@@ -150,7 +150,7 @@ const frontendDistPath = path.join(__dirname, '..', '..', 'dist');
 app.use(express.static(frontendDistPath));
 
 // Catch-all route to serve the Single Page App (index.html)
-app.get('*', (req, res, next) => {
+app.get('/*splat', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }
