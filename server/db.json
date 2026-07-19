@@ -1,0 +1,1221 @@
+{
+  "users": [
+    {
+      "email": "xyz@gmail.com",
+      "password": "$2b$10$c/WlAZB6IAm5.DOaZEbtou31lzeCY0UfQAmmJXoiY.SE8fWl9ANXW",
+      "userId": "user_1781938581496",
+      "firstName": "Mayank",
+      "lastName": "Sharma",
+      "dob": "2007-07-09"
+    },
+    {
+      "email": "hello@gmail.com",
+      "password": "$2b$10$/2crTmjKCNo8iEcj9RMqQupOJwnkrgI.WsLQBLtlfI8pyDyjW5jFa",
+      "userId": "user_1782461704667",
+      "firstName": "Varun",
+      "lastName": "Verma",
+      "dob": "2006-07-08"
+    },
+    {
+      "email": "demo@gmail.com",
+      "password": "$2b$10$pd9YUulXaUOR2lPGwg.xKuSCYmIBgZ2GBO.tQldPd55czCxj7uMXa",
+      "userId": "user_1784305052223",
+      "firstName": "Mayank",
+      "lastName": "Verma",
+      "dob": "2006-06-08"
+    }
+  ],
+  "userData": [
+    {
+      "userId": "user_1781938581496",
+      "profile": {
+        "fullName": "Mayank Sharma",
+        "enrollmentNumber": "1234567",
+        "email": "xyz@gmail.com",
+        "collegeName": "Bhagwan Parshuram Institute of Technology (BPIT)",
+        "course": "B.Tech",
+        "branch": "CSE - Computer Science & Engineering",
+        "currentSemester": "2",
+        "admissionYear": "2025",
+        "graduationYear": "2029",
+        "targetCgpa": "9.8",
+        "backlogCount": "0",
+        "backlogSubjects": [],
+        "dob": "2007-07-09"
+      },
+      "subjects": [
+        {
+          "id": "1781940250380",
+          "name": "AM-II",
+          "credits": 3
+        },
+        {
+          "id": "1781940251670",
+          "name": "ES",
+          "credits": 3
+        },
+        {
+          "id": "1781940252350",
+          "name": "AP-II",
+          "credits": 3
+        },
+        {
+          "id": "1781940253485",
+          "name": "AC",
+          "credits": 3
+        },
+        {
+          "id": "1781940255496",
+          "name": "CS",
+          "credits": 3
+        },
+        {
+          "id": "1781940257194",
+          "name": "EM",
+          "credits": 3
+        },
+        {
+          "id": "1781940258646",
+          "name": "EG-II",
+          "credits": 1
+        },
+        {
+          "id": "1781940260667",
+          "name": "AC Lab",
+          "credits": 1
+        },
+        {
+          "id": "1781940262014",
+          "name": "AP Lab",
+          "credits": 1
+        },
+        {
+          "id": "1781940264805",
+          "name": "ES Lab",
+          "credits": 1
+        },
+        {
+          "id": "1781940265498",
+          "name": "WP",
+          "credits": 1
+        }
+      ],
+      "timetable": [
+        {
+          "day": "Wednesday",
+          "subject": "AM-II",
+          "period": 1
+        },
+        {
+          "day": "Wednesday",
+          "subject": "AM-II",
+          "period": 2
+        },
+        {
+          "day": "Wednesday",
+          "subject": "AP-II",
+          "period": 3
+        },
+        {
+          "day": "Wednesday",
+          "subject": "AP-II",
+          "period": 4
+        },
+        {
+          "day": "Wednesday",
+          "subject": "CS",
+          "period": 5
+        },
+        {
+          "day": "Wednesday",
+          "subject": "EM",
+          "period": 6
+        },
+        {
+          "day": "Wednesday",
+          "subject": "AC Lab",
+          "period": 7
+        },
+        {
+          "day": "Thursday",
+          "subject": "AM-II",
+          "period": 1
+        },
+        {
+          "day": "Thursday",
+          "subject": "ES",
+          "period": 2
+        },
+        {
+          "day": "Thursday",
+          "subject": "AP-II",
+          "period": 3
+        },
+        {
+          "day": "Thursday",
+          "subject": "AC",
+          "period": 4
+        },
+        {
+          "day": "Thursday",
+          "subject": "CS",
+          "period": 5
+        },
+        {
+          "day": "Thursday",
+          "subject": "AC Lab",
+          "period": 6
+        },
+        {
+          "day": "Thursday",
+          "subject": "WP",
+          "period": 7
+        },
+        {
+          "day": "Friday",
+          "subject": "AM-II",
+          "period": 1
+        },
+        {
+          "day": "Friday",
+          "subject": "CS",
+          "period": 2
+        },
+        {
+          "day": "Friday",
+          "subject": "EM",
+          "period": 3
+        },
+        {
+          "day": "Friday",
+          "subject": "EG-II",
+          "period": 4
+        },
+        {
+          "day": "Friday",
+          "subject": "AC Lab",
+          "period": 5
+        },
+        {
+          "day": "Saturday",
+          "subject": "ES",
+          "period": 1
+        },
+        {
+          "day": "Saturday",
+          "subject": "AC",
+          "period": 2
+        },
+        {
+          "day": "Saturday",
+          "subject": "AC",
+          "period": 3
+        },
+        {
+          "day": "Saturday",
+          "subject": "AC",
+          "period": 4
+        },
+        {
+          "day": "Saturday",
+          "subject": "CS",
+          "period": 5
+        },
+        {
+          "day": "Saturday",
+          "subject": "EM",
+          "period": 6
+        },
+        {
+          "day": "Saturday",
+          "subject": "EG-II",
+          "period": 7
+        },
+        {
+          "day": "Saturday",
+          "subject": "AC Lab",
+          "period": 8
+        }
+      ],
+      "attendanceRecords": [
+        {
+          "date": "2026-06-20",
+          "subjects": [
+            "ES",
+            "AC",
+            "EM"
+          ]
+        },
+        {
+          "date": "2026-06-27",
+          "subjects": [
+            "AC-2",
+            "AC-3",
+            "AC-4",
+            "CS-5"
+          ]
+        }
+      ],
+      "semesterData": [
+        {
+          "semester": 1,
+          "subjects": [
+            {
+              "subjectName": "Programming in C",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 51,
+              "totalMarks": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP-I",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 38,
+              "totalMarks": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 49,
+              "totalMarks": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AM-I",
+              "credits": 3,
+              "internalMarks": 35,
+              "externalMarks": 43,
+              "totalMarks": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internalMarks": 37,
+              "externalMarks": 60,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-I Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "Programming in C Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 57,
+              "totalMarks": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        }
+      ],
+      "semesterMarks": [
+        {
+          "semester": 1,
+          "results": [
+            {
+              "subjectName": "Programming in C",
+              "credits": 3,
+              "internal": 37,
+              "external": 51,
+              "total": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP-I",
+              "credits": 3,
+              "internal": 37,
+              "external": 38,
+              "total": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internal": 37,
+              "external": 49,
+              "total": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AM-I",
+              "credits": 3,
+              "internal": 35,
+              "external": 43,
+              "total": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internal": 37,
+              "external": 60,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-I Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "Programming in C Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 57,
+              "total": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        }
+      ],
+      "backlogs": [],
+      "examCalendar": null,
+      "targetCgpa": 9.62,
+      "isOnboarded": true
+    },
+    {
+      "userId": "user_1782461704667",
+      "profile": {
+        "fullName": "Varun Verma",
+        "enrollmentNumber": "02120802725",
+        "email": "hello@gmail.com",
+        "collegeName": "Bhagwan Parshuram Institute of Technology (BPIT)",
+        "course": "B.Tech",
+        "branch": "CSE - Computer Science & Engineering",
+        "currentSemester": "3",
+        "admissionYear": "2025",
+        "graduationYear": "2029",
+        "targetCgpa": "9.8",
+        "backlogCount": "0",
+        "backlogSubjects": [],
+        "dob": "2006-07-08"
+      },
+      "subjects": [
+        {
+          "id": "1782461849662",
+          "name": "Data Structure and Algorithms",
+          "credits": 3
+        }
+      ],
+      "timetable": [
+        {
+          "day": "Friday",
+          "subject": "Data Structure and Algorithms",
+          "period": 1
+        },
+        {
+          "day": "Thursday",
+          "subject": "Data Structure and Algorithms",
+          "period": 1
+        },
+        {
+          "day": "Wednesday",
+          "subject": "Data Structure and Algorithms",
+          "period": 1
+        },
+        {
+          "day": "Tuesday",
+          "subject": "Data Structure and Algorithms",
+          "period": 1
+        },
+        {
+          "day": "Monday",
+          "subject": "Data Structure and Algorithms",
+          "period": 1
+        }
+      ],
+      "attendanceRecords": [],
+      "semesterData": [
+        {
+          "semester": 1,
+          "subjects": [
+            {
+              "subjectName": "AM-1",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 51,
+              "totalMarks": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP-1",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 38,
+              "totalMarks": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "P in C",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 49,
+              "totalMarks": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internalMarks": 35,
+              "externalMarks": 43,
+              "totalMarks": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internalMarks": 37,
+              "externalMarks": 60,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "P in C-Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 57,
+              "totalMarks": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS-Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        }
+      ],
+      "semesterMarks": [
+        {
+          "semester": 1,
+          "results": [
+            {
+              "subjectName": "AM-1",
+              "credits": 3,
+              "internal": 37,
+              "external": 51,
+              "total": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP-1",
+              "credits": 3,
+              "internal": 37,
+              "external": 38,
+              "total": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "P in C",
+              "credits": 3,
+              "internal": 37,
+              "external": 49,
+              "total": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internal": 35,
+              "external": 43,
+              "total": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internal": 37,
+              "external": 60,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "P in C-Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG",
+              "credits": 1,
+              "internal": 39,
+              "external": 57,
+              "total": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS-Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        }
+      ],
+      "backlogs": [],
+      "examCalendar": {
+        "semConfig": {
+          "semester": 1,
+          "startDate": "2025-08-01",
+          "endDate": "2025-12-31"
+        },
+        "examPeriods": [
+          {
+            "type": "midsem1",
+            "label": "Mid Semester 1",
+            "startDate": null,
+            "endDate": null
+          },
+          {
+            "type": "midsem2",
+            "label": "Mid Semester 2",
+            "startDate": null,
+            "endDate": null
+          },
+          {
+            "type": "endsem",
+            "label": "End Semester",
+            "startDate": null,
+            "endDate": null
+          }
+        ],
+        "dayEvents": []
+      },
+      "targetCgpa": 9.59,
+      "isOnboarded": true
+    },
+    {
+      "userId": "test",
+      "profile": null,
+      "subjects": [],
+      "timetable": [],
+      "attendanceRecords": [],
+      "semesterData": [],
+      "semesterMarks": [],
+      "backlogs": [],
+      "examCalendar": null,
+      "targetCgpa": 0
+    },
+    {
+      "userId": "user_1784305052223",
+      "profile": {
+        "fullName": "Mayank Verma",
+        "enrollmentNumber": "02820802725",
+        "email": "demo@gmail.com",
+        "collegeName": "Bhagwan Parshuram Institute of Technology (BPIT)",
+        "course": "B.Tech",
+        "branch": "CSE - Computer Science & Engineering",
+        "currentSemester": "3",
+        "admissionYear": "2025",
+        "graduationYear": "2029",
+        "targetCgpa": "9.7",
+        "backlogCount": "0",
+        "backlogSubjects": [],
+        "dob": "2006-06-08"
+      },
+      "subjects": [
+        {
+          "id": "1784305130451",
+          "name": "DSA",
+          "credits": 3
+        }
+      ],
+      "timetable": [
+        {
+          "day": "Monday",
+          "subject": "DSA",
+          "period": 1
+        },
+        {
+          "day": "Tuesday",
+          "subject": "DSA",
+          "period": 1
+        },
+        {
+          "day": "Wednesday",
+          "subject": "DSA",
+          "period": 1
+        },
+        {
+          "day": "Thursday",
+          "subject": "DSA",
+          "period": 1
+        },
+        {
+          "day": "Friday",
+          "subject": "DSA",
+          "period": 1
+        },
+        {
+          "day": "Saturday",
+          "subject": "DSA",
+          "period": 1
+        }
+      ],
+      "attendanceRecords": [],
+      "semesterData": [
+        {
+          "semester": 1,
+          "subjects": [
+            {
+              "subjectName": "P in C",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 51,
+              "totalMarks": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 38,
+              "totalMarks": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AM",
+              "credits": 3,
+              "internalMarks": 35,
+              "externalMarks": 43,
+              "totalMarks": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 49,
+              "totalMarks": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP Practical",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS Practical",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 57,
+              "totalMarks": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internalMarks": 39,
+              "externalMarks": 59,
+              "totalMarks": 98,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "P in C Practical",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        },
+        {
+          "semester": 2,
+          "subjects": [
+            {
+              "subjectName": "AC",
+              "credits": 3,
+              "internalMarks": 39,
+              "externalMarks": 55,
+              "totalMarks": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-II",
+              "credits": 3,
+              "internalMarks": 37,
+              "externalMarks": 57,
+              "totalMarks": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "ES",
+              "credits": 3,
+              "internalMarks": 38,
+              "externalMarks": 52,
+              "totalMarks": 90,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AM-II",
+              "credits": 3,
+              "internalMarks": 38,
+              "externalMarks": 33,
+              "totalMarks": 71,
+              "grade": "A",
+              "gradePoint": 8
+            },
+            {
+              "subjectName": "CS",
+              "credits": 3,
+              "internalMarks": 39,
+              "externalMarks": 55,
+              "totalMarks": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-II Lab",
+              "credits": 1,
+              "internalMarks": 38,
+              "externalMarks": 60,
+              "totalMarks": 98,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AC Lab",
+              "credits": 1,
+              "internalMarks": 39,
+              "externalMarks": 58,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG-II",
+              "credits": 1,
+              "internalMarks": 37,
+              "externalMarks": 56,
+              "totalMarks": 93,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "ES Lab",
+              "credits": 1,
+              "internalMarks": 40,
+              "externalMarks": 59,
+              "totalMarks": 99,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "WP",
+              "credits": 1,
+              "internalMarks": 38,
+              "externalMarks": 59,
+              "totalMarks": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EM",
+              "credits": 3,
+              "internalMarks": 38,
+              "externalMarks": 53,
+              "totalMarks": 91,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.73913043478261
+        }
+      ],
+      "semesterMarks": [
+        {
+          "semester": 1,
+          "results": [
+            {
+              "subjectName": "P in C",
+              "credits": 3,
+              "internal": 37,
+              "external": 51,
+              "total": 88,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AP",
+              "credits": 3,
+              "internal": 37,
+              "external": 38,
+              "total": 75,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "AM",
+              "credits": 3,
+              "internal": 35,
+              "external": 43,
+              "total": 78,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "EVS",
+              "credits": 3,
+              "internal": 37,
+              "external": 49,
+              "total": 86,
+              "grade": "A+",
+              "gradePoint": 9
+            },
+            {
+              "subjectName": "MP",
+              "credits": 3,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP Practical",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EVS Practical",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG",
+              "credits": 1,
+              "internal": 39,
+              "external": 57,
+              "total": 96,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "HVE",
+              "credits": 2,
+              "internal": 39,
+              "external": 59,
+              "total": 98,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "P in C Practical",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.428571428571429
+        },
+        {
+          "semester": 2,
+          "results": [
+            {
+              "subjectName": "AC",
+              "credits": 3,
+              "internal": 39,
+              "external": 55,
+              "total": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-II",
+              "credits": 3,
+              "internal": 37,
+              "external": 57,
+              "total": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "ES",
+              "credits": 3,
+              "internal": 38,
+              "external": 52,
+              "total": 90,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AM-II",
+              "credits": 3,
+              "internal": 38,
+              "external": 33,
+              "total": 71,
+              "grade": "A",
+              "gradePoint": 8
+            },
+            {
+              "subjectName": "CS",
+              "credits": 3,
+              "internal": 39,
+              "external": 55,
+              "total": 94,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AP-II Lab",
+              "credits": 1,
+              "internal": 38,
+              "external": 60,
+              "total": 98,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "AC Lab",
+              "credits": 1,
+              "internal": 39,
+              "external": 58,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EG-II",
+              "credits": 1,
+              "internal": 37,
+              "external": 56,
+              "total": 93,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "ES Lab",
+              "credits": 1,
+              "internal": 40,
+              "external": 59,
+              "total": 99,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "WP",
+              "credits": 1,
+              "internal": 38,
+              "external": 59,
+              "total": 97,
+              "grade": "O",
+              "gradePoint": 10
+            },
+            {
+              "subjectName": "EM",
+              "credits": 3,
+              "internal": 38,
+              "external": 53,
+              "total": 91,
+              "grade": "O",
+              "gradePoint": 10
+            }
+          ],
+          "sgpa": 9.73913043478261
+        }
+      ],
+      "backlogs": [],
+      "examCalendar": null,
+      "targetCgpa": 9.68,
+      "isOnboarded": true
+    }
+  ]
+}
