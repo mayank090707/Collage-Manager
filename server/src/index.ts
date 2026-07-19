@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import { db } from './DB';
+import path from 'path';
 
 dotenv.config();
 
@@ -144,7 +145,19 @@ app.post('/api/user/:userId/sync', async (req, res) => {
   }
 });
 
+// Serve frontend static build files in production
+const frontendDistPath = path.join(__dirname, '..', '..', 'dist');
+app.use(express.static(frontendDistPath));
+
+// Catch-all route to serve the Single Page App (index.html)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
   console.log(`Using Local File Database: db.json`);
 });
