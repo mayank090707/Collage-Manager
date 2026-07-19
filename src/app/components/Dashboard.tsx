@@ -233,7 +233,7 @@ export function Dashboard() {
       value: stats.upcomingExams,
       icon: Calendar,
       color: "from-purple-500 to-pink-500",
-      progress: 60,
+      progress: Math.min((stats.upcomingExams / 10) * 100, 100),
     },
     {
       title: "Required SGPA",
@@ -423,28 +423,28 @@ export function Dashboard() {
           </Button>
           <Button
             onClick={() => navigate("/app/exam-calendar")}
-            className="h-24 bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border border-[var(--brand-end)]/30 hover:border-[var(--brand-end)] hover:bg-[var(--brand-end)]/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb), 0.3)]"
+            className="h-24 bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border border-[var(--brand-end)]/30 hover:border-[var(--brand-end)] hover:bg-[var(--brand-end)]/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb),0.3)]"
           >
             <Calendar className="w-6 h-6" />
             <span className="text-sm">Exam Calendar</span>
           </Button>
           <Button
             onClick={() => navigate("/app/enter-marks")}
-            className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb), 0.3)]"
+            className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb),0.3)]"
           >
             <PenLine className="w-6 h-6" />
             <span className="text-sm">Enter Marks</span>
           </Button>
           <Button
             onClick={() => navigate("/app/timetable")}
-            className="h-24 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            className="h-24 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
           >
             <LayoutGrid className="w-6 h-6" />
             <span className="text-sm">Timetable</span>
           </Button>
           <Button
             onClick={() => navigate("/app/target-predictor")}
-            className="h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 hover:border-indigo-500 hover:bg-indigo-500/30 text-white flex flex-col items-center justify-center gap-1 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+            className="h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 hover:border-indigo-500 hover:bg-indigo-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-1 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
           >
             <TrendingUp className="w-5 h-5" />
             <span className="text-sm">Target Predictor</span>
