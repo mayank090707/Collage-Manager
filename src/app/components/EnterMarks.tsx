@@ -200,10 +200,10 @@ export function EnterMarks() {
 
   const getCGPA = () => {
     if (savedSemesters.length === 0) return null;
-    const allEnteredSGPAs = savedSemesters.map((s) => s.sgpa || 0);
-    return allEnteredSGPAs.length > 0
-      ? allEnteredSGPAs.reduce((a, b) => a + b, 0) / allEnteredSGPAs.length
-      : 0;
+    const allResults = savedSemesters.flatMap((s) => s.results);
+    const totalCredits = allResults.reduce((s, r) => s + r.credits, 0);
+    const weighted = allResults.reduce((s, r) => s + r.gradePoint * r.credits, 0);
+    return totalCredits > 0 ? weighted / totalCredits : 0;
   };
 
   const activeSemResults = getSemResults(activeSem);

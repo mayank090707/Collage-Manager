@@ -52,11 +52,11 @@ export function TargetPredictor() {
 
       const reqSGPA = (target * currentSemNum) - sumPreviousSGPAs;
 
-      // Current CGPA = simple average of all entered SGPAs
-      const allEnteredSGPAs = savedMarks.map((m: any) => m.sgpa || 0);
-      const currentCgpa = allEnteredSGPAs.length > 0
-        ? allEnteredSGPAs.reduce((a: number, b: number) => a + b, 0) / allEnteredSGPAs.length
-        : 0;
+      // Current CGPA = credit-weighted average
+      const allResults = savedMarks.flatMap((m: any) => m.results || []);
+      const totalCredits = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
+      const weighted = allResults.reduce((s: number, r: any) => s + (r.gradePoint * (r.credits || 0)), 0);
+      const currentCgpa = totalCredits > 0 ? weighted / totalCredits : 0;
 
       // Max achievable CGPA if this sem gets perfect 10.0
       const maxAchievable = (sumPreviousSGPAs + 10.0) / currentSemNum;

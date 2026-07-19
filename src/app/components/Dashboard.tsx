@@ -132,13 +132,13 @@ export function Dashboard() {
         }).length;
       }
 
-      // 4. CGPA Calculation (simple average of all SGPAs)
+      // 4. CGPA Calculation (credit-weighted average)
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
       if (savedMarks.length > 0) {
-        const allEnteredSGPAs = savedMarks.map((m: any) => m.sgpa || 0);
-        updatedStats.cgpa = allEnteredSGPAs.length > 0
-          ? allEnteredSGPAs.reduce((a: number, b: number) => a + b, 0) / allEnteredSGPAs.length
-          : 0;
+        const allResults = savedMarks.flatMap((s: any) => s.results);
+        const totalCredits = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
+        const weighted = allResults.reduce((s: number, r: any) => s + (r.gradePoint * (r.credits || 0)), 0);
+        updatedStats.cgpa = totalCredits > 0 ? weighted / totalCredits : 0;
 
         // 5. Required SGPA for Target
         // Formula: (SGPA1 + SGPA2 + ... + x) / N = targetCGPA
