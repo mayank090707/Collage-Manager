@@ -113,7 +113,7 @@ export function Analytics() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
           Analytics
         </h1>
         <p className="text-gray-400 text-lg">Visualize your academic performance and insights</p>
@@ -130,9 +130,9 @@ export function Analytics() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="bg-gradient-to-r from-[#00d4ff]/10 to-[#a855f7]/10 border-[#00d4ff]/30 backdrop-blur-xl p-4">
+              <Card className="bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/30 backdrop-blur-xl p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#a855f7] mt-1">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] mt-1">
                     {insight.includes("improved") || insight.includes("Excellent") || insight.includes("Outstanding") || insight.includes("Congratulations") ? (
                       <TrendingUp className="w-4 h-4 text-white" />
                     ) : insight.includes("decreased") || insight.includes("below") || insight.includes("backlog") ? (
@@ -178,13 +178,13 @@ export function Analytics() {
                   dataKey="sgpa"
                   stroke="url(#sgpaGradient)"
                   strokeWidth={3}
-                  dot={{ fill: "#00d4ff", r: 6 }}
+                  dot={{ fill: "#fbbf24", r: 6 }}
                   activeDot={{ r: 8 }}
                 />
                 <defs>
                   <linearGradient id="sgpaGradient" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#00d4ff" />
-                    <stop offset="100%" stopColor="#a855f7" />
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#f97316" />
                   </linearGradient>
                 </defs>
               </LineChart>
@@ -216,8 +216,8 @@ export function Analytics() {
                 <Bar dataKey="attendance" fill="url(#attendanceGradient)" radius={[8, 8, 0, 0]} />
                 <defs>
                   <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#00d4ff" />
-                    <stop offset="100%" stopColor="#a855f7" />
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#f97316" />
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -242,8 +242,8 @@ export function Analytics() {
               <Radar
                 name="Score"
                 dataKey="score"
-                stroke="#00d4ff"
-                fill="#00d4ff"
+                stroke="#fbbf24"
+                fill="#fbbf24"
                 fillOpacity={0.3}
                 strokeWidth={2}
               />
@@ -284,10 +284,10 @@ export function Analytics() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-gradient-to-br from-[#00d4ff]/20 to-[#0ea5e9]/20 border-[#00d4ff]/30 p-6">
+            <Card className="bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/30 p-6">
               <div className="flex items-center justify-between mb-4">
-                <TrendingUp className="w-8 h-8 text-[#00d4ff]" />
-                <span className="text-2xl text-[#00d4ff]">Good</span>
+                <TrendingUp className="w-8 h-8 text-[var(--brand-start)]" />
+                <span className="text-2xl text-[var(--brand-start)]">Good</span>
               </div>
               <p className="text-sm text-gray-300 mb-1">Academic Trend</p>
               <p className="text-xs text-gray-400">Consistent performance</p>
@@ -299,10 +299,10 @@ export function Analytics() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-gradient-to-br from-[#a855f7]/20 to-[#8b5cf6]/20 border-[#a855f7]/30 p-6">
+            <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
               <div className="flex items-center justify-between mb-4">
-                <Target className="w-8 h-8 text-[#a855f7]" />
-                <span className="text-2xl text-[#a855f7]">On Track</span>
+                <Target className="w-8 h-8 text-[var(--brand-end)]" />
+                <span className="text-2xl text-[var(--brand-end)]">On Track</span>
               </div>
               <p className="text-sm text-gray-300 mb-1">Target Progress</p>
               <p className="text-xs text-gray-400">Meeting expectations</p>

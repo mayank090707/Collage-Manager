@@ -155,7 +155,7 @@ export function OnboardingFlow() {
     return timetable.filter((t) => t.day === day).sort((a, b) => a.period - b.period);
   };
 
-  const inputCls = "bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white";
+  const inputCls = "bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white";
 
   const COLLEGES = [
     "Maharaja Agrasen Institute of Technology (MAIT)",
@@ -184,8 +184,8 @@ export function OnboardingFlow() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-[#00d4ff] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-20 w-96 h-96 bg-[#a855f7] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-[var(--brand-end)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
@@ -198,14 +198,14 @@ export function OnboardingFlow() {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                       step >= s
-                        ? "bg-gradient-to-r from-[#00d4ff] to-[#a855f7] text-white shadow-[0_0_20px_rgba(0,212,255,0.5)]"
+                        ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.5)]"
                         : "bg-gray-700 text-gray-400"
                     }`}
                   >
                     {s}
                   </div>
                   {s < 3 && (
-                    <div className={`flex-1 h-1 mx-2 rounded ${step > s ? "bg-gradient-to-r from-[#00d4ff] to-[#a855f7]" : "bg-gray-700"}`} />
+                    <div className={`flex-1 h-1 mx-2 rounded ${step > s ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)]" : "bg-gray-700"}`} />
                   )}
                 </div>
               ))}
@@ -224,7 +224,7 @@ export function OnboardingFlow() {
               {step === 1 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
                       Student Information
                     </h2>
                     <p className="text-gray-400">Let's start by setting up your profile</p>
@@ -341,7 +341,7 @@ export function OnboardingFlow() {
               {step === 2 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
                       Current Semester Subjects
                     </h2>
                     <p className="text-gray-400">Add your subjects — credits are used for SGPA/CGPA calculations</p>
@@ -350,7 +350,7 @@ export function OnboardingFlow() {
                   <div className="space-y-3">
                     {subjects.map((subject, idx) => (
                       <div key={subject.id} className="flex gap-3 items-end bg-[#0a0a0f]/30 p-4 rounded-lg border border-gray-800/50">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#00d4ff]/20 to-[#a855f7]/20 border border-[#00d4ff]/30 flex items-center justify-center text-[#00d4ff] text-sm font-bold flex-shrink-0 self-center">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 border border-[var(--brand-start)]/30 flex items-center justify-center text-[var(--brand-start)] text-sm font-bold flex-shrink-0 self-center">
                           {idx + 1}
                         </div>
                         <div className="flex-1 space-y-1">
@@ -374,7 +374,7 @@ export function OnboardingFlow() {
                     ))}
                   </div>
 
-                  <Button type="button" onClick={addSubject} variant="outline" className="w-full border-dashed border-gray-700 hover:border-[#00d4ff] bg-transparent text-[#00d4ff] hover:bg-[#00d4ff]/10">
+                  <Button type="button" onClick={addSubject} variant="outline" className="w-full border-dashed border-gray-700 hover:border-[var(--brand-start)] bg-transparent text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10">
                     <Plus className="w-4 h-4 mr-2" />
                     Add Subject
                   </Button>
@@ -385,7 +385,7 @@ export function OnboardingFlow() {
               {step === 3 && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+                    <h2 className="text-3xl mb-1 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
                       Create Your Timetable
                     </h2>
                     <p className="text-gray-400">
@@ -399,7 +399,7 @@ export function OnboardingFlow() {
                       return (
                         <div key={day} className="space-y-3 p-4 rounded-xl bg-[#0a0a0f]/30 border border-gray-800/50">
                           <div className="flex items-center justify-between border-b border-gray-800/50 pb-2">
-                            <Label className="text-[#00d4ff] font-bold text-lg">{day}</Label>
+                            <Label className="text-[var(--brand-start)] font-bold text-lg">{day}</Label>
                             <span className="text-xs text-gray-500 uppercase tracking-widest">{daySlots.length} Slots</span>
                           </div>
 
@@ -410,7 +410,7 @@ export function OnboardingFlow() {
                                 key={subject.id}
                                 type="button"
                                 onClick={() => addTimetableSlot(day, subject.name)}
-                                className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800/30 text-gray-300 text-xs hover:border-[#00d4ff] hover:text-white transition-all flex items-center gap-1.5"
+                                className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800/30 text-gray-300 text-xs hover:border-[var(--brand-start)] hover:text-white transition-all flex items-center gap-1.5"
                               >
                                 <Plus size={12} />
                                 {subject.name}
@@ -424,7 +424,7 @@ export function OnboardingFlow() {
                               {daySlots.map((slot, idx) => (
                                 <div
                                   key={`${day}-${idx}`}
-                                  className="group flex items-center gap-2 pl-3 pr-1 py-1 rounded-full bg-gradient-to-r from-[#00d4ff]/10 to-[#a855f7]/10 border border-[#00d4ff]/30 text-white text-sm"
+                                  className="group flex items-center gap-2 pl-3 pr-1 py-1 rounded-full bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/30 text-white text-sm"
                                 >
                                   <span className="text-[10px] font-bold opacity-50">P{slot.period}</span>
                                   <span className="font-medium">{slot.subject}</span>
@@ -454,7 +454,7 @@ export function OnboardingFlow() {
                     Previous
                   </Button>
                 )}
-                <Button type="button" onClick={handleNext} className="ml-auto bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(0,212,255,0.3)]">
+                <Button type="button" onClick={handleNext} className="ml-auto bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]">
                   {step === 3 ? "Complete Setup" : "Next →"}
                 </Button>
               </div>

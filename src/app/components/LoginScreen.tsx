@@ -103,8 +103,8 @@ export function LoginScreen() {
     <div className="dark min-h-screen bg-[#0a0a0f] relative overflow-hidden flex items-center justify-center">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-[#00d4ff] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
-        <div className="absolute top-40 right-20 w-96 h-96 bg-[#a855f7] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-[var(--brand-end)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-20 left-1/3 w-96 h-96 bg-[#8b5cf6] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
@@ -120,11 +120,11 @@ export function LoginScreen() {
           className="hidden lg:flex flex-col items-center justify-center space-y-6"
         >
           <div className="relative">
-            <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#00d4ff] to-[#a855f7] rounded-full blur-3xl opacity-30"></div>
-            <GraduationCap className="w-64 h-64 text-[#00d4ff] relative z-10" strokeWidth={1} />
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] rounded-full blur-3xl opacity-30"></div>
+            <GraduationCap className="w-64 h-64 text-[var(--brand-start)] relative z-10" strokeWidth={1} />
           </div>
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#00d4ff] via-[#a855f7] to-[#00d4ff] bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] via-[var(--brand-end)] to-[var(--brand-start)] bg-clip-text text-transparent">
               College Manager
             </h1>
             <p className="text-gray-400 text-lg">Your Academic Operating System</p>
@@ -143,13 +143,13 @@ export function LoginScreen() {
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-[#111118]/80 to-[#111118]/40 rounded-3xl blur-xl"></div>
             <div className="relative backdrop-blur-xl bg-[#111118]/60 border border-gray-800/50 rounded-3xl p-8 shadow-2xl">
               {/* Neon Border Effect */}
-              <div className="absolute inset-0 pointer-events-none rounded-3xl bg-gradient-to-r from-[#00d4ff]/20 via-[#a855f7]/20 to-[#00d4ff]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 pointer-events-none rounded-3xl bg-gradient-to-r from-[var(--brand-start)]/20 via-[var(--brand-end)]/20 to-[var(--brand-start)]/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
               {/* Logo */}
               <div className="flex items-center justify-center mb-8">
                 <div className="flex items-center space-x-3">
-                  <Sparkles className="w-8 h-8 text-[#00d4ff]" />
-                  <span className="text-2xl font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+                  <Sparkles className="w-8 h-8 text-[var(--brand-start)]" />
+                  <span className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
                     College Manager
                   </span>
                 </div>
@@ -171,7 +171,7 @@ export function LoginScreen() {
                         id="firstName"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white h-11"
+                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white h-11"
                         placeholder="John"
                         required
                       />
@@ -182,7 +182,7 @@ export function LoginScreen() {
                         id="lastName"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white h-11"
+                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white h-11"
                         placeholder="Doe"
                         required
                       />
@@ -198,7 +198,7 @@ export function LoginScreen() {
                       type="date"
                       value={dob}
                       onChange={(e) => setDob(e.target.value)}
-                      className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white h-11"
+                      className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white h-11"
                       required
                     />
                   </div>
@@ -213,7 +213,7 @@ export function LoginScreen() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] transition-colors text-white h-11"
+                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] transition-colors text-white h-11"
                     placeholder="eg- student@college.edu"
                     required
                   />
@@ -230,7 +230,7 @@ export function LoginScreen() {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] transition-colors text-white h-11 pr-10"
+                        className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] transition-colors text-white h-11 pr-10"
                         placeholder="••••••••"
                         required
                       />
@@ -255,7 +255,7 @@ export function LoginScreen() {
                           type={showConfirmPassword ? "text" : "password"}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] transition-colors text-white h-11 pr-10"
+                          className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] transition-colors text-white h-11 pr-10"
                           placeholder="••••••••"
                           required
                         />
@@ -278,7 +278,7 @@ export function LoginScreen() {
                       id="remember" 
                       checked={rememberMe}
                       onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      className="border-gray-600 data-[state=checked]:bg-[#00d4ff] data-[state=checked]:border-[#00d4ff]"
+                      className="border-gray-600 data-[state=checked]:bg-[var(--brand-start)] data-[state=checked]:border-[var(--brand-start)]"
                     />
                     <Label htmlFor="remember" className="text-sm text-gray-400 cursor-pointer">
                       Remember me
@@ -286,7 +286,7 @@ export function LoginScreen() {
                   </div>
                   )}
                   {isLogin && (
-                    <button type="button" className="text-sm text-[#00d4ff] hover:text-[#00ffff] transition-colors">
+                    <button type="button" className="text-sm text-[var(--brand-start)] hover:text-[#00ffff] transition-colors">
                       Forgot Password?
                     </button>
                   )}
@@ -295,7 +295,7 @@ export function LoginScreen() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] transition-all flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] hover:shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.5)] transition-all flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -317,7 +317,7 @@ export function LoginScreen() {
                   type="button"
                   onClick={() => setIsLogin(!isLogin)}
                   variant="outline"
-                  className="w-full h-12 border-gray-700 hover:border-[#a855f7] bg-transparent text-white hover:bg-[#a855f7]/10 transition-all"
+                  className="w-full h-12 border-gray-700 hover:border-[var(--brand-end)] bg-transparent text-white hover:bg-[var(--brand-end)]/10 transition-all"
                 >
                   {isLogin ? "Create New Account" : "Back to Sign In"}
                 </Button>

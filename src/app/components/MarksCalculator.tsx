@@ -23,9 +23,9 @@ const GRADE_POINTS: Record<string, number> = {
 
 function getGradeInfo(marks: number) {
   if (marks >= 90) return { grade: "O", gp: 10, color: "text-emerald-400" };
-  if (marks >= 75) return { grade: "A+", gp: 9, color: "text-[#00d4ff]" };
+  if (marks >= 75) return { grade: "A+", gp: 9, color: "text-[var(--brand-start)]" };
   if (marks >= 65) return { grade: "A", gp: 8, color: "text-sky-400" };
-  if (marks >= 55) return { grade: "B+", gp: 7, color: "text-[#a855f7]" };
+  if (marks >= 55) return { grade: "B+", gp: 7, color: "text-[var(--brand-end)]" };
   if (marks >= 50) return { grade: "B", gp: 6, color: "text-violet-400" };
   if (marks >= 45) return { grade: "C", gp: 5, color: "text-yellow-400" };
   if (marks >= 40) return { grade: "P", gp: 4, color: "text-orange-400" };
@@ -108,7 +108,7 @@ export function MarksCalculator() {
           Dashboard
         </Button>
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
             Marks Calculator
           </h1>
           <p className="text-gray-400">Simulate your SGPA based on predicted marks</p>
@@ -119,7 +119,7 @@ export function MarksCalculator() {
         <Card className="lg:col-span-2 bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold text-white">Subject Marks</h2>
-            <Button onClick={addSubject} variant="outline" size="sm" className="border-gray-700 bg-transparent text-[#00d4ff] hover:bg-[#00d4ff]/10">
+            <Button onClick={addSubject} variant="outline" size="sm" className="border-gray-700 bg-transparent text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10">
               <Plus className="w-4 h-4 mr-2" /> Add Subject
             </Button>
           </div>
@@ -132,7 +132,7 @@ export function MarksCalculator() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="grid grid-cols-12 gap-3 items-end p-4 rounded-xl bg-[#0a0a0f]/50 border border-gray-800 group hover:border-[#00d4ff]/30 transition-all"
+                  className="grid grid-cols-12 gap-3 items-end p-4 rounded-xl bg-[#0a0a0f]/50 border border-gray-800 group hover:border-[var(--brand-start)]/30 transition-all"
                 >
                   <div className="col-span-5 space-y-2">
                     <Label className="text-xs text-gray-500 uppercase tracking-wider">Subject Name</Label>
@@ -158,7 +158,7 @@ export function MarksCalculator() {
                       type="number" 
                       value={sub.marks || ""} 
                       onChange={(e) => updateSubject(sub.id, "marks", parseInt(e.target.value) || 0)}
-                      className="bg-[#111118] border-gray-700 text-center text-lg font-bold text-[#00d4ff]" 
+                      className="bg-[#111118] border-gray-700 text-center text-lg font-bold text-[var(--brand-start)]" 
                       placeholder="85"
                     />
                   </div>
@@ -182,7 +182,7 @@ export function MarksCalculator() {
 
           <Button 
             onClick={calculateSgpa}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(0,212,255,0.3)] mt-6"
+            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] mt-6"
           >
             <Calculator className="w-5 h-5 mr-2" />
             Calculate Prediction
@@ -198,11 +198,11 @@ export function MarksCalculator() {
                 <p className="text-sm text-gray-400">Enter your total marks (internal + external) out of 100.</p>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#00d4ff] mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-[var(--brand-start)] mt-0.5" />
                 <p className="text-sm text-gray-400">This calculation uses the standard IPU 10-point scale.</p>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-[#a855f7] mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-[var(--brand-end)] mt-0.5" />
                 <p className="text-sm text-gray-400">You can edit subjects and credits here - these changes won't be saved to your profile permanently.</p>
               </div>
             </div>
@@ -222,7 +222,7 @@ export function MarksCalculator() {
             animate={{ scale: 1, opacity: 1 }}
             className="space-y-6"
           >
-            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#a855f7] mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(0,212,255,0.4)]">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.4)]">
               <Calculator className="w-10 h-10 text-white" />
             </div>
             
@@ -231,11 +231,11 @@ export function MarksCalculator() {
               <div className="space-y-4 pt-4">
                 <div className="p-4 rounded-xl bg-gray-800/50 border border-gray-700">
                   <p className="text-sm text-gray-400 mb-1 uppercase tracking-wider">Predicted SGPA</p>
-                  <p className="text-5xl font-black bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+                  <p className="text-5xl font-black bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
                     {resultData.sgpa.toFixed(2)}
                   </p>
                 </div>
-                <div className="p-4 rounded-xl bg-[#00d4ff]/5 border border-[#00d4ff]/10">
+                <div className="p-4 rounded-xl bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/10">
                   <p className="text-xs text-gray-400 mb-1 uppercase tracking-wider">Projected CGPA</p>
                   <p className="text-2xl font-bold text-white">
                     {resultData.cgpa.toFixed(2)}

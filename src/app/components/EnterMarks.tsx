@@ -51,9 +51,9 @@ function calcSGPA(results: SemesterResult[]): number {
 
 function gradeColor(grade: string) {
   if (grade === "O") return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
-  if (grade === "A+") return "bg-[#00d4ff]/20 text-[#00d4ff] border-[#00d4ff]/40";
+  if (grade === "A+") return "bg-[var(--brand-start)]/20 text-[var(--brand-start)] border-[var(--brand-start)]/40";
   if (grade === "A") return "bg-sky-500/20 text-sky-300 border-sky-500/40";
-  if (grade === "B+") return "bg-[#a855f7]/20 text-[#a855f7] border-[#a855f7]/40";
+  if (grade === "B+") return "bg-[var(--brand-end)]/20 text-[var(--brand-end)] border-[var(--brand-end)]/40";
   if (grade === "B") return "bg-violet-500/20 text-violet-300 border-violet-500/40";
   if (grade === "C") return "bg-yellow-500/20 text-yellow-300 border-yellow-500/40";
   if (grade === "P") return "bg-orange-500/20 text-orange-300 border-orange-500/40";
@@ -219,7 +219,7 @@ export function EnterMarks() {
           Back to Academics
         </Button>
         <div className="flex-1">
-          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             Enter Marks
           </h1>
           <p className="text-gray-400">Grading System · Internal (40) + External (60) = 100</p>
@@ -236,12 +236,12 @@ export function EnterMarks() {
               onClick={() => setActiveSem(sem)}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 activeSem === sem
-                  ? "bg-gradient-to-r from-[#00d4ff]/20 to-[#a855f7]/20 border-[#00d4ff] text-white shadow-[0_0_12px_rgba(0,212,255,0.2)]"
+                  ? "bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 border-[var(--brand-start)] text-white shadow-[0_0_12px_rgba(var(--brand-start-rgb), 0.2)]"
                   : "border-gray-700 text-gray-400 hover:border-gray-600 hover:text-white"
               }`}
             >
               Sem {sem}
-              {sem === currentSem && <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-[#00d4ff] inline-block align-middle" />}
+              {sem === currentSem && <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-[var(--brand-start)] inline-block align-middle" />}
               {saved && <span className="ml-1.5 text-xs text-emerald-400">✓</span>}
             </button>
           );
@@ -254,9 +254,9 @@ export function EnterMarks() {
           <div className="p-6 border-b border-gray-800/50 flex items-center justify-between flex-wrap gap-3">
             <div>
               <h2 className="text-xl font-bold text-white">Semester {activeSem}</h2>
-              {activeSem === currentSem && <span className="text-xs text-[#00d4ff]">Current semester · Subjects from your onboarding</span>}
+              {activeSem === currentSem && <span className="text-xs text-[var(--brand-start)]">Current semester · Subjects from your onboarding</span>}
             </div>
-            <Button onClick={() => handleSave(activeSem)} className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white">
+            <Button onClick={() => handleSave(activeSem)} className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white">
               <Save className="w-4 h-4 mr-2" />
               Save Semester {activeSem}
             </Button>
@@ -311,7 +311,7 @@ export function EnterMarks() {
                           max="40"
                           value={m.internalMarks}
                           onChange={(e) => updateMark(activeSem, idx, "internalMarks", e.target.value)}
-                          className="w-20 mx-auto bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white text-center"
+                          className="w-20 mx-auto bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white text-center"
                           placeholder="0"
                         />
                       </td>
@@ -322,7 +322,7 @@ export function EnterMarks() {
                           max="60"
                           value={m.externalMarks}
                           onChange={(e) => updateMark(activeSem, idx, "externalMarks", e.target.value)}
-                          className="w-20 mx-auto bg-[#0a0a0f]/50 border-gray-700 focus:border-[#a855f7] text-white text-center"
+                          className="w-20 mx-auto bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-end)] text-white text-center"
                           placeholder="0"
                         />
                       </td>
@@ -365,7 +365,7 @@ export function EnterMarks() {
               <Button
                 onClick={addSubject}
                 variant="ghost"
-                className="text-[#00d4ff] hover:text-white hover:bg-[#00d4ff]/20 transition-all font-medium"
+                className="text-[var(--brand-start)] hover:text-white hover:bg-[var(--brand-start)]/20 transition-all font-medium"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Subject
@@ -378,8 +378,8 @@ export function EnterMarks() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-[#00d4ff]/20 to-[#a855f7]/20 flex items-center justify-center">
-                    <Award className="w-5 h-5 text-[#00d4ff]" />
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 flex items-center justify-center">
+                    <Award className="w-5 h-5 text-[var(--brand-start)]" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">Semester {activeSem} SGPA</p>
@@ -429,8 +429,8 @@ export function EnterMarks() {
               </div>
             ))}
             {cgpa !== null && (
-              <div className="bg-gradient-to-br from-[#00d4ff]/10 to-[#a855f7]/10 border border-[#00d4ff]/30 rounded-xl p-4 text-center">
-                <p className="text-xs text-[#00d4ff] mb-1">Overall</p>
+              <div className="bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/30 rounded-xl p-4 text-center">
+                <p className="text-xs text-[var(--brand-start)] mb-1">Overall</p>
                 <p className="text-2xl font-bold text-white">{cgpa.toFixed(2)}</p>
                 <p className="text-xs text-gray-500 mt-1">CGPA</p>
               </div>

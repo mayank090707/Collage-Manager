@@ -47,8 +47,8 @@ export function DashboardLayout() {
         {/* Logo */}
         <div className="p-6 border-b border-border flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Sparkles className="w-8 h-8 text-[#00d4ff]" />
-            <span className="text-xl font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <Sparkles className="w-8 h-8 text-brand-start" />
+            <span className="text-xl font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
               College Manager
             </span>
           </div>
@@ -66,11 +66,11 @@ export function DashboardLayout() {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
                   active
-                    ? "bg-gradient-to-r from-[#00d4ff]/10 to-[#a855f7]/10 dark:from-[#00d4ff]/20 dark:to-[#a855f7]/20 text-[#00d4ff] dark:text-[#00d4ff] border border-[#00d4ff]/20 dark:border-transparent shadow-[0_4px_12px_rgba(0,212,255,0.1)]"
+                    ? "bg-gradient-to-r from-brand-start/10 to-brand-end/10 dark:from-brand-start/20 dark:to-brand-end/20 text-brand-start border border-brand-start/20 shadow-[0_4px_12px_rgba(var(--brand-start-rgb),0.15)]"
                     : "text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-800/50"
                 }`}
               >
-                <Icon className={`w-5 h-5 transition-colors ${active ? "text-[#00d4ff]" : "text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white"}`} />
+                <Icon className={`w-5 h-5 transition-colors ${active ? "text-brand-start" : "text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white"}`} />
                 <span className="font-medium tracking-tight">{item.label}</span>
               </button>
             );
@@ -94,8 +94,8 @@ export function DashboardLayout() {
       <main className="flex-1 overflow-auto">
         {/* Background Effects */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-40 right-40 w-96 h-96 bg-[#00d4ff] rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob"></div>
-          <div className="absolute bottom-40 left-40 w-96 h-96 bg-[#a855f7] rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-40 right-40 w-96 h-96 bg-brand-start rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob"></div>
+          <div className="absolute bottom-40 left-40 w-96 h-96 bg-brand-end rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob animation-delay-2000"></div>
         </div>
 
         <div className="relative z-10">

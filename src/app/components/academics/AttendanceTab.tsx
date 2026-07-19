@@ -105,7 +105,7 @@ export function AttendanceTab() {
         <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-400">Overall Attendance</span>
-            <TrendingUp className="w-5 h-5 text-[#00d4ff]" />
+            <TrendingUp className="w-5 h-5 text-[var(--brand-start)]" />
           </div>
           <div className="text-3xl text-white mb-2">{overallAttendance.toFixed(1)}%</div>
           <Progress value={overallAttendance} className="h-2 bg-gray-800" />

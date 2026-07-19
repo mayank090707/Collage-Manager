@@ -44,14 +44,14 @@ interface CalendarState {
 // ── Style maps ────────────────────────────────────────────────────────────────
 const EXAM_META: Record<ExamType, { label: string; color: string; bg: string; border: string; dot: string; pill: string }> = {
   midsem1: {
-    label: "Mid Sem 1", color: "text-[#00d4ff]",
-    bg: "bg-[#00d4ff]/15", border: "border-[#00d4ff]/40",
-    dot: "bg-[#00d4ff]", pill: "bg-[#00d4ff]/20 text-[#00d4ff] border-[#00d4ff]/40",
+    label: "Mid Sem 1", color: "text-[var(--brand-start)]",
+    bg: "bg-[var(--brand-start)]/15", border: "border-[var(--brand-start)]/40",
+    dot: "bg-[var(--brand-start)]", pill: "bg-[var(--brand-start)]/20 text-[var(--brand-start)] border-[var(--brand-start)]/40",
   },
   midsem2: {
-    label: "Mid Sem 2", color: "text-[#a855f7]",
-    bg: "bg-[#a855f7]/15", border: "border-[#a855f7]/40",
-    dot: "bg-[#a855f7]", pill: "bg-[#a855f7]/20 text-[#a855f7] border-[#a855f7]/40",
+    label: "Mid Sem 2", color: "text-[var(--brand-end)]",
+    bg: "bg-[var(--brand-end)]/15", border: "border-[var(--brand-end)]/40",
+    dot: "bg-[var(--brand-end)]", pill: "bg-[var(--brand-end)]/20 text-[var(--brand-end)] border-[var(--brand-end)]/40",
   },
   endsem: {
     label: "End Sem", color: "text-orange-400",
@@ -66,7 +66,7 @@ function urgencyStyle(days: number) {
   if (days <= 1) return { card: "from-red-500/25 to-rose-600/25 border-red-500/50", text: "text-red-400", dot: "bg-red-500" };
   if (days <= 3) return { card: "from-orange-500/25 to-amber-500/25 border-orange-500/50", text: "text-orange-400", dot: "bg-orange-400" };
   if (days <= 7) return { card: "from-yellow-500/20 to-amber-400/20 border-yellow-500/40", text: "text-yellow-400", dot: "bg-yellow-400" };
-  return { card: "from-[#00d4ff]/15 to-[#a855f7]/15 border-[#00d4ff]/30", text: "text-[#00d4ff]", dot: "bg-[#a855f7]" };
+  return { card: "from-[var(--brand-start)]/15 to-[var(--brand-end)]/15 border-[var(--brand-start)]/30", text: "text-[var(--brand-start)]", dot: "bg-[var(--brand-end)]" };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -126,8 +126,8 @@ export function Exams() {
   if (!data) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] space-y-6 text-center">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#00d4ff]/20 to-[#a855f7]/20 border border-[#00d4ff]/30 flex items-center justify-center">
-          <CalendarDays className="w-10 h-10 text-[#00d4ff]" />
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 border border-[var(--brand-start)]/30 flex items-center justify-center">
+          <CalendarDays className="w-10 h-10 text-[var(--brand-start)]" />
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">No Exam Calendar Yet</h2>
@@ -137,7 +137,7 @@ export function Exams() {
         </div>
         <Button
           onClick={() => navigate("/app/exam-calendar")}
-          className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] text-white px-6"
+          className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white px-6"
         >
           Set Up Exam Calendar
         </Button>
@@ -154,7 +154,7 @@ export function Exams() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             Exams
           </h1>
           <p className="text-gray-400">
@@ -270,17 +270,17 @@ export function Exams() {
                         examType && meta
                           ? `${meta.bg} ${meta.border} shadow-sm`
                           : isCurrent
-                          ? "bg-[#00d4ff]/8 border-[#00d4ff]/30"
+                          ? "bg-[var(--brand-start)]/8 border-[var(--brand-start)]/30"
                           : "border-transparent hover:bg-gray-800/20"
                       }`}
                     >
                       {/* Today ring */}
                       {isCurrent && (
-                        <div className="absolute inset-0 rounded-xl border border-[#00d4ff]/50 pointer-events-none" />
+                        <div className="absolute inset-0 rounded-xl border border-[var(--brand-start)]/50 pointer-events-none" />
                       )}
 
                       <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${
-                        isCurrent ? "bg-[#00d4ff] text-[#0a0a0f]"
+                        isCurrent ? "bg-[var(--brand-start)] text-[#0a0a0f]"
                           : examType && meta ? meta.color
                           : "text-gray-400"
                       }`}>

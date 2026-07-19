@@ -121,7 +121,7 @@ export function TargetPredictor() {
             Dashboard
           </Button>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Target Predictor
             </h1>
             <p className="text-gray-400">Strategic grade breakdown for the current semester</p>
@@ -129,7 +129,7 @@ export function TargetPredictor() {
         </div>
 
         {stats.targetCgpa > 0 && (
-          <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00d4ff]/10 to-[#a855f7]/10 border border-[#00d4ff]/20 shadow-[0_0_20px_rgba(0,212,255,0.1)]">
+          <div className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/20 shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.1)]">
             <div className="text-right">
               <p className="text-xs text-gray-500 uppercase tracking-tighter">CGPA Gap</p>
               <p className={`text-2xl font-black ${stats.gap > 0 ? "text-orange-400" : "text-emerald-400"}`}>
@@ -155,14 +155,14 @@ export function TargetPredictor() {
 
       <div className="grid md:grid-cols-3 gap-6">
         <Card className="p-6 bg-[#111118]/80 border-gray-800/50 flex flex-col items-center justify-center text-center space-y-2">
-          <Target className="w-8 h-8 text-[#00d4ff] mb-2" />
+          <Target className="w-8 h-8 text-[var(--brand-start)] mb-2" />
           <p className="text-sm text-gray-400 uppercase tracking-widest">Target CGPA</p>
           <p className="text-4xl font-black text-white">{stats.targetCgpa.toFixed(2)}</p>
         </Card>
         <Card className="p-6 bg-[#111118]/80 border-gray-800/50 flex flex-col items-center justify-center text-center space-y-2">
-          <TrendingUp className="w-8 h-8 text-[#a855f7] mb-2" />
+          <TrendingUp className="w-8 h-8 text-[var(--brand-end)] mb-2" />
           <p className="text-sm text-gray-400 uppercase tracking-widest">Required SGPA</p>
-          <p className={`text-4xl font-black ${stats.isPossible ? "text-[#a855f7]" : "text-red-500"}`}>
+          <p className={`text-4xl font-black ${stats.isPossible ? "text-[var(--brand-end)]" : "text-red-500"}`}>
             {stats.requiredSgpa > 10 ? "10.0+" : stats.requiredSgpa.toFixed(2)}
           </p>
         </Card>
@@ -176,7 +176,7 @@ export function TargetPredictor() {
       <div className="grid lg:grid-cols-2 gap-8">
         <Card className="bg-[#111118]/80 border-gray-800/50 p-8 space-y-6">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#00d4ff]/20 text-[#00d4ff]">
+            <div className="p-2 rounded-lg bg-[var(--brand-start)]/20 text-[var(--brand-start)]">
               <Calculator className="w-5 h-5" />
             </div>
             Grade Requirements
@@ -189,12 +189,12 @@ export function TargetPredictor() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="flex items-center justify-between p-4 rounded-xl bg-[#0a0a0f]/50 border border-gray-800 hover:border-[#00d4ff]/30 transition-all group"
+                className="flex items-center justify-between p-4 rounded-xl bg-[#0a0a0f]/50 border border-gray-800 hover:border-[var(--brand-start)]/30 transition-all group"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-14 h-14 rounded-xl border-2 flex flex-col items-center justify-center font-bold relative bg-black/40 ${
                     req.grade === "O" ? "border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]" :
-                    req.grade === "A+" ? "border-[#00d4ff] text-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.2)]" :
+                    req.grade === "A+" ? "border-[var(--brand-start)] text-[var(--brand-start)] shadow-[0_0_15px_rgba(var(--brand-start-rgb), 0.2)]" :
                     req.grade === "A" ? "border-sky-500 text-sky-400" :
                     "border-gray-700 text-gray-400"
                   }`}>
@@ -221,7 +221,7 @@ export function TargetPredictor() {
         <div className="space-y-6">
           <Card className="bg-[#111118]/80 border-gray-800/50 p-6">
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Info className="w-5 h-5 text-[#00d4ff]" />
+              <Info className="w-5 h-5 text-[var(--brand-start)]" />
               Strategic Insight
             </h3>
             <div className="space-y-4">
@@ -237,19 +237,19 @@ export function TargetPredictor() {
             </div>
           </Card>
 
-          <Card className="bg-gradient-to-br from-[#00d4ff]/10 to-[#a855f7]/10 border-[#00d4ff]/20 p-6">
+          <Card className="bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/20 p-6">
             <h3 className="text-white font-bold mb-2">How it works</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li className="flex gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] mt-1.5 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-start)] mt-1.5 flex-shrink-0" />
                 Analyzes current CGPA and remaining credits for the semester.
               </li>
               <li className="flex gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] mt-1.5 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-start)] mt-1.5 flex-shrink-0" />
                 Distributes the required grade points across your subjects.
               </li>
               <li className="flex gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#00d4ff] mt-1.5 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-start)] mt-1.5 flex-shrink-0" />
                 Tailored specifically for the IPU marking system (10.0 scale).
               </li>
             </ul>

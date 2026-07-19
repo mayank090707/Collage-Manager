@@ -12,8 +12,8 @@ interface TimetableSlot {
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const PERIOD_COLORS = [
-  "from-[#00d4ff]/20 to-[#0ea5e9]/20 border-[#00d4ff]/40 text-[#00d4ff]",
-  "from-[#a855f7]/20 to-[#8b5cf6]/20 border-[#a855f7]/40 text-[#a855f7]",
+  "from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/40 text-[var(--brand-start)]",
+  "from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/40 text-[var(--brand-end)]",
   "from-emerald-500/20 to-teal-500/20 border-emerald-500/40 text-emerald-400",
   "from-orange-500/20 to-amber-500/20 border-orange-500/40 text-orange-400",
   "from-pink-500/20 to-rose-500/20 border-pink-500/40 text-pink-400",
@@ -57,7 +57,7 @@ export function Timetable() {
     <div className="p-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
           Weekly Timetable
         </h1>
         <p className="text-gray-400 text-lg">Your class schedule at a glance</p>
@@ -71,8 +71,8 @@ export function Timetable() {
           { label: "Subjects", value: totalSubjects, icon: BookOpen },
         ].map(({ label, value, icon: Icon }) => (
           <Card key={label} className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-[#00d4ff]/20 to-[#a855f7]/20 flex items-center justify-center">
-              <Icon className="w-5 h-5 text-[#00d4ff]" />
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 flex items-center justify-center">
+              <Icon className="w-5 h-5 text-[var(--brand-start)]" />
             </div>
             <div>
               <p className="text-2xl font-bold text-white">{value}</p>

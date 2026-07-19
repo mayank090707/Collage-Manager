@@ -90,7 +90,7 @@ export function CGPATab() {
     <div className="space-y-6 relative">
       {/* Gap Display at Top Right */}
       {targetCgpa > 0 && (
-        <div className="absolute -top-12 right-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#00d4ff]/10 to-[#a855f7]/10 border border-[#00d4ff]/20 backdrop-blur-md">
+        <div className="absolute -top-12 right-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/20 backdrop-blur-md">
           <span className="text-gray-400 text-sm font-medium">Gap to Target:</span>
           <span className={`text-lg font-bold ${(targetCgpa - cgpa) > 0 ? "text-orange-400" : "text-emerald-400"}`}>
             {(targetCgpa - cgpa).toFixed(2)}
@@ -100,9 +100,9 @@ export function CGPATab() {
 
       {/* Current CGPA Card */}
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="bg-gradient-to-br from-[#00d4ff]/20 to-[#0ea5e9]/20 border-[#00d4ff]/30 p-6">
+        <Card className="bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/30 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-gradient-to-br from-[#00d4ff] to-[#0ea5e9]">
+            <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-start)]">
               <Award className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -113,9 +113,9 @@ export function CGPATab() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-[#a855f7]/20 to-[#8b5cf6]/20 border-[#a855f7]/30 p-6">
+        <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-gradient-to-br from-[#a855f7] to-[#8b5cf6]">
+            <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--brand-end)] to-[#8b5cf6]">
               <Target className="w-6 h-6 text-white" />
             </div>
             <Button
@@ -125,7 +125,7 @@ export function CGPATab() {
                 setNewTarget(targetCgpa.toString());
                 setShowTargetDialog(true);
               }}
-              className="text-[#a855f7] hover:text-[#8b5cf6] hover:bg-[#a855f7]/10"
+              className="text-[var(--brand-end)] hover:text-[#8b5cf6] hover:bg-[var(--brand-end)]/10"
             >
               Edit
             </Button>
@@ -229,7 +229,7 @@ export function CGPATab() {
                 <Card
                   className={`p-4 text-center ${
                     hasSgpa
-                      ? "bg-gradient-to-br from-[#00d4ff]/10 to-[#a855f7]/10 border-[#00d4ff]/30"
+                      ? "bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/30"
                       : "bg-[#0a0a0f]/30 border-gray-800"
                   }`}
                 >
@@ -248,7 +248,7 @@ export function CGPATab() {
       <Dialog open={showTargetDialog} onOpenChange={setShowTargetDialog}>
         <DialogContent className="bg-[#111118] border-gray-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Set Target CGPA
             </DialogTitle>
           </DialogHeader>
@@ -266,7 +266,7 @@ export function CGPATab() {
                 max="10"
                 value={newTarget}
                 onChange={(e) => setNewTarget(e.target.value)}
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                 placeholder="9.0"
               />
             </div>
@@ -281,7 +281,7 @@ export function CGPATab() {
               </Button>
               <Button
                 onClick={handleSaveTarget}
-                className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
               >
                 Save Target
               </Button>

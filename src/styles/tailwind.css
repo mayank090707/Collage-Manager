@@ -23,51 +23,61 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand-start: var(--brand-start);
+  --color-brand-end: var(--brand-end);
 }
 
 @layer base {
   :root {
-    --background: #f8fafc; /* Slate 50 */
-    --foreground: #0f172a; /* Slate 900 */
+    --background: #fbfbf9; /* Warm stone/ivory white */
+    --foreground: #09090b; /* Pitch carbon black */
     --card: #ffffff;
-    --card-foreground: #0f172a;
+    --card-foreground: #09090b;
     --popover: #ffffff;
-    --popover-foreground: #0f172a;
-    --primary: #00d4ff;
-    --primary-foreground: #ffffff;
-    --secondary: #e2e8f0; /* Slate 200 */
-    --secondary-foreground: #0f172a;
-    --muted: #f1f5f9; /* Slate 100 */
-    --muted-foreground: #1e293b; /* Slate 800 - DARKER FOR CONTRAST */
-    --accent: #f1f5f9;
-    --accent-foreground: #0f172a;
+    --popover-foreground: #09090b;
+    --primary: #fbbf24; /* Classy gold yellow */
+    --primary-foreground: #000000; /* Contrast black text */
+    --secondary: #e4e4e7; /* Zinc 200 */
+    --secondary-foreground: #09090b;
+    --muted: #f4f4f5; /* Zinc 100 */
+    --muted-foreground: #52525b; /* Zinc 600 - Good contrast readability */
+    --accent: #f4f4f5;
+    --accent-foreground: #09090b;
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
-    --border: #cbd5e1; /* Slate 300 - MORE VISIBLE */
-    --input: #cbd5e1;
-    --ring: #00d4ff;
+    --border: #d4d4d8; /* Zinc 300 - Visible but subtle */
+    --input: #d4d4d8;
+    --ring: #fbbf24;
+    --brand-start: #fbbf24;
+    --brand-start-rgb: 251, 191, 36;
+    --brand-end: #000000;
+    --brand-end-rgb: 0, 0, 0;
   }
 
   .dark {
-    --background: #0a0a0f;
-    --foreground: #f8fafc;
-    --card: #111118;
-    --card-foreground: #f8fafc;
-    --popover: #0a0a0f;
-    --popover-foreground: #f8fafc;
-    --primary: #00d4ff;
-    --primary-foreground: #ffffff;
-    --secondary: #1e293b;
-    --secondary-foreground: #f8fafc;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
+    --background: #09090b; /* Pure dark mode black */
+    --foreground: #f4f4f5; /* Clean light gray */
+    --card: #121216; /* Deep dark slate card */
+    --card-foreground: #f4f4f5;
+    --popover: #09090b;
+    --popover-foreground: #f4f4f5;
+    --primary: #facc15; /* Bright glowing yellow */
+    --primary-foreground: #000000;
+    --secondary: #1e1e24;
+    --secondary-foreground: #f4f4f5;
+    --muted: #1e1e24;
+    --muted-foreground: #a1a1aa;
+    --accent: #1e1e24;
+    --accent-foreground: #f4f4f5;
     --destructive: #7f1d1d;
-    --destructive-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #00d4ff;
+    --destructive-foreground: #f4f4f5;
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #facc15;
+    --brand-start: #facc15;
+    --brand-start-rgb: 250, 204, 21;
+    --brand-end: #f97316; /* Glowing orange/amber */
+    --brand-end-rgb: 249, 115, 22;
   }
 }
 

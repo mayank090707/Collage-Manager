@@ -168,7 +168,7 @@ export function BacklogsTab() {
       <div className="flex justify-end">
         <Button
           onClick={() => setShowAddDialog(true)}
-          className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+          className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Backlog
@@ -244,7 +244,7 @@ export function BacklogsTab() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="bg-[#111118] border-gray-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Add Backlog
             </DialogTitle>
           </DialogHeader>
@@ -260,7 +260,7 @@ export function BacklogsTab() {
                 onChange={(e) =>
                   setNewBacklog({ ...newBacklog, subjectName: e.target.value })
                 }
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                 placeholder="e.g., Data Structures"
               />
             </div>
@@ -275,7 +275,7 @@ export function BacklogsTab() {
                 onChange={(e) =>
                   setNewBacklog({ ...newBacklog, subjectCode: e.target.value })
                 }
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                 placeholder="e.g., CS201"
               />
             </div>
@@ -290,7 +290,7 @@ export function BacklogsTab() {
                   setNewBacklog({ ...newBacklog, semester: value })
                 }
               >
-                <SelectTrigger className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white">
+                <SelectTrigger className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white">
                   <SelectValue placeholder="Select semester" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#111118] border-gray-700 text-white">
@@ -313,7 +313,7 @@ export function BacklogsTab() {
                   setNewBacklog({ ...newBacklog, status: value })
                 }
               >
-                <SelectTrigger className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white">
+                <SelectTrigger className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-[#111118] border-gray-700 text-white">
@@ -334,7 +334,7 @@ export function BacklogsTab() {
               </Button>
               <Button
                 onClick={handleAddBacklog}
-                className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
               >
                 Add Backlog
               </Button>

@@ -79,7 +79,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
             Mark Attendance
           </DialogTitle>
         </DialogHeader>
@@ -92,7 +92,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-start bg-[#0a0a0f]/50 border-gray-700 hover:border-[#00d4ff] text-white"
+                  className="w-full justify-start bg-[#0a0a0f]/50 border-gray-700 hover:border-[var(--brand-start)] text-white"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
@@ -137,7 +137,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
                         onCheckedChange={(checked) =>
                           setAttendance({ ...attendance, [key]: checked as boolean })
                         }
-                        className="border-gray-600 data-[state=checked]:bg-[#00d4ff] data-[state=checked]:border-[#00d4ff]"
+                        className="border-gray-600 data-[state=checked]:bg-[var(--brand-start)] data-[state=checked]:border-[var(--brand-start)]"
                       />
                       <Label
                         htmlFor={key}
@@ -164,7 +164,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
             <Button
               onClick={handleSave}
               disabled={todaySubjects.length === 0}
-              className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+              className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
             >
               Save Attendance
             </Button>

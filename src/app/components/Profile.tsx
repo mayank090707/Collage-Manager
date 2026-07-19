@@ -123,7 +123,7 @@ export function Profile() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
           Profile
         </h1>
         <p className="text-gray-400 text-lg">View and manage your profile information</p>
@@ -135,8 +135,8 @@ export function Profile() {
           <Card className="bg-gradient-to-br from-[#111118]/80 to-[#111118]/60 backdrop-blur-xl border-gray-800/50 p-8">
             <div className="flex items-start justify-between mb-8">
               <div className="flex items-center space-x-6">
-                <Avatar className="w-24 h-24 border-4 border-[#00d4ff] shadow-[0_0_30px_rgba(0,212,255,0.4)]">
-                  <AvatarFallback className="bg-gradient-to-br from-[#00d4ff] to-[#a855f7] text-white text-3xl">
+                <Avatar className="w-24 h-24 border-4 border-[var(--brand-start)] shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.4)]">
+                  <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white text-3xl">
                     {profile.fullName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
@@ -149,7 +149,7 @@ export function Profile() {
               <div className="flex items-center space-x-3">
                 <Button
                   onClick={() => setShowEditDialog(true)}
-                  className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold"
+                  className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold"
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Profile
@@ -167,8 +167,8 @@ export function Profile() {
 
             <div className="grid md:grid-cols-4 gap-6">
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-[#00d4ff]/20">
-                  <GraduationCap className="w-5 h-5 text-[#00d4ff]" />
+                <div className="p-3 rounded-lg bg-[var(--brand-start)]/20">
+                  <GraduationCap className="w-5 h-5 text-[var(--brand-start)]" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Course</p>
@@ -176,8 +176,8 @@ export function Profile() {
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-[#a855f7]/20">
-                  <GraduationCap className="w-5 h-5 text-[#a855f7]" />
+                <div className="p-3 rounded-lg bg-[var(--brand-end)]/20">
+                  <GraduationCap className="w-5 h-5 text-[var(--brand-end)]" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-400">Branch</p>
@@ -220,9 +220,9 @@ export function Profile() {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <Card className="bg-gradient-to-br from-[#00d4ff]/20 to-[#0ea5e9]/20 border-[#00d4ff]/30 p-6">
+                <Card className="bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/30 p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-[#00d4ff]" />
+                    <Award className="w-8 h-8 text-[var(--brand-start)]" />
                   </div>
                   <p className="text-sm text-gray-300 mb-1">Current CGPA</p>
                   <p className="text-3xl text-white">{stats.cgpa.toFixed(2)}</p>
@@ -230,9 +230,9 @@ export function Profile() {
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <Card className="bg-gradient-to-br from-[#a855f7]/20 to-[#8b5cf6]/20 border-[#a855f7]/30 p-6">
+                <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-[#a855f7]" />
+                    <Award className="w-8 h-8 text-[var(--brand-end)]" />
                   </div>
                   <p className="text-sm text-gray-300 mb-1">Target CGPA</p>
                   <p className="text-3xl text-white">{stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "-"}</p>
@@ -263,7 +263,7 @@ export function Profile() {
                       key={sem}
                       className={`p-4 rounded-lg border ${
                         semData
-                          ? "bg-gradient-to-br from-[#00d4ff]/10 to-[#a855f7]/10 border-[#00d4ff]/30"
+                          ? "bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/30"
                           : "bg-[#0a0a0f]/30 border-gray-800"
                       }`}
                     >
@@ -307,7 +307,7 @@ export function Profile() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Edit Profile
             </DialogTitle>
           </DialogHeader>
@@ -321,7 +321,7 @@ export function Profile() {
                     id="fullName"
                     value={editData.fullName}
                     onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -331,7 +331,7 @@ export function Profile() {
                     type="email"
                     value={editData.email}
                     onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -340,7 +340,7 @@ export function Profile() {
                     id="collegeName"
                     value={editData.collegeName}
                     onChange={(e) => setEditData({ ...editData, collegeName: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                   />
                 </div>
                 <div className="space-y-2">
@@ -349,7 +349,7 @@ export function Profile() {
                     id="branch"
                     value={editData.branch}
                     onChange={(e) => setEditData({ ...editData, branch: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                   />
                 </div>
               </div>
@@ -364,7 +364,7 @@ export function Profile() {
                 </Button>
                 <Button
                   onClick={handleSaveProfile}
-                  className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                  className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
                 >
                   Save Changes
                 </Button>

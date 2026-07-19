@@ -47,19 +47,19 @@ interface DayEvent {
 const EXAM_META: Record<ExamType, { label: string; color: string; bg: string; border: string; dot: string; glow: string }> = {
   midsem1: {
     label: "Mid Semester 1",
-    color: "text-[#00d4ff]",
-    bg: "bg-[#00d4ff]/20",
-    border: "border-[#00d4ff]/50",
-    dot: "bg-[#00d4ff]",
-    glow: "shadow-[0_0_10px_rgba(0,212,255,0.4)]",
+    color: "text-[var(--brand-start)]",
+    bg: "bg-[var(--brand-start)]/20",
+    border: "border-[var(--brand-start)]/50",
+    dot: "bg-[var(--brand-start)]",
+    glow: "shadow-[0_0_10px_rgba(var(--brand-start-rgb), 0.4)]",
   },
   midsem2: {
     label: "Mid Semester 2",
-    color: "text-[#a855f7]",
-    bg: "bg-[#a855f7]/20",
-    border: "border-[#a855f7]/50",
-    dot: "bg-[#a855f7]",
-    glow: "shadow-[0_0_10px_rgba(168,85,247,0.4)]",
+    color: "text-[var(--brand-end)]",
+    bg: "bg-[var(--brand-end)]/20",
+    border: "border-[var(--brand-end)]/50",
+    dot: "bg-[var(--brand-end)]",
+    glow: "shadow-[0_0_10px_rgba(var(--brand-end-rgb), 0.4)]",
   },
   endsem: {
     label: "End Semester",
@@ -259,7 +259,7 @@ export function ExamCalendar() {
             <ArrowLeft className="w-4 h-4 mr-2" />Back
           </Button>
           <div>
-            <h1 className="text-4xl bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+            <h1 className="text-4xl bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
               Exam Calendar
             </h1>
             <p className="text-gray-400 mt-1">Set up your semester to get started</p>
@@ -270,7 +270,7 @@ export function ExamCalendar() {
           <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-8 space-y-8">
             {/* Step indicator */}
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#a855f7] flex items-center justify-center text-white text-sm font-bold">1</div>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] flex items-center justify-center text-white text-sm font-bold">1</div>
               <h2 className="text-xl font-bold text-white">Semester Details</h2>
             </div>
 
@@ -284,7 +284,7 @@ export function ExamCalendar() {
                     onClick={() => setSetupSem(s.toString())}
                     className={`py-3 rounded-xl border text-sm font-bold transition-all ${
                       setupSem === s.toString()
-                        ? "bg-gradient-to-r from-[#00d4ff]/30 to-[#a855f7]/30 border-[#00d4ff] text-white shadow-[0_0_12px_rgba(0,212,255,0.3)]"
+                        ? "bg-gradient-to-r from-[var(--brand-start)]/30 to-[var(--brand-end)]/30 border-[var(--brand-start)] text-white shadow-[0_0_12px_rgba(var(--brand-start-rgb), 0.3)]"
                         : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
                     }`}
                   >
@@ -299,7 +299,7 @@ export function ExamCalendar() {
             {/* Start month/year */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-[#00d4ff]" />
+                <div className="w-2 h-2 rounded-full bg-[var(--brand-start)]" />
                 <Label className="text-gray-300 font-semibold">Semester Start</Label>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -331,7 +331,7 @@ export function ExamCalendar() {
             {/* End month/year */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-[#a855f7]" />
+                <div className="w-2 h-2 rounded-full bg-[var(--brand-end)]" />
                 <Label className="text-gray-300 font-semibold">Semester End</Label>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -370,7 +370,7 @@ export function ExamCalendar() {
 
             <Button
               onClick={handleSetupSubmit}
-              className="w-full h-12 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+              className="w-full h-12 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
             >
               Create Semester Calendar →
             </Button>
@@ -398,7 +398,7 @@ export function ExamCalendar() {
           <ArrowLeft className="w-4 h-4 mr-2" />Back
         </Button>
         <div className="flex-1">
-          <h1 className="text-4xl bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             Semester {semConfig.semester} Calendar
           </h1>
           <p className="text-gray-400 text-sm mt-0.5">
@@ -512,7 +512,7 @@ export function ExamCalendar() {
               onClick={() => setViewMonth(i)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 viewMonth === i
-                  ? "bg-gradient-to-r from-[#00d4ff]/20 to-[#a855f7]/20 border border-[#00d4ff]/50 text-white"
+                  ? "bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 border border-[var(--brand-start)]/50 text-white"
                   : "text-gray-500 hover:text-gray-300 hover:bg-gray-800/40"
               }`}
             >
@@ -577,7 +577,7 @@ export function ExamCalendar() {
                         examType && meta
                           ? `${meta.bg} border ${meta.border} ${meta.glow}`
                           : isCurrentDay
-                          ? "bg-[#00d4ff]/5 border border-[#00d4ff]/30"
+                          ? "bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/30"
                           : "border border-transparent hover:bg-gray-800/30 hover:border-gray-700/50"
                       }`}
                     >
@@ -585,7 +585,7 @@ export function ExamCalendar() {
                       <span
                         className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1 ${
                           isCurrentDay
-                            ? "bg-[#00d4ff] text-[#0a0a0f]"
+                            ? "bg-[var(--brand-start)] text-[#0a0a0f]"
                             : examType && meta
                             ? meta.color
                             : "text-gray-300"
@@ -741,7 +741,7 @@ export function ExamCalendar() {
               <Button variant="outline" onClick={() => setEditingPeriod(null)} className="flex-1 border-gray-700 bg-transparent text-white">
                 Cancel
               </Button>
-              <Button onClick={handleSavePeriod} className={`flex-1 ${editingPeriod ? `bg-gradient-to-r ${editingPeriod === "midsem1" ? "from-[#00d4ff] to-[#0ea5e9]" : editingPeriod === "midsem2" ? "from-[#a855f7] to-[#8b5cf6]" : "from-orange-500 to-amber-500"}` : ""} text-white`}>
+              <Button onClick={handleSavePeriod} className={`flex-1 ${editingPeriod ? `bg-gradient-to-r ${editingPeriod === "midsem1" ? "from-[var(--brand-start)] to-[var(--brand-start)]" : editingPeriod === "midsem2" ? "from-[var(--brand-end)] to-[#8b5cf6]" : "from-orange-500 to-amber-500"}` : ""} text-white`}>
                 <Check className="w-4 h-4 mr-2" />
                 Confirm Dates
               </Button>
@@ -809,7 +809,7 @@ export function ExamCalendar() {
                 value={dayForm.label}
                 onChange={(e) => setDayForm({ ...dayForm, label: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && handleSaveDayEvent()}
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                 placeholder='e.g. "DS Paper", "Holiday", "Assignment Due"'
               />
             </div>
@@ -846,7 +846,7 @@ export function ExamCalendar() {
               <Button variant="outline" onClick={() => { setSelectedDate(null); setEditingEvent(null); }} className="flex-1 border-gray-700 bg-transparent text-white">
                 Cancel
               </Button>
-              <Button onClick={handleSaveDayEvent} className="flex-1 bg-gradient-to-r from-[#00d4ff] to-[#a855f7] text-white">
+              <Button onClick={handleSaveDayEvent} className="flex-1 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white">
                 <Check className="w-4 h-4 mr-1" />
                 {editingEvent ? "Update" : "Add Event"}
               </Button>

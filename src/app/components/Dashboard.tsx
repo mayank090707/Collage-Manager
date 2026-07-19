@@ -114,7 +114,7 @@ export function Dashboard() {
             particleCount: 150,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#00d4ff', '#a855f7', '#ffffff']
+            colors: ['#fbbf24', '#f97316', '#ffffff']
           });
         }, 500);
       }
@@ -170,7 +170,7 @@ export function Dashboard() {
         activities.push({
           text: `Attendance marked for ${new Date(a.date).toLocaleDateString()}`,
           time: a.date,
-          color: "bg-[#00d4ff]"
+          color: "bg-[var(--brand-start)]"
         });
       });
 
@@ -179,7 +179,7 @@ export function Dashboard() {
         activities.push({
           text: `Semester ${m.semester} result updated`,
           time: "Recently",
-          color: "bg-[#a855f7]"
+          color: "bg-[var(--brand-end)]"
         });
       });
       setRecentActivities(activities);
@@ -211,14 +211,14 @@ export function Dashboard() {
       title: "Current CGPA",
       value: stats.cgpa.toFixed(2),
       icon: TrendingUp,
-      color: "from-[#00d4ff] to-[#0ea5e9]",
+      color: "from-[var(--brand-start)] to-[var(--brand-start)]",
       progress: (stats.cgpa / 10) * 100,
     },
     {
       title: "Target CGPA",
       value: stats.targetCgpa.toFixed(2),
       icon: Target,
-      color: "from-[#a855f7] to-[#8b5cf6]",
+      color: "from-[var(--brand-end)] to-[#8b5cf6]",
       progress: (stats.targetCgpa / 10) * 100,
     },
     {
@@ -277,7 +277,7 @@ export function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl mb-2 font-black bg-gradient-to-r from-[#00d4ff] via-slate-800 dark:via-white to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl mb-2 font-black bg-gradient-to-r from-[var(--brand-start)] via-slate-800 dark:via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             {getGreeting()}, {profile?.fullName?.split(" ")[0] || "Student"}
           </h1>
           <p className="text-slate-600 dark:text-gray-400 text-lg font-medium">
@@ -292,7 +292,7 @@ export function Dashboard() {
             className="relative text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-full"
           >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-[#00d4ff] rounded-full"></span>
+            <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--brand-start)] rounded-full"></span>
           </Button>
           
           <div className="relative">
@@ -300,8 +300,8 @@ export function Dashboard() {
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="focus:outline-none rounded-full block"
             >
-              <Avatar className="w-12 h-12 border-2 border-[#00d4ff] shadow-[0_0_15px_rgba(0,212,255,0.3)] hover:scale-105 transition-transform cursor-pointer">
-                <AvatarFallback className="bg-gradient-to-br from-[#00d4ff] to-[#a855f7] text-white font-bold">
+              <Avatar className="w-12 h-12 border-2 border-[var(--brand-start)] shadow-[0_0_15px_rgba(var(--brand-start-rgb), 0.3)] hover:scale-105 transition-transform cursor-pointer">
+                <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white font-bold">
                   {profile?.fullName?.charAt(0) || "S"}
                 </AvatarFallback>
               </Avatar>
@@ -318,8 +318,8 @@ export function Dashboard() {
                 {/* Dropdown Menu */}
                 <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/95 dark:bg-[#111118]/95 backdrop-blur-xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] z-50 text-slate-800 dark:text-gray-200 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex items-center space-x-3 pb-3 mb-3 border-b border-slate-100 dark:border-gray-800">
-                    <Avatar className="w-10 h-10 border border-[#00d4ff]">
-                      <AvatarFallback className="bg-gradient-to-br from-[#00d4ff] to-[#a855f7] text-white text-sm font-bold">
+                    <Avatar className="w-10 h-10 border border-[var(--brand-start)]">
+                      <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white text-sm font-bold">
                         {profile?.fullName?.charAt(0) || "S"}
                       </AvatarFallback>
                     </Avatar>
@@ -371,7 +371,7 @@ export function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="relative overflow-hidden bg-white dark:bg-[#111118]/80 backdrop-blur-xl border-slate-200 dark:border-gray-800/50 p-6 hover:border-[#00d4ff]/50 dark:hover:border-[#00d4ff]/50 transition-all group shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none">
+              <Card className="relative overflow-hidden bg-white dark:bg-[#111118]/80 backdrop-blur-xl border-slate-200 dark:border-gray-800/50 p-6 hover:border-[var(--brand-start)]/50 dark:hover:border-[var(--brand-start)]/50 transition-all group shadow-sm dark:shadow-none hover:shadow-md dark:hover:shadow-none">
                 {/* Glow Effect */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
 
@@ -392,7 +392,7 @@ export function Dashboard() {
                           setNewTarget(stats.targetCgpa.toString());
                           setShowTargetDialog(true);
                         }}
-                        className="h-6 w-6 text-slate-400 hover:text-[#a855f7] hover:bg-black/5 dark:hover:bg-white/10 relative z-50"
+                        className="h-6 w-6 text-slate-400 hover:text-[var(--brand-end)] hover:bg-black/5 dark:hover:bg-white/10 relative z-50"
                       >
                         <PenLine className="w-3.5 h-3.5" />
                       </Button>
@@ -416,21 +416,21 @@ export function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Button
             onClick={() => setShowAttendanceDialog(true)}
-            className="h-24 bg-gradient-to-br from-[#00d4ff]/10 to-[#0ea5e9]/10 dark:from-[#00d4ff]/20 dark:to-[#0ea5e9]/20 border border-[#00d4ff]/30 hover:border-[#00d4ff] hover:bg-[#00d4ff]/30 text-gray-900 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+            className="h-24 bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-start)]/10 dark:from-[var(--brand-start)]/20 dark:to-[var(--brand-start)]/20 border border-[var(--brand-start)]/30 hover:border-[var(--brand-start)] hover:bg-[var(--brand-start)]/30 text-gray-900 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
           >
             <CheckCircle className="w-6 h-6" />
             <span className="text-sm">Mark Attendance</span>
           </Button>
           <Button
             onClick={() => navigate("/app/exam-calendar")}
-            className="h-24 bg-gradient-to-br from-[#a855f7]/20 to-[#8b5cf6]/20 border border-[#a855f7]/30 hover:border-[#a855f7] hover:bg-[#a855f7]/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+            className="h-24 bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border border-[var(--brand-end)]/30 hover:border-[var(--brand-end)] hover:bg-[var(--brand-end)]/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb), 0.3)]"
           >
             <Calendar className="w-6 h-6" />
             <span className="text-sm">Exam Calendar</span>
           </Button>
           <Button
             onClick={() => navigate("/app/enter-marks")}
-            className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+            className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/30 text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb), 0.3)]"
           >
             <PenLine className="w-6 h-6" />
             <span className="text-sm">Enter Marks</span>
@@ -493,11 +493,11 @@ export function Dashboard() {
       <Dialog open={showCongrats} onOpenChange={setShowCongrats}>
         <DialogContent className="bg-[#111118]/95 backdrop-blur-2xl border-gray-800 text-center p-12 max-w-lg">
           <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", duration: 0.8 }}>
-            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[#00d4ff] to-[#a855f7] mx-auto mb-6 flex items-center justify-center shadow-[0_0_50px_rgba(0,212,255,0.5)]">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] mx-auto mb-6 flex items-center justify-center shadow-[0_0_50px_rgba(var(--brand-start-rgb), 0.5)]">
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
             <DialogHeader>
-              <DialogTitle className="text-4xl font-bold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent mb-4">
+              <DialogTitle className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent mb-4">
                 Congratulations!
               </DialogTitle>
               <DialogDescription className="text-gray-300 text-xl leading-relaxed">
@@ -507,7 +507,7 @@ export function Dashboard() {
             <div className="mt-8">
               <Button 
                 onClick={() => setShowCongrats(false)}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(0,212,255,0.3)] transition-all hover:scale-105"
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] transition-all hover:scale-105"
               >
                 Let&apos;s Get Started
               </Button>
@@ -519,7 +519,7 @@ export function Dashboard() {
       <Dialog open={showTargetDialog} onOpenChange={setShowTargetDialog}>
         <DialogContent className="bg-[#111118] border-gray-800 text-white">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Set Target CGPA
             </DialogTitle>
           </DialogHeader>
@@ -537,7 +537,7 @@ export function Dashboard() {
                 max="10"
                 value={newTarget}
                 onChange={(e) => setNewTarget(e.target.value)}
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[#00d4ff] text-white"
+                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
                 placeholder="9.0"
               />
             </div>
@@ -552,7 +552,7 @@ export function Dashboard() {
               </Button>
               <Button
                 onClick={handleSaveTarget}
-                className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
               >
                 Save Target
               </Button>

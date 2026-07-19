@@ -143,7 +143,7 @@ export function SGPATab() {
           <h3 className="text-xl text-white">Semester-wise Performance</h3>
           <Button
             onClick={() => navigate("/app/enter-marks")}
-            className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+            className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
           >
             <PenLine className="w-4 h-4 mr-2" />
             Enter Marks
@@ -165,7 +165,7 @@ export function SGPATab() {
                   <div className="flex items-center justify-between w-full pr-4">
                     <span>Semester {sem}</span>
                     {hasData && (
-                      <span className="text-[#00d4ff]">SGPA: {semData.sgpa.toFixed(2)}</span>
+                      <span className="text-[var(--brand-start)]">SGPA: {semData.sgpa.toFixed(2)}</span>
                     )}
                   </div>
                 </AccordionTrigger>
@@ -176,7 +176,7 @@ export function SGPATab() {
                         <Button
                           onClick={() => handleEditSemester(sem)}
                           size="sm"
-                          className="bg-[#00d4ff]/20 hover:bg-[#00d4ff]/30 text-[#00d4ff] border border-[#00d4ff]/30"
+                          className="bg-[var(--brand-start)]/20 hover:bg-[var(--brand-start)]/30 text-[var(--brand-start)] border border-[var(--brand-start)]/30"
                         >
                           <Edit className="w-4 h-4 mr-2" />
                           Edit Marks
@@ -240,7 +240,7 @@ export function SGPATab() {
       <Dialog open={editingSemester !== null} onOpenChange={() => setEditingSemester(null)}>
         <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[#00d4ff] to-[#a855f7] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
               Edit Marks - Semester {editingSemester}
             </DialogTitle>
           </DialogHeader>
@@ -299,7 +299,7 @@ export function SGPATab() {
               </Button>
               <Button
                 onClick={handleSaveMarks}
-                className="bg-gradient-to-r from-[#00d4ff] to-[#a855f7] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save Marks

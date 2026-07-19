@@ -67,9 +67,9 @@ function getRequiredMarks(subjectName: string): number {
 
 function gradeColor(grade: string) {
   if (grade === "O")  return { bg: "bg-emerald-500/15 border-emerald-500/40", text: "text-emerald-300", bar: "#10b981" };
-  if (grade === "A+") return { bg: "bg-[#00d4ff]/15 border-[#00d4ff]/40",    text: "text-[#00d4ff]",   bar: "#00d4ff" };
+  if (grade === "A+") return { bg: "bg-[var(--brand-start)]/15 border-[var(--brand-start)]/40",    text: "text-[var(--brand-start)]",   bar: "#fbbf24" };
   if (grade === "A")  return { bg: "bg-sky-500/15 border-sky-500/40",         text: "text-sky-300",     bar: "#38bdf8" };
-  if (grade === "B+") return { bg: "bg-[#a855f7]/15 border-[#a855f7]/40",    text: "text-[#a855f7]",   bar: "#a855f7" };
+  if (grade === "B+") return { bg: "bg-[var(--brand-end)]/15 border-[var(--brand-end)]/40",    text: "text-[var(--brand-end)]",   bar: "#f97316" };
   if (grade === "B")  return { bg: "bg-violet-500/15 border-violet-500/40",   text: "text-violet-300",  bar: "#8b5cf6" };
   if (grade === "C")  return { bg: "bg-yellow-500/15 border-yellow-500/40",   text: "text-yellow-300",  bar: "#eab308" };
   if (grade === "P")  return { bg: "bg-orange-500/15 border-orange-500/40",   text: "text-orange-300",  bar: "#f97316" };
@@ -210,7 +210,7 @@ export function RequiredMarks() {
           Back to Dashboard
         </Button>
         <div className="flex-1">
-          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[#00d4ff] via-white to-[#a855f7] bg-clip-text text-transparent">
+          <h1 className="text-4xl mb-1 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             Marks Required
           </h1>
           <p className="text-gray-400">Exact marks needed per subject this semester to reach your target CGPA</p>
@@ -235,7 +235,7 @@ export function RequiredMarks() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-5">
           <div className="flex items-center gap-3 mb-2">
-            <Target className="w-5 h-5 text-[#00d4ff]" />
+            <Target className="w-5 h-5 text-[var(--brand-start)]" />
             <span className="text-xs text-gray-400">Target CGPA</span>
           </div>
           <p className="text-3xl font-bold text-white">{targetCGPA.toFixed(2)}</p>
@@ -249,7 +249,7 @@ export function RequiredMarks() {
         </Card>
         <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-5">
           <div className="flex items-center gap-3 mb-2">
-            <Award className="w-5 h-5 text-[#a855f7]" />
+            <Award className="w-5 h-5 text-[var(--brand-end)]" />
             <span className="text-xs text-gray-400">Status</span>
           </div>
           <p className="text-xl font-bold text-white">{targetSGPA <= 10 ? "On Track" : "Goal Adjusted"}</p>
@@ -274,14 +274,14 @@ export function RequiredMarks() {
               </p>
               <p className="text-xs text-gray-400">Critical (90+)</p>
             </div>
-            <div className="p-4 rounded-xl bg-[#a855f7]/10 border border-[#a855f7]/20">
-              <p className="text-2xl font-bold text-[#a855f7]">
+            <div className="p-4 rounded-xl bg-[var(--brand-end)]/10 border border-[var(--brand-end)]/20">
+              <p className="text-2xl font-bold text-[var(--brand-end)]">
                 {rows.filter(r => r.requiredMarks >= 75 && r.requiredMarks < 90).length}
               </p>
               <p className="text-xs text-gray-400">Difficult (75+)</p>
             </div>
-            <div className="p-4 rounded-xl bg-[#00d4ff]/10 border border-[#00d4ff]/20">
-              <p className="text-2xl font-bold text-[#00d4ff]">
+            <div className="p-4 rounded-xl bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/20">
+              <p className="text-2xl font-bold text-[var(--brand-start)]">
                 {rows.filter(r => r.requiredMarks >= 65 && r.requiredMarks < 75).length}
               </p>
               <p className="text-xs text-gray-400">Moderate (65+)</p>
@@ -297,7 +297,7 @@ export function RequiredMarks() {
 
         <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6 flex flex-col justify-center">
           <div className="flex items-center gap-3 mb-2">
-            <Info className="w-5 h-5 text-[#00d4ff]" />
+            <Info className="w-5 h-5 text-[var(--brand-start)]" />
             <h4 className="text-white font-semibold">Pro-Tip</h4>
           </div>
           <p className="text-sm text-gray-400 leading-relaxed">
@@ -307,11 +307,11 @@ export function RequiredMarks() {
       </div>
 
       {/* Info banner */}
-      <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-[#00d4ff]/5 border border-[#00d4ff]/20">
-        <Info className="w-4 h-4 text-[#00d4ff] flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/20">
+        <Info className="w-4 h-4 text-[var(--brand-start)] flex-shrink-0 mt-0.5" />
         <p className="text-sm text-gray-400">
           Required marks are the <span className="text-white">minimum out of 100</span> you need in each subject (Internal 40 + External 60).
-          Calculated to reach your final target CGPA of <span className="text-[#00d4ff]">{targetCGPA.toFixed(2)}</span> by graduation.
+          Calculated to reach your final target CGPA of <span className="text-[var(--brand-start)]">{targetCGPA.toFixed(2)}</span> by graduation.
         </p>
       </div>
 
@@ -355,7 +355,7 @@ export function RequiredMarks() {
                       <p className="text-white font-medium">{row.name}</p>
                     </td>
                     <td className="p-4 text-center">
-                      <span className="px-2 py-1 rounded bg-[#00d4ff]/10 text-[#00d4ff] text-sm font-semibold">
+                      <span className="px-2 py-1 rounded bg-[var(--brand-start)]/10 text-[var(--brand-start)] text-sm font-semibold">
                         {row.credits}
                       </span>
                     </td>
@@ -406,7 +406,7 @@ export function RequiredMarks() {
               <div className="w-px h-10 bg-gray-700" />
               <div>
                 <p className="text-xs text-gray-400 mb-1">Target CGPA</p>
-                <p className="text-3xl font-bold text-[#00d4ff]">{targetCGPA.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-[var(--brand-start)]">{targetCGPA.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-2">
                 {targetSGPA <= 10 ? (
@@ -425,7 +425,7 @@ export function RequiredMarks() {
             <div className="text-right">
               <p className="text-xs text-gray-500 mb-2">Grade Scale</p>
               <div className="flex gap-1.5 flex-wrap justify-end">
-                {[["O","≥90","text-emerald-400"],["A+","≥75","text-[#00d4ff]"],["A","≥65","text-sky-400"],["B+","≥55","text-[#a855f7]"],["B","≥50","text-violet-400"],["C","≥45","text-yellow-400"],["P","≥40","text-orange-400"],["F","<40","text-red-400"]].map(([g, r, cls]) => (
+                {[["O","≥90","text-emerald-400"],["A+","≥75","text-[var(--brand-start)]"],["A","≥65","text-sky-400"],["B+","≥55","text-[var(--brand-end)]"],["B","≥50","text-violet-400"],["C","≥45","text-yellow-400"],["P","≥40","text-orange-400"],["F","<40","text-red-400"]].map(([g, r, cls]) => (
                   <span key={g} className={`text-xs ${cls} bg-gray-800/60 border border-gray-700/50 px-1.5 py-0.5 rounded`}>
                     {g} {r}
                   </span>
