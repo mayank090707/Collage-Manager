@@ -132,13 +132,13 @@ export function Dashboard() {
         }).length;
       }
 
-      // 4. CGPA Calculation
+      // 4. CGPA Calculation (simple average of all SGPAs)
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
       if (savedMarks.length > 0) {
-        const allResults = savedMarks.flatMap((s: any) => s.results);
-        const totalCredits = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
-        const weighted = allResults.reduce((s: number, r: any) => s + (r.gradePoint * (r.credits || 0)), 0);
-        updatedStats.cgpa = totalCredits > 0 ? weighted / totalCredits : 0;
+        const allEnteredSGPAs = savedMarks.map((m: any) => m.sgpa || 0);
+        updatedStats.cgpa = allEnteredSGPAs.length > 0
+          ? allEnteredSGPAs.reduce((a: number, b: number) => a + b, 0) / allEnteredSGPAs.length
+          : 0;
 
         // 5. Required SGPA for Target
         // Formula: (SGPA1 + SGPA2 + ... + x) / N = targetCGPA
@@ -259,22 +259,17 @@ export function Dashboard() {
     // Notify other components
     window.dispatchEvent(new Event("storage"));
     
-    // Recalculate stats to update required SGPA
+    // Recalculate stats to update required SGPA using simple average
     const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-    const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
-    const currentSemCredits = subjects.reduce((acc: number, s: any) => acc + (s.credits || 0), 0);
-    
-    const totalCreditsHist = savedMarks.reduce((acc: number, s: any) => 
-      acc + s.results.reduce((subAcc: number, r: any) => subAcc + (r.credits || 0), 0), 0);
-    const totalPointsHist = savedMarks.reduce((acc: number, s: any) => 
-      acc + (s.sgpa * s.results.reduce((subAcc: number, r: any) => subAcc + (r.credits || 0), 0)), 0);
+    const savedProfileRaw = localStorage.getItem("student_profile");
+    const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
+    const currentSemNum = parseInt(localProfile.currentSemester || "1");
 
-    const totalCreditsByEnd = totalCreditsHist + currentSemCredits;
-    const totalPointsNeededByEnd = target * totalCreditsByEnd;
-    const pointsToEarn = totalPointsNeededByEnd - totalPointsHist;
-    
-    const req = currentSemCredits > 0 ? Math.max(0, pointsToEarn / currentSemCredits) : 0;
-    setStats(prev => ({ ...prev, requiredSgpa: req }));
+    const previousSemMarks = savedMarks.filter((m: any) => m.semester < currentSemNum);
+    const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
+
+    const req = (target * currentSemNum) - sumPreviousSGPAs;
+    setStats(prev => ({ ...prev, requiredSgpa: Math.max(0, req) }));
   };
 
   return (

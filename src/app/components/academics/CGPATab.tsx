@@ -50,29 +50,16 @@ export function CGPATab() {
       setCgpa(calculatedCgpa);
     }
 
-    // Calculate required SGPA for CURRENT semester to reach target
+    // Calculate required SGPA for CURRENT semester to reach target (simple average)
     if (savedTarget > 0) {
-      const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
-      const currentSemCredits = subjects.reduce((acc: number, s: any) => acc + (s.credits || 0), 0) || 20;
-      
-      const totalCreditsHist = savedSemesterData.reduce((acc: number, s: SemesterData) => acc + 20, 0); // Approx credits if not stored
-      const totalPointsHist = savedSemesterData.reduce((acc: number, s: SemesterData) => acc + (s.sgpa * 20), 0);
-
-      // Re-calculate more accurately if possible
+      const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
+      const currentSemNum = parseInt(profile.currentSemester || "1");
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-      const accurateCreditsHist = savedMarks.reduce((acc: number, s: any) => 
-        acc + s.results.reduce((subAcc: number, r: any) => subAcc + (r.credits || 0), 0), 0);
-      const accuratePointsHist = savedMarks.reduce((acc: number, s: any) => 
-        acc + (s.sgpa * s.results.reduce((subAcc: number, r: any) => subAcc + (r.credits || 0), 0)), 0);
-
-      const finalCreditsHist = accurateCreditsHist || totalCreditsHist;
-      const finalPointsHist = accuratePointsHist || totalPointsHist;
-
-      const totalCreditsByEnd = finalCreditsHist + currentSemCredits;
-      const totalPointsNeededByEnd = savedTarget * totalCreditsByEnd;
-      const pointsToEarn = totalPointsNeededByEnd - finalPointsHist;
+      const previousSemMarks = savedMarks.filter((m: any) => m.semester < currentSemNum);
+      const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
       
-      setRequiredSgpa(Math.max(0, pointsToEarn / currentSemCredits));
+      const reqSGPA = (savedTarget * currentSemNum) - sumPreviousSGPAs;
+      setRequiredSgpa(Math.max(0, reqSGPA));
     }
   };
 
