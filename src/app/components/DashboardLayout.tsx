@@ -1,13 +1,38 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { ThemeToggle } from "./ThemeToggle";
-import { Home, BookOpen, Calendar, User, BarChart3, Sparkles, LogOut, LayoutGrid } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  Calendar,
+  User,
+  BarChart3,
+  Sparkles,
+  LogOut,
+  LayoutGrid,
+  Menu,
+  X
+} from "lucide-react";
 import { Button } from "./ui/button";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { motion } from "motion/react";
+import { useState, useEffect } from "react";
 
 export function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Auto-collapse sidebar on smaller screens initially
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    handleResize(); // run on mount
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const menuItems = [
     { icon: Home, label: "Dashboard", path: "/app" },
@@ -41,67 +66,122 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex text-foreground">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card/80 backdrop-blur-xl flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Sparkles className="w-8 h-8 text-brand-start" />
-            <span className="text-xl font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
+    <div className="min-h-screen bg-background text-foreground relative flex flex-col">
+      
+      {/* Mobile/Tablet Backdrop overlay */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+        />
+      )}
+
+      {/* Top Navbar Header */}
+      <header className="sticky top-0 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between z-30 lg:px-8">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+          >
+            <Menu className="w-6 h-6" />
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-6 h-6 text-brand-start h-auto" />
+            <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
               College Manager
             </span>
           </div>
+        </div>
+        <div className="flex items-center gap-4">
           <ThemeToggle />
         </div>
+      </header>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
-                  active
-                    ? "bg-gradient-to-r from-brand-start/10 to-brand-end/10 dark:from-brand-start/20 dark:to-brand-end/20 text-brand-start border border-brand-start/20 shadow-[0_4px_12px_rgba(var(--brand-start-rgb),0.15)]"
-                    : "text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-800/50"
-                }`}
-              >
-                <Icon className={`w-5 h-5 transition-colors ${active ? "text-brand-start" : "text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white"}`} />
-                <span className="font-medium tracking-tight">{item.label}</span>
-              </button>
-            );
-          })}
-        </nav>
+      <div className="flex flex-1 relative">
+        {/* Sidebar Drawer */}
+        <aside 
+          className={`fixed lg:top-[65px] top-0 bottom-0 left-0 z-50 lg:z-20 w-64 border-r border-border bg-card/95 lg:bg-card/85 backdrop-blur-xl flex flex-col transition-transform duration-300 ease-in-out ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Header ONLY visible inside drawer on Mobile/Tablet */}
+          <div className="p-6 border-b border-border flex items-center justify-between lg:hidden bg-background/50">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-7 h-7 text-brand-start" />
+              <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
+                College Manager
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(false)}
+              className="text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-border">
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Logout
-          </Button>
-        </div>
-      </aside>
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    // Close drawer on mobile upon navigating
+                    if (window.innerWidth < 1024) {
+                      setIsSidebarOpen(false);
+                    }
+                  }}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
+                    active
+                      ? "bg-gradient-to-r from-brand-start/10 to-brand-end/10 dark:from-brand-start/20 dark:to-brand-end/20 text-brand-start border border-brand-start/20 shadow-[0_4px_12px_rgba(var(--brand-start-rgb),0.15)]"
+                      : "text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-800/50"
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 transition-colors ${active ? "text-brand-start" : "text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white"}`} />
+                  <span className="font-semibold tracking-tight text-sm">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {/* Background Effects */}
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-40 right-40 w-96 h-96 bg-brand-start rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob"></div>
-          <div className="absolute bottom-40 left-40 w-96 h-96 bg-brand-end rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob animation-delay-2000"></div>
-        </div>
+          {/* Logout */}
+          <div className="p-4 border-t border-border bg-background/20">
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              className="w-full justify-start text-slate-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 font-semibold"
+            >
+              <LogOut className="w-5 h-5 mr-3" />
+              Logout
+            </Button>
+          </div>
+        </aside>
 
-        <div className="relative z-10">
-          <Outlet />
-        </div>
-      </main>
+        {/* Main Content Area */}
+        <main 
+          className={`flex-1 overflow-x-hidden min-w-0 transition-all duration-300 ease-in-out ${
+            isSidebarOpen ? "lg:pl-64" : "lg:pl-0"
+          }`}
+        >
+          {/* Background Effects */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+            <div className="absolute top-40 right-40 w-96 h-96 bg-brand-start rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob"></div>
+            <div className="absolute bottom-40 left-40 w-96 h-96 bg-brand-end rounded-full mix-blend-multiply dark:mix-blend-multiply filter blur-[128px] opacity-10 dark:opacity-10 animate-blob animation-delay-2000"></div>
+          </div>
+
+          <div className="relative z-10 w-full min-h-full">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

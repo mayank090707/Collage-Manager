@@ -273,19 +273,19 @@ export function Dashboard() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl mb-2 font-black bg-gradient-to-r from-[var(--brand-start)] via-slate-800 dark:via-white to-[var(--brand-end)] bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl mb-2 font-black bg-gradient-to-r from-[var(--brand-start)] via-slate-800 dark:via-white to-[var(--brand-end)] bg-clip-text text-transparent">
             {getGreeting()}, {profile?.fullName?.split(" ")[0] || "Student"}
           </h1>
-          <p className="text-slate-600 dark:text-gray-400 text-lg font-medium">
+          <p className="text-slate-600 dark:text-gray-400 text-base md:text-lg font-medium">
             Current Semester: {profile?.currentSemester || "N/A"}
           </p>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 self-end sm:self-auto">
           <Button
             variant="ghost"
             size="icon"

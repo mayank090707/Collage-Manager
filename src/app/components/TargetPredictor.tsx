@@ -54,123 +54,134 @@ function gradeColor(grade: string) {
 
 // ── Primary distribution (upgrade highest-credit subjects first) ──────────────
 // Formula: SGPA = Σ(GP_i × C_i) / Σ(C_i)
-function computeSubjectTargets(
+// ── Generate all strategies and select the closest qualifying one as main ──────────────────
+function computeBestTargetAndAlternatives(
   subjects: { name: string; credits: number }[],
   targetSGPA: number
-): SubjectResult[] {
-  if (subjects.length === 0 || targetSGPA <= 0) return [];
-
-  const clamped = Math.min(targetSGPA, 10);
-  const totalC  = subjects.reduce((s, sub) => s + sub.credits, 0);
-  const needed  = clamped * totalC;
-
-  const sorted = [...subjects].sort((a, b) => b.credits - a.credits);
-  const gp: number[] = sorted.map(() => Math.floor(clamped));
-  let total = gp.reduce((acc, g, i) => acc + g * sorted[i].credits, 0);
-
-  for (let i = 0; i < gp.length; i++) {
-    while (total < needed && gp[i] < 10) { gp[i]++; total += sorted[i].credits; }
-    if (total >= needed) break;
+): { main: SubjectResult[]; alternatives: AlternativeCombo[] } {
+  if (subjects.length === 0) {
+    return { main: [], alternatives: [] };
   }
 
-  return sorted.map((sub, i) => {
-    const info = GRADE_TABLE.find(g => g.gp === gp[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
-    return { name: sub.name, credits: sub.credits, gradePoint: gp[i], grade: info.grade, minMarks: info.minMarks, marksRange: info.marksRange };
-  });
-}
-
-// ── Alternative combinations ──────────────────────────────────────────────────
-// Generate up to 4 distinct grade-assignment vectors that satisfy the same SGPA
-// (within ±0.005 floating-point tolerance) using different priority orderings.
-function computeAlternatives(
-  subjects: { name: string; credits: number }[],
-  targetSGPA: number,
-  primaryRows: SubjectResult[]
-): AlternativeCombo[] {
-  if (subjects.length < 2) return [];
-
   const clamped = Math.min(targetSGPA, 10);
   const totalC  = subjects.reduce((s, sub) => s + sub.credits, 0);
   const needed  = clamped * totalC;
-  const TOLERANCE = 0.005;
 
-  // Helper: given a sorted order, do the standard greedy assignment & return combo
-  const tryOrder = (
-    ordered: { name: string; credits: number }[],
-    label: string
-  ): AlternativeCombo | null => {
-    const gp: number[] = ordered.map(() => Math.floor(clamped));
-    let total = gp.reduce((acc, g, i) => acc + g * ordered[i].credits, 0);
-    for (let i = 0; i < gp.length; i++) {
-      while (total < needed && gp[i] < 10) { gp[i]++; total += ordered[i].credits; }
-      if (total >= needed) break;
+  // We try 5 distinct priority orderings for greedy GP allocation
+  const strategies = [
+    {
+      label: "Optimize for larger credits",
+      order: [...subjects].sort((a, b) => b.credits - a.credits)
+    },
+    {
+      label: "Upgrade smaller subjects first",
+      order: [...subjects].sort((a, b) => a.credits - b.credits)
+    },
+    {
+      label: "Mixed priority order",
+      order: (() => {
+        const sortedNames = [...subjects].sort((a, b) => a.name.localeCompare(b.name));
+        return [
+          ...sortedNames.filter((_, i) => i % 2 === 0),
+          ...sortedNames.filter((_, i) => i % 2 !== 0),
+        ];
+      })()
+    },
+    {
+      label: "Score later-listed subjects higher",
+      order: [...subjects].sort((a, b) => b.name.localeCompare(a.name))
+    },
+    {
+      label: "Uniform floor distribution",
+      order: [...subjects].sort((a, b) => a.name.localeCompare(b.name)),
+      useUniform: true
     }
-    const sgpa = gp.reduce((acc, g, i) => acc + g * ordered[i].credits, 0) / totalC;
-    if (Math.abs(sgpa - clamped) > TOLERANCE) return null;  // doesn't satisfy the target
-
-    // Check distinct from primary
-    const primaryGPMap = Object.fromEntries(primaryRows.map(r => [r.name, r.gradePoint]));
-    const isDifferent = ordered.some((sub, i) => gp[i] !== primaryGPMap[sub.name]);
-    if (!isDifferent) return null;
-
-    return {
-      sgpa,
-      label,
-      assignments: ordered.map((sub, i) => {
-        const info = GRADE_TABLE.find(g => g.gp === gp[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
-        return { name: sub.name, credits: sub.credits, gp: gp[i], grade: info.grade, minMarks: info.minMarks };
-      }),
-    };
-  };
-
-  const combos: AlternativeCombo[] = [];
-  const seen = new Set<string>();
-
-  const addIfNew = (combo: AlternativeCombo | null) => {
-    if (!combo) return;
-    const key = combo.assignments.map(a => `${a.name}:${a.gp}`).join("|");
-    if (seen.has(key)) return;
-    seen.add(key);
-    combos.push(combo);
-  };
-
-  // Strategy 2 — upgrade lowest-credit subjects first
-  const byCreditsAsc = [...subjects].sort((a, b) => a.credits - b.credits);
-  addIfNew(tryOrder(byCreditsAsc, "Upgrade smaller subjects first"));
-
-  // Strategy 3 — alternating (odd indices high, even low)
-  const byName = [...subjects].sort((a, b) => a.name.localeCompare(b.name));
-  const interleaved = [
-    ...byName.filter((_, i) => i % 2 === 0),
-    ...byName.filter((_, i) => i % 2 !== 0),
   ];
-  addIfNew(tryOrder(interleaved, "Mixed priority order"));
 
-  // Strategy 4 — reverse alphabetical
-  const byNameDesc = [...subjects].sort((a, b) => b.name.localeCompare(a.name));
-  addIfNew(tryOrder(byNameDesc, "Score later-listed subjects higher"));
+  const candidates = strategies.map(strat => {
+    let gp: number[];
+    if (strat.useUniform) {
+      // Force all subjects to floor(clamped)
+      const baseGP = Math.min(Math.max(Math.floor(clamped), 0), 10);
+      gp = strat.order.map(() => baseGP);
+    } else {
+      const baseGP = Math.min(Math.max(Math.floor(clamped), 0), 10);
+      gp = strat.order.map(() => baseGP);
+      let total = gp.reduce((acc, g, i) => acc + g * strat.order[i].credits, 0);
 
-  // Strategy 5 — uniform floor (all same GP, no upgrades needed)
-  const floorGP = Math.floor(clamped);
-  const uniformTotal = floorGP * totalC;
-  if (Math.abs(uniformTotal / totalC - clamped) <= TOLERANCE) {
-    const key = subjects.map(s => `${s.name}:${floorGP}`).join("|");
-    if (!seen.has(key)) {
-      const primaryGPMap = Object.fromEntries(primaryRows.map(r => [r.name, r.gradePoint]));
-      const isDifferent = subjects.some(s => floorGP !== primaryGPMap[s.name]);
-      if (isDifferent) {
-        seen.add(key);
-        const info = GRADE_TABLE.find(g => g.gp === floorGP) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
-        combos.push({
-          sgpa: clamped,
-          label: "Same grade in every subject",
-          assignments: subjects.map(sub => ({ name: sub.name, credits: sub.credits, gp: floorGP, grade: info.grade, minMarks: info.minMarks })),
-        });
+      for (let i = 0; i < gp.length; i++) {
+        while (total < needed && gp[i] < 10) {
+          gp[i]++;
+          total += strat.order[i].credits;
+        }
+        if (total >= needed) break;
       }
     }
+
+    const totalGP = gp.reduce((acc, g, i) => acc + g * strat.order[i].credits, 0);
+    const achieved = totalGP / totalC;
+
+    const assignments = strat.order.map((sub, i) => {
+      const info = GRADE_TABLE.find(g => g.gp === gp[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
+      return {
+        name: sub.name,
+        credits: sub.credits,
+        gradePoint: gp[i],
+        grade: info.grade,
+        minMarks: info.minMarks,
+        marksRange: info.marksRange
+      };
+    });
+
+    return {
+      label: strat.label,
+      achieved,
+      assignments
+    };
+  });
+
+  // Filter candidates that meet the target SGPA
+  let valid = candidates.filter(c => c.achieved >= clamped - 0.0001);
+  if (valid.length === 0) {
+    // If impossible (everyone is less), fall back to whatever gets closest to 10
+    valid = candidates;
   }
 
-  return combos.slice(0, 3); // cap at 3 alternatives
+  // Sort them so that the one closest to targetSGPA rises to the top
+  valid.sort((a, b) => a.achieved - b.achieved);
+
+  const mainCandidate = valid[0];
+
+  // Map to UI expectations
+  const main: SubjectResult[] = mainCandidate.assignments;
+
+  // Track unique duplicates for alternatives
+  const seenKeys = new Set<string>();
+  const makeKey = (ass: any[]) => {
+    return ass.map(a => `${a.name}:${a.gradePoint}`).sort().join("|");
+  };
+  seenKeys.add(makeKey(mainCandidate.assignments));
+
+  const alternatives: AlternativeCombo[] = [];
+  valid.slice(1).forEach(c => {
+    const key = makeKey(c.assignments);
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      alternatives.push({
+        label: c.label,
+        sgpa: c.achieved,
+        assignments: c.assignments.map(a => ({
+          name: a.name,
+          credits: a.credits,
+          gp: a.gradePoint,
+          grade: a.grade,
+          minMarks: a.minMarks
+        }))
+      });
+    }
+  });
+
+  return { main, alternatives };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -219,12 +230,11 @@ export function TargetPredictor() {
       });
 
       const effectiveSGPA = Math.min(Math.max(reqSGPA, 0), 10);
-      const computed = computeSubjectTargets(subs, effectiveSGPA);
-      setRows(computed);
+      
+      const { main, alternatives: alts } = computeBestTargetAndAlternatives(subs, effectiveSGPA);
+      
+      setRows(main);
       setTotalCredits(subs.reduce((s: number, sub: any) => s + (sub.credits || 0), 0));
-
-      // Generate alternative combos
-      const alts = computeAlternatives(subs, effectiveSGPA, computed);
       setAlternatives(alts);
     };
 
