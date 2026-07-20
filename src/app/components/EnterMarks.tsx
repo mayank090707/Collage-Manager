@@ -162,7 +162,11 @@ export function EnterMarks() {
 
   const handleSave = (sem: number) => {
     const results = getSemResults(sem);
-    const sgpa = calcSGPA(results);
+    // Only calculate SGPA when at least one subject has actual marks entered.
+    // If the user is just saving subjects/credits for the current semester (no marks yet),
+    // we store sgpa = -1 as a sentinel so downstream code can skip it.
+    const hasAnyMarks = results.some(r => r.internal > 0 || r.external > 0);
+    const sgpa = hasAnyMarks ? calcSGPA(results) : -1;
     const updated: SavedSemester = { semester: sem, results, sgpa };
     const rest = savedSemesters.filter((s) => s.semester !== sem);
     const newSaved = [...rest, updated].sort((a, b) => a.semester - b.semester);
@@ -199,15 +203,21 @@ export function EnterMarks() {
   };
 
   const getCGPA = () => {
-    if (savedSemesters.length === 0) return null;
-    const allResults = savedSemesters.flatMap((s) => s.results);
+    // Only include semesters that have real marks (sgpa !== -1)
+    const semestersWithMarks = savedSemesters.filter(s => s.sgpa !== -1);
+    if (semestersWithMarks.length === 0) return null;
+    const allResults = semestersWithMarks.flatMap((s) => s.results);
     const totalCredits = allResults.reduce((s, r) => s + r.credits, 0);
     const weighted = allResults.reduce((s, r) => s + r.gradePoint * r.credits, 0);
     return totalCredits > 0 ? weighted / totalCredits : 0;
   };
 
   const activeSemResults = getSemResults(activeSem);
-  const activeSGPA = calcSGPA(activeSemResults);
+  // Only show a live SGPA if at least one subject on the active sem has marks entered
+  const activeSemHasMarks = (marks[activeSem] || []).some(
+    m => m.internalMarks !== "" || m.externalMarks !== ""
+  );
+  const activeSGPA = activeSemHasMarks ? calcSGPA(activeSemResults) : null;
   const cgpa = getCGPA();
 
   return (
@@ -384,8 +394,11 @@ export function EnterMarks() {
                   <div>
                     <p className="text-xs text-gray-400">Semester {activeSem} SGPA</p>
                     <p className="text-2xl font-bold text-white">
-                      {activeSGPA > 0 ? activeSGPA.toFixed(2) : "—"}
+                      {activeSGPA !== null && activeSGPA > 0 ? activeSGPA.toFixed(2) : "—"}
                     </p>
+                    {activeSem === currentSem && activeSGPA === null && (
+                      <p className="text-[10px] text-gray-600 mt-0.5">Enter marks to see SGPA</p>
+                    )}
                   </div>
                 </div>
                 {cgpa !== null && (
@@ -424,8 +437,18 @@ export function EnterMarks() {
             {savedSemesters.map((sv) => (
               <div key={sv.semester} className="bg-[#0a0a0f]/50 border border-gray-800/50 rounded-xl p-4 text-center">
                 <p className="text-xs text-gray-400 mb-1">Semester {sv.semester}</p>
-                <p className="text-2xl font-bold text-white">{sv.sgpa.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">SGPA</p>
+                {sv.sgpa === -1 ? (
+                  <>
+                    <p className="text-lg font-bold text-gray-600">—</p>
+                    <p className="text-[10px] text-gray-700 mt-1">Subjects saved</p>
+                    <p className="text-[10px] text-gray-700">No marks yet</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-white">{sv.sgpa.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500 mt-1">SGPA</p>
+                  </>
+                )}
               </div>
             ))}
             {cgpa !== null && (

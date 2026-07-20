@@ -9,6 +9,7 @@ import {
   AlertCircle,
   BookOpen,
   Info,
+  Lightbulb,
 } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -33,7 +34,13 @@ interface SubjectResult {
   marksRange: string;
 }
 
-// Grade bar / badge colour helpers
+interface AlternativeCombo {
+  assignments: { name: string; credits: number; gp: number; grade: string; minMarks: number }[];
+  sgpa: number;
+  label: string;  // brief human description
+}
+
+// ── colour helper ─────────────────────────────────────────────────────────────
 function gradeColor(grade: string) {
   if (grade === "O")  return { badge: "bg-emerald-500/20 border-emerald-500/50 text-emerald-300", bar: "#10b981", mark: "text-emerald-300" };
   if (grade === "A+") return { badge: "bg-amber-500/20 border-amber-500/50 text-amber-300",        bar: "#f59e0b", mark: "text-amber-300"   };
@@ -45,44 +52,125 @@ function gradeColor(grade: string) {
   return                     { badge: "bg-red-500/20 border-red-500/50 text-red-300",              bar: "#ef4444", mark: "text-red-300"     };
 }
 
-// ── 10-point scale distribution ───────────────────────────────────────────────
-// SGPA = Σ(GP_i × C_i) / Σ(C_i)
-// Solve for marks: assign floor(SGPA) GP to every subject, then upgrade
-// highest-credit subjects first until Σ(GP_i × C_i) ≥ SGPA × Σ(C_i).
+// ── Primary distribution (upgrade highest-credit subjects first) ──────────────
+// Formula: SGPA = Σ(GP_i × C_i) / Σ(C_i)
 function computeSubjectTargets(
   subjects: { name: string; credits: number }[],
   targetSGPA: number
 ): SubjectResult[] {
   if (subjects.length === 0 || targetSGPA <= 0) return [];
 
-  const clampedSGPA = Math.min(targetSGPA, 10);
-  const totalCredits = subjects.reduce((s, sub) => s + sub.credits, 0);
-  const totalGPNeeded = clampedSGPA * totalCredits;
+  const clamped = Math.min(targetSGPA, 10);
+  const totalC  = subjects.reduce((s, sub) => s + sub.credits, 0);
+  const needed  = clamped * totalC;
 
-  // Sort highest-credit first so upgrades land on heavy subjects
   const sorted = [...subjects].sort((a, b) => b.credits - a.credits);
-  const gpAssign: number[] = sorted.map(() => Math.floor(clampedSGPA));
-  let currentTotal = gpAssign.reduce((acc, gp, i) => acc + gp * sorted[i].credits, 0);
+  const gp: number[] = sorted.map(() => Math.floor(clamped));
+  let total = gp.reduce((acc, g, i) => acc + g * sorted[i].credits, 0);
 
-  for (let i = 0; i < gpAssign.length; i++) {
-    while (currentTotal < totalGPNeeded && gpAssign[i] < 10) {
-      gpAssign[i]++;
-      currentTotal += sorted[i].credits;
-    }
-    if (currentTotal >= totalGPNeeded) break;
+  for (let i = 0; i < gp.length; i++) {
+    while (total < needed && gp[i] < 10) { gp[i]++; total += sorted[i].credits; }
+    if (total >= needed) break;
   }
 
   return sorted.map((sub, i) => {
-    const gradeInfo = GRADE_TABLE.find(g => g.gp === gpAssign[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
-    return {
-      name: sub.name,
-      credits: sub.credits,
-      gradePoint: gpAssign[i],
-      grade: gradeInfo.grade,
-      minMarks: gradeInfo.minMarks,
-      marksRange: gradeInfo.marksRange,
-    };
+    const info = GRADE_TABLE.find(g => g.gp === gp[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
+    return { name: sub.name, credits: sub.credits, gradePoint: gp[i], grade: info.grade, minMarks: info.minMarks, marksRange: info.marksRange };
   });
+}
+
+// ── Alternative combinations ──────────────────────────────────────────────────
+// Generate up to 4 distinct grade-assignment vectors that satisfy the same SGPA
+// (within ±0.005 floating-point tolerance) using different priority orderings.
+function computeAlternatives(
+  subjects: { name: string; credits: number }[],
+  targetSGPA: number,
+  primaryRows: SubjectResult[]
+): AlternativeCombo[] {
+  if (subjects.length < 2) return [];
+
+  const clamped = Math.min(targetSGPA, 10);
+  const totalC  = subjects.reduce((s, sub) => s + sub.credits, 0);
+  const needed  = clamped * totalC;
+  const TOLERANCE = 0.005;
+
+  // Helper: given a sorted order, do the standard greedy assignment & return combo
+  const tryOrder = (
+    ordered: { name: string; credits: number }[],
+    label: string
+  ): AlternativeCombo | null => {
+    const gp: number[] = ordered.map(() => Math.floor(clamped));
+    let total = gp.reduce((acc, g, i) => acc + g * ordered[i].credits, 0);
+    for (let i = 0; i < gp.length; i++) {
+      while (total < needed && gp[i] < 10) { gp[i]++; total += ordered[i].credits; }
+      if (total >= needed) break;
+    }
+    const sgpa = gp.reduce((acc, g, i) => acc + g * ordered[i].credits, 0) / totalC;
+    if (Math.abs(sgpa - clamped) > TOLERANCE) return null;  // doesn't satisfy the target
+
+    // Check distinct from primary
+    const primaryGPMap = Object.fromEntries(primaryRows.map(r => [r.name, r.gradePoint]));
+    const isDifferent = ordered.some((sub, i) => gp[i] !== primaryGPMap[sub.name]);
+    if (!isDifferent) return null;
+
+    return {
+      sgpa,
+      label,
+      assignments: ordered.map((sub, i) => {
+        const info = GRADE_TABLE.find(g => g.gp === gp[i]) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
+        return { name: sub.name, credits: sub.credits, gp: gp[i], grade: info.grade, minMarks: info.minMarks };
+      }),
+    };
+  };
+
+  const combos: AlternativeCombo[] = [];
+  const seen = new Set<string>();
+
+  const addIfNew = (combo: AlternativeCombo | null) => {
+    if (!combo) return;
+    const key = combo.assignments.map(a => `${a.name}:${a.gp}`).join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    combos.push(combo);
+  };
+
+  // Strategy 2 — upgrade lowest-credit subjects first
+  const byCreditsAsc = [...subjects].sort((a, b) => a.credits - b.credits);
+  addIfNew(tryOrder(byCreditsAsc, "Upgrade smaller subjects first"));
+
+  // Strategy 3 — alternating (odd indices high, even low)
+  const byName = [...subjects].sort((a, b) => a.name.localeCompare(b.name));
+  const interleaved = [
+    ...byName.filter((_, i) => i % 2 === 0),
+    ...byName.filter((_, i) => i % 2 !== 0),
+  ];
+  addIfNew(tryOrder(interleaved, "Mixed priority order"));
+
+  // Strategy 4 — reverse alphabetical
+  const byNameDesc = [...subjects].sort((a, b) => b.name.localeCompare(a.name));
+  addIfNew(tryOrder(byNameDesc, "Score later-listed subjects higher"));
+
+  // Strategy 5 — uniform floor (all same GP, no upgrades needed)
+  const floorGP = Math.floor(clamped);
+  const uniformTotal = floorGP * totalC;
+  if (Math.abs(uniformTotal / totalC - clamped) <= TOLERANCE) {
+    const key = subjects.map(s => `${s.name}:${floorGP}`).join("|");
+    if (!seen.has(key)) {
+      const primaryGPMap = Object.fromEntries(primaryRows.map(r => [r.name, r.gradePoint]));
+      const isDifferent = subjects.some(s => floorGP !== primaryGPMap[s.name]);
+      if (isDifferent) {
+        seen.add(key);
+        const info = GRADE_TABLE.find(g => g.gp === floorGP) ?? GRADE_TABLE[GRADE_TABLE.length - 1];
+        combos.push({
+          sgpa: clamped,
+          label: "Same grade in every subject",
+          assignments: subjects.map(sub => ({ name: sub.name, credits: sub.credits, gp: floorGP, grade: info.grade, minMarks: info.minMarks })),
+        });
+      }
+    }
+  }
+
+  return combos.slice(0, 3); // cap at 3 alternatives
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -99,24 +187,25 @@ export function TargetPredictor() {
   const [semesterNum, setSemesterNum] = useState(1);
   const [rows, setRows] = useState<SubjectResult[]>([]);
   const [totalCredits, setTotalCredits] = useState(0);
+  const [alternatives, setAlternatives] = useState<AlternativeCombo[]>([]);
 
   useEffect(() => {
     const compute = () => {
-      const target      = parseFloat(localStorage.getItem("target_cgpa") || "0");
-      const savedMarks  = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-      const subs        = JSON.parse(localStorage.getItem("subjects") || "[]");
-      const profile     = JSON.parse(localStorage.getItem("student_profile") || "{}");
-      const semNum      = parseInt(profile.currentSemester || "1");
+      const target     = parseFloat(localStorage.getItem("target_cgpa") || "0");
+      const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
+      const subs       = JSON.parse(localStorage.getItem("subjects") || "[]");
+      const profile    = JSON.parse(localStorage.getItem("student_profile") || "{}");
+      const semNum     = parseInt(profile.currentSemester || "1");
 
       setSemesterNum(semNum);
 
-      // Previous semesters
-      const prevMarks       = savedMarks.filter((m: any) => m.semester < semNum);
-      const sumPrevSGPAs    = prevMarks.reduce((a: number, m: any) => a + (m.sgpa || 0), 0);
-      const reqSGPA         = (target * semNum) - sumPrevSGPAs;
+      // Only use previous semesters that have real marks (sgpa !== -1 sentinel)
+      const prevMarks    = savedMarks.filter((m: any) => m.semester < semNum && m.sgpa !== -1);
+      const sumPrevSGPAs = prevMarks.reduce((a: number, m: any) => a + (m.sgpa || 0), 0);
+      const reqSGPA      = (target * semNum) - sumPrevSGPAs;
 
-      // Current CGPA (credit-weighted across all entered semesters)
-      const allResults   = savedMarks.flatMap((m: any) => m.results || []);
+      // Current CGPA (credit-weighted, real marks only)
+      const allResults   = prevMarks.flatMap((m: any) => m.results || []);
       const tc           = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
       const wp           = allResults.reduce((s: number, r: any) => s + (r.gradePoint || 0) * (r.credits || 0), 0);
       const currentCgpa  = tc > 0 ? wp / tc : 0;
@@ -129,10 +218,14 @@ export function TargetPredictor() {
         currentCgpa,
       });
 
-      // Compute marks required per subject using the required SGPA
-      const computed = computeSubjectTargets(subs, Math.min(Math.max(reqSGPA, 0), 10));
+      const effectiveSGPA = Math.min(Math.max(reqSGPA, 0), 10);
+      const computed = computeSubjectTargets(subs, effectiveSGPA);
       setRows(computed);
       setTotalCredits(subs.reduce((s: number, sub: any) => s + (sub.credits || 0), 0));
+
+      // Generate alternative combos
+      const alts = computeAlternatives(subs, effectiveSGPA, computed);
+      setAlternatives(alts);
     };
 
     compute();
@@ -140,7 +233,6 @@ export function TargetPredictor() {
     return () => window.removeEventListener("storage", compute);
   }, []);
 
-  // Verified SGPA back-calculated from assigned grade points
   const achievedSGPA =
     rows.length > 0 && totalCredits > 0
       ? rows.reduce((s, r) => s + r.gradePoint * r.credits, 0) / totalCredits
@@ -149,7 +241,7 @@ export function TargetPredictor() {
   return (
     <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto">
 
-      {/* ── Page Header ──────────────────────────────────────────────────────── */}
+      {/* ── Header ───────────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <Button
@@ -201,7 +293,6 @@ export function TargetPredictor() {
 
       {/* ── Summary Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        {/* Target CGPA */}
         <Card className="relative overflow-hidden bg-[#111118]/90 border-gray-800/50 p-6">
           <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand-start)]/8 to-transparent pointer-events-none" />
           <div className="flex items-center gap-3 mb-3">
@@ -214,20 +305,15 @@ export function TargetPredictor() {
           <p className="text-xs text-gray-600 mt-2">Your graduation goal</p>
         </Card>
 
-        {/* Required SGPA */}
         <Card className={`relative overflow-hidden border p-6 ${
-          stats.isPossible
-            ? "bg-[#111118]/90 border-gray-800/50"
-            : "bg-red-500/8 border-red-500/30"
+          stats.isPossible ? "bg-[#111118]/90 border-gray-800/50" : "bg-red-500/8 border-red-500/30"
         }`}>
           <div className={`absolute inset-0 bg-gradient-to-br pointer-events-none ${
             stats.isPossible ? "from-[var(--brand-end)]/8 to-transparent" : "from-red-500/10 to-transparent"
           }`} />
           <div className="flex items-center gap-3 mb-3">
             <div className={`p-2 rounded-xl border ${
-              stats.isPossible
-                ? "bg-[var(--brand-end)]/15 border-[var(--brand-end)]/20"
-                : "bg-red-500/15 border-red-500/20"
+              stats.isPossible ? "bg-[var(--brand-end)]/15 border-[var(--brand-end)]/20" : "bg-red-500/15 border-red-500/20"
             }`}>
               <TrendingUp className={`w-5 h-5 ${stats.isPossible ? "text-[var(--brand-end)]" : "text-red-400"}`} />
             </div>
@@ -309,45 +395,30 @@ export function TargetPredictor() {
                         transition={{ delay: idx * 0.05, duration: 0.3 }}
                         className="border-b border-gray-800/40 hover:bg-white/[0.02] transition-colors group"
                       >
-                        {/* # */}
                         <td className="px-6 py-4 text-gray-700 text-sm tabular-nums">{idx + 1}</td>
-
-                        {/* Subject */}
                         <td className="px-6 py-4">
                           <span className="text-white font-semibold text-[15px] group-hover:text-[var(--brand-start)] transition-colors">
                             {row.name}
                           </span>
                         </td>
-
-                        {/* Credits */}
                         <td className="px-6 py-4 text-center">
                           <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/20 text-[var(--brand-start)] font-bold text-sm">
                             {row.credits}
                           </span>
                         </td>
-
-                        {/* Min Marks */}
                         <td className="px-6 py-4 text-center">
-                          <span className={`text-3xl font-black tabular-nums ${c.mark}`}>
-                            {row.minMarks}
-                          </span>
+                          <span className={`text-3xl font-black tabular-nums ${c.mark}`}>{row.minMarks}</span>
                           <span className="text-gray-600 text-sm ml-0.5">/100</span>
                         </td>
-
-                        {/* Grade badge */}
                         <td className="px-6 py-4 text-center">
                           <span className={`inline-block px-3 py-1 rounded-lg border text-sm font-bold ${c.badge}`}>
                             {row.grade}
                           </span>
                         </td>
-
-                        {/* GP */}
                         <td className="px-6 py-4 text-center">
                           <span className="text-xl font-black text-white tabular-nums">{row.gradePoint}</span>
                           <span className="text-gray-600 text-sm">/10</span>
                         </td>
-
-                        {/* Progress bar */}
                         <td className="px-6 py-4">
                           <div className="space-y-1.5">
                             <div className="relative h-2 bg-gray-800/80 rounded-full overflow-hidden">
@@ -372,7 +443,6 @@ export function TargetPredictor() {
             {/* Footer */}
             <div className="px-7 py-5 border-t border-gray-800/50 bg-[#0a0a0f]/40">
               <div className="flex flex-wrap items-center gap-8">
-                {/* SGPA achieved */}
                 <div>
                   <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold mb-1">SGPA Achieved</p>
                   <p className="text-3xl font-black text-emerald-400 tabular-nums">
@@ -380,26 +450,17 @@ export function TargetPredictor() {
                     <span className="text-base font-normal text-gray-600"> / 10.00</span>
                   </p>
                 </div>
-
                 <div className="w-px h-10 bg-gray-800" />
-
-                {/* Total credits */}
                 <div>
                   <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold mb-1">Total Credits</p>
                   <p className="text-3xl font-black text-white tabular-nums">{totalCredits}</p>
                 </div>
-
                 <div className="w-px h-10 bg-gray-800" />
-
-                {/* Subject count */}
                 <div>
                   <p className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold mb-1">Subjects</p>
                   <p className="text-3xl font-black text-white tabular-nums">{rows.length}</p>
                 </div>
-
                 <div className="flex-1" />
-
-                {/* Formula note */}
                 <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/15 text-xs text-gray-500 max-w-xs">
                   <Info className="w-3.5 h-3.5 text-[var(--brand-start)] flex-shrink-0" />
                   <span>
@@ -412,6 +473,121 @@ export function TargetPredictor() {
           </>
         )}
       </Card>
+
+      {/* ── Alternative Options ───────────────────────────────────────────────── */}
+      {alternatives.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="space-y-4"
+        >
+          {/* Section heading */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-500/20">
+              <Lightbulb className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Another Option</h2>
+              <p className="text-xs text-gray-500">
+                Different grade combinations that achieve the same SGPA of{" "}
+                <span className="text-indigo-400 font-semibold">{achievedSGPA.toFixed(2)}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {alternatives.map((alt, ai) => (
+              <Card key={ai} className="bg-[#111118]/90 border-gray-800/40 overflow-hidden">
+                {/* Alt card header */}
+                <div className="px-6 py-4 border-b border-gray-800/40 bg-indigo-500/5 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+                      {ai + 1}
+                    </span>
+                    <p className="text-sm font-semibold text-indigo-300">{alt.label}</p>
+                  </div>
+                  <span className="text-xs text-gray-500">
+                    SGPA achieved:&nbsp;
+                    <span className="text-indigo-400 font-bold">{alt.sgpa.toFixed(2)}</span>
+                  </span>
+                </div>
+
+                {/* Alt rows */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-[#0d0d14]/50">
+                        {["Subject", "Credits", "Min Marks", "Grade", "GP"].map((h, i) => (
+                          <th
+                            key={i}
+                            className={`px-5 py-3 text-[10px] text-gray-600 font-semibold uppercase tracking-widest ${i === 0 ? "text-left" : "text-center"}`}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {alt.assignments.map((a, si) => {
+                        const c  = gradeColor(a.grade);
+                        // Highlight changes vs primary
+                        const primary = rows.find(r => r.name === a.name);
+                        const changed = primary && primary.gradePoint !== a.gp;
+                        return (
+                          <tr
+                            key={si}
+                            className={`border-b border-gray-800/30 transition-colors ${changed ? "bg-indigo-500/5" : "hover:bg-white/[0.01]"}`}
+                          >
+                            <td className="px-5 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium ${changed ? "text-indigo-200" : "text-gray-300"}`}>
+                                  {a.name}
+                                </span>
+                                {changed && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 font-semibold uppercase tracking-wide">
+                                    different
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <span className="text-sm text-gray-400 font-semibold">{a.credits}</span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <span className={`text-xl font-black tabular-nums ${c.mark}`}>{a.minMarks}</span>
+                              <span className="text-gray-700 text-xs">/100</span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <span className={`inline-block px-2.5 py-0.5 rounded-lg border text-xs font-bold ${c.badge}`}>
+                                {a.grade}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-center">
+                              <span className="text-base font-black text-white tabular-nums">{a.gp}</span>
+                              <span className="text-gray-600 text-xs">/10</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Alt footer note */}
+                <div className="px-6 py-3 border-t border-gray-800/30 bg-[#0a0a0f]/30">
+                  <p className="text-[11px] text-gray-600">
+                    <span className="text-indigo-400 font-semibold">Note: </span>
+                    Rows highlighted in blue differ from the primary recommendation above.
+                    Both combinations yield an identical SGPA of{" "}
+                    <span className="text-white font-semibold">{alt.sgpa.toFixed(2)}</span>.
+                  </p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
