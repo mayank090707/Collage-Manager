@@ -29,14 +29,14 @@
 
 @layer base {
   :root {
-    --background: #fbfbf9; /* Warm stone/ivory white */
+    --background: #f4f4f5; /* Light grey background */
     --foreground: #09090b; /* Pitch carbon black */
     --card: #ffffff;
     --card-foreground: #09090b;
     --popover: #ffffff;
     --popover-foreground: #09090b;
-    --primary: #fbbf24; /* Classy gold yellow */
-    --primary-foreground: #000000; /* Contrast black text */
+    --primary: #ca8a04; /* Classy rich yellow */
+    --primary-foreground: #ffffff; /* Contrast white text */
     --secondary: #e4e4e7; /* Zinc 200 */
     --secondary-foreground: #09090b;
     --muted: #f4f4f5; /* Zinc 100 */
@@ -47,9 +47,9 @@
     --destructive-foreground: #ffffff;
     --border: #d4d4d8; /* Zinc 300 - Visible but subtle */
     --input: #d4d4d8;
-    --ring: #fbbf24;
-    --brand-start: #fbbf24;
-    --brand-start-rgb: 251, 191, 36;
+    --ring: #ca8a04;
+    --brand-start: #ca8a04;
+    --brand-start-rgb: 202, 138, 4;
     --brand-end: #000000;
     --brand-end-rgb: 0, 0, 0;
   }
@@ -61,7 +61,7 @@
     --card-foreground: #f4f4f5;
     --popover: #09090b;
     --popover-foreground: #f4f4f5;
-    --primary: #facc15; /* Bright glowing yellow */
+    --primary: #eab308; /* Solid deep yellow */
     --primary-foreground: #000000;
     --secondary: #1e1e24;
     --secondary-foreground: #f4f4f5;
@@ -73,9 +73,9 @@
     --destructive-foreground: #f4f4f5;
     --border: #27272a;
     --input: #27272a;
-    --ring: #facc15;
-    --brand-start: #facc15;
-    --brand-start-rgb: 250, 204, 21;
+    --ring: #eab308;
+    --brand-start: #eab308;
+    --brand-start-rgb: 234, 179, 8;
     --brand-end: #f97316; /* Glowing orange/amber */
     --brand-end-rgb: 249, 115, 22;
   }

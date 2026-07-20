@@ -13,6 +13,7 @@ import { EnterMarks } from "./components/EnterMarks";
 import { RequiredMarks } from "./components/RequiredMarks";
 import { MarksCalculator } from "./components/MarksCalculator";
 import { TargetPredictor } from "./components/TargetPredictor";
+import { StudyMaterial } from "./components/StudyMaterial";
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "required-marks", element: <RequiredMarks /> },
       { path: "marks-calculator", element: <MarksCalculator /> },
       { path: "target-predictor", element: <TargetPredictor /> },
+      { path: "study-material", element: <StudyMaterial /> },
       { path: "profile", element: <Profile /> },
       { path: "analytics", element: <Analytics /> },
     ],

@@ -10,7 +10,8 @@ import {
   LogOut,
   LayoutGrid,
   Menu,
-  X
+  X,
+  FolderOpen
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
@@ -40,6 +41,7 @@ export function DashboardLayout() {
     { icon: Calendar, label: "Exams", path: "/app/exams" },
     { icon: LayoutGrid, label: "Timetable", path: "/app/timetable" },
     { icon: BarChart3, label: "Analytics", path: "/app/analytics" },
+    { icon: FolderOpen, label: "Study Material", path: "/app/study-material" },
     { icon: User, label: "Profile", path: "/app/profile" },
   ];
 
@@ -89,7 +91,7 @@ export function DashboardLayout() {
             <Menu className="w-6 h-6" />
           </Button>
           <div className="flex items-center space-x-2">
-            <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-full border border-gray-800/20" />
+            <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-lg border border-gray-800/10 shadow-sm bg-white p-0.5" />
             <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
               Campus Hub
             </span>
@@ -110,7 +112,7 @@ export function DashboardLayout() {
           {/* Header ONLY visible inside drawer on Mobile/Tablet */}
           <div className="p-6 border-b border-border flex items-center justify-between lg:hidden bg-background/50">
             <div className="flex items-center space-x-2">
-              <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-full border border-gray-800/20" />
+              <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-lg border border-gray-800/10 shadow-sm bg-white p-0.5" />
               <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
                 Campus Hub
               </span>
@@ -143,10 +145,10 @@ export function DashboardLayout() {
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
                     active
                       ? "bg-gradient-to-r from-brand-start/10 to-brand-end/10 dark:from-brand-start/20 dark:to-brand-end/20 text-brand-start border border-brand-start/20 shadow-[0_4px_12px_rgba(var(--brand-start-rgb),0.15)]"
-                      : "text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-gray-800/50"
+                      : "text-slate-800 dark:text-gray-400 hover:text-slate-950 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-gray-800/50"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 transition-colors ${active ? "text-brand-start" : "text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white"}`} />
+                  <Icon className={`w-5 h-5 transition-colors ${active ? "text-brand-start" : "text-slate-700 dark:text-gray-400 group-hover:text-slate-950 dark:group-hover:text-white"}`} />
                   <span className="font-semibold tracking-tight text-sm">{item.label}</span>
                 </button>
               );
