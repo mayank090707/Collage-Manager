@@ -140,11 +140,11 @@ export function LoginScreen() {
         >
           <div className="relative">
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] rounded-full blur-3xl opacity-30"></div>
-            <GraduationCap className="w-64 h-64 text-[var(--brand-start)] relative z-10" strokeWidth={1} />
+            <img src="/logo.png" alt="Campus Hub Logo" className="w-64 h-64 object-contain relative z-10 rounded-full border-4 border-gray-800/50 shadow-2xl backdrop-blur-md" />
           </div>
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] via-[var(--brand-end)] to-[var(--brand-start)] bg-clip-text text-transparent">
-              College Manager
+              Campus Hub
             </h1>
             <p className="text-gray-400 text-lg">Your Academic Operating System</p>
           </div>
@@ -167,9 +167,9 @@ export function LoginScreen() {
               {/* Logo */}
               <div className="flex items-center justify-center mb-8">
                 <div className="flex items-center space-x-3">
-                  <Sparkles className="w-8 h-8 text-[var(--brand-start)]" />
+                  <img src="/logo.png" alt="Campus Hub Logo" className="w-10 h-10 object-contain rounded-full border border-gray-800/40" />
                   <span className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
-                    College Manager
+                    Campus Hub
                   </span>
                 </div>
               </div>

@@ -89,9 +89,9 @@ export function DashboardLayout() {
             <Menu className="w-6 h-6" />
           </Button>
           <div className="flex items-center space-x-2">
-            <Sparkles className="w-6 h-6 text-brand-start h-auto" />
+            <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-full border border-gray-800/20" />
             <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
-              College Manager
+              Campus Hub
             </span>
           </div>
         </div>
@@ -99,7 +99,7 @@ export function DashboardLayout() {
           <ThemeToggle />
         </div>
       </header>
-
+ 
       <div className="flex flex-1 relative">
         {/* Sidebar Drawer */}
         <aside 
@@ -110,9 +110,9 @@ export function DashboardLayout() {
           {/* Header ONLY visible inside drawer on Mobile/Tablet */}
           <div className="p-6 border-b border-border flex items-center justify-between lg:hidden bg-background/50">
             <div className="flex items-center space-x-2">
-              <Sparkles className="w-7 h-7 text-brand-start" />
+              <img src="/logo.png" alt="Campus Hub Logo" className="w-8 h-8 object-contain rounded-full border border-gray-800/20" />
               <span className="text-lg font-bold bg-gradient-to-r from-brand-start to-brand-end bg-clip-text text-transparent">
-                College Manager
+                Campus Hub
               </span>
             </div>
             <Button
