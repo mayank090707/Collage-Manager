@@ -53,6 +53,7 @@ export function DashboardLayout() {
   const handleLogout = () => {
     localStorage.removeItem("college_manager_user_id");
     localStorage.removeItem("college_manager_remember");
+    localStorage.removeItem("college_manager_remember_expiry");
     localStorage.removeItem("student_profile");
     localStorage.removeItem("subjects");
     localStorage.removeItem("timetable");

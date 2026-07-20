@@ -24,12 +24,21 @@ export function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
-    // Check if remember me was used
+    // Check if remember-me session is still valid (4-day window)
     const savedUserId = localStorage.getItem("college_manager_user_id");
-    const isRemembered = localStorage.getItem("college_manager_remember") === "true";
-    
-    if (savedUserId && isRemembered) {
-      navigate("/app");
+    const expiryStr = localStorage.getItem("college_manager_remember_expiry");
+
+    if (savedUserId && expiryStr) {
+      const expiry = parseInt(expiryStr, 10);
+      if (Date.now() < expiry) {
+        // Still within the 4-day window — auto-login
+        navigate("/app");
+      } else {
+        // Expired — clear saved session so user must log in again
+        localStorage.removeItem("college_manager_user_id");
+        localStorage.removeItem("college_manager_remember");
+        localStorage.removeItem("college_manager_remember_expiry");
+      }
     }
   }, []);
 
@@ -60,9 +69,19 @@ export function LoginScreen() {
         const result = await api.login({ email, password });
         toast.success("Welcome back!");
         
-        // Save user ID
+        // Save user ID & remember-me expiry (4 days from now)
         localStorage.setItem("college_manager_user_id", result.userId);
         localStorage.setItem("college_manager_remember", rememberMe.toString());
+        if (rememberMe) {
+          const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(
+            "college_manager_remember_expiry",
+            (Date.now() + FOUR_DAYS_MS).toString()
+          );
+        } else {
+          // User didn't check remember me — remove any existing expiry
+          localStorage.removeItem("college_manager_remember_expiry");
+        }
 
         // Sync data from DB
         await api.syncFromDB();
