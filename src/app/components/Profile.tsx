@@ -86,12 +86,16 @@ export function Profile() {
       totalAttendance = totalPossible > 0 ? (totalAttended / totalPossible) * 100 : 0;
     }
 
-    // Load CGPA
-    const semesterData = JSON.parse(localStorage.getItem("semester_data") || "[]");
-    const validSemesters = semesterData.filter((sem: any) => sem.sgpa > 0);
-    const cgpa = validSemesters.length > 0
-      ? validSemesters.reduce((sum: number, sem: any) => sum + sem.sgpa, 0) / validSemesters.length
-      : 0;
+    // Load CGPA — use semester_marks (canonical), skip sentinel -1 entries
+    const semesterMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
+    const realMarks = semesterMarks.filter((s: any) => s.sgpa !== -1 && s.sgpa > 0);
+    let cgpa = 0;
+    if (realMarks.length > 0) {
+      const allResults = realMarks.flatMap((s: any) => s.results || []);
+      const tc = allResults.reduce((sum: number, r: any) => sum + (r.credits || 0), 0);
+      const wp = allResults.reduce((sum: number, r: any) => sum + (r.gradePoint || 0) * (r.credits || 0), 0);
+      cgpa = tc > 0 ? wp / tc : 0;
+    }
 
     // Load target CGPA
     const targetCgpa = parseFloat(localStorage.getItem("target_cgpa") || "0");
@@ -117,8 +121,10 @@ export function Profile() {
     toast.success("Profile updated successfully!");
   };
 
-  const semesterData = JSON.parse(localStorage.getItem("semester_data") || "[]");
-  const validSemesters = semesterData.filter((sem: any) => sem.sgpa > 0);
+  // For Academic History, use semester_marks (sgpa > 0 only)
+  const semesterMarksRaw = JSON.parse(localStorage.getItem("semester_marks") || "[]");
+  const validSemesters = semesterMarksRaw.filter((s: any) => s.sgpa > 0);
+
 
   return (
     <div className="p-8 space-y-8">

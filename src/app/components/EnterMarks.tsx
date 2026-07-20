@@ -203,14 +203,20 @@ export function EnterMarks() {
   };
 
   const getCGPA = () => {
-    // Only include semesters that have real marks (sgpa !== -1)
-    const semestersWithMarks = savedSemesters.filter(s => s.sgpa !== -1);
+    // Only include semesters that have real marks (sgpa not -1, and at least one mark > 0)
+    const semestersWithMarks = savedSemesters.filter(s => {
+      if (s.sgpa === -1) return false;
+      // Guard against old data: if every result has 0 internal+external, treat as no marks
+      const hasRealMarks = s.results.some(r => r.internal > 0 || r.external > 0);
+      return hasRealMarks;
+    });
     if (semestersWithMarks.length === 0) return null;
     const allResults = semestersWithMarks.flatMap((s) => s.results);
     const totalCredits = allResults.reduce((s, r) => s + r.credits, 0);
     const weighted = allResults.reduce((s, r) => s + r.gradePoint * r.credits, 0);
     return totalCredits > 0 ? weighted / totalCredits : 0;
   };
+
 
   const activeSemResults = getSemResults(activeSem);
   // Only show a live SGPA if at least one subject on the active sem has marks entered
@@ -434,23 +440,26 @@ export function EnterMarks() {
             CGPA Overview
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {savedSemesters.map((sv) => (
-              <div key={sv.semester} className="bg-[#0a0a0f]/50 border border-gray-800/50 rounded-xl p-4 text-center">
-                <p className="text-xs text-gray-400 mb-1">Semester {sv.semester}</p>
-                {sv.sgpa === -1 ? (
-                  <>
-                    <p className="text-lg font-bold text-gray-600">—</p>
-                    <p className="text-[10px] text-gray-700 mt-1">Subjects saved</p>
-                    <p className="text-[10px] text-gray-700">No marks yet</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-2xl font-bold text-white">{sv.sgpa.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-1">SGPA</p>
-                  </>
-                )}
-              </div>
-            ))}
+            {savedSemesters.map((sv) => {
+              const hasRealMarks = sv.sgpa !== -1 && sv.results.some(r => r.internal > 0 || r.external > 0);
+              return (
+                <div key={sv.semester} className="bg-[#0a0a0f]/50 border border-gray-800/50 rounded-xl p-4 text-center">
+                  <p className="text-xs text-gray-400 mb-1">Semester {sv.semester}</p>
+                  {hasRealMarks ? (
+                    <>
+                      <p className="text-2xl font-bold text-white">{sv.sgpa.toFixed(2)}</p>
+                      <p className="text-xs text-gray-500 mt-1">SGPA</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-bold text-gray-600">—</p>
+                      <p className="text-[10px] text-gray-700 mt-1">Subjects saved</p>
+                      <p className="text-[10px] text-gray-700">No marks yet</p>
+                    </>
+                  )}
+                </div>
+              );
+            })}
             {cgpa !== null && (
               <div className="bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/30 rounded-xl p-4 text-center">
                 <p className="text-xs text-[var(--brand-start)] mb-1">Overall</p>

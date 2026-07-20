@@ -132,10 +132,12 @@ export function Dashboard() {
         }).length;
       }
 
-      // 4. CGPA Calculation (credit-weighted average)
+      // 4. CGPA Calculation (credit-weighted average, skip sentinel entries)
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-      if (savedMarks.length > 0) {
-        const allResults = savedMarks.flatMap((s: any) => s.results);
+      // Only include semesters that have actual marks (sgpa !== -1 sentinel)
+      const realMarks = savedMarks.filter((s: any) => s.sgpa !== -1);
+      if (realMarks.length > 0) {
+        const allResults = realMarks.flatMap((s: any) => s.results);
         const totalCredits = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
         const weighted = allResults.reduce((s: number, r: any) => s + (r.gradePoint * (r.credits || 0)), 0);
         updatedStats.cgpa = totalCredits > 0 ? weighted / totalCredits : 0;
@@ -148,8 +150,8 @@ export function Dashboard() {
           const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
           const currentSemNum = parseInt(localProfile.currentSemester || "1");
 
-          // Only use previous semesters' SGPAs
-          const previousSemMarks = savedMarks.filter((m: any) => m.semester < currentSemNum);
+          // Only use previous semesters' SGPAs (exclude sentinel)
+          const previousSemMarks = realMarks.filter((m: any) => m.semester < currentSemNum);
           const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
 
           // Required SGPA this semester = targetCGPA × N − sum of past SGPAs
@@ -162,6 +164,7 @@ export function Dashboard() {
           updatedStats.requiredSgpa = updatedStats.targetCgpa;
         }
       }
+
 
       // 6. Recent Activity Logic
       const activities: any[] = [];

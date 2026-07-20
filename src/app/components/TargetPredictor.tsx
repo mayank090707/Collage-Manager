@@ -164,6 +164,7 @@ function computeBestTargetAndAlternatives(
 
   const alternatives: AlternativeCombo[] = [];
   valid.slice(1).forEach(c => {
+    if (alternatives.length >= 2) return; // cap at 2 alternatives (3 total with main)
     const key = makeKey(c.assignments);
     if (!seenKeys.has(key)) {
       seenKeys.add(key);
@@ -584,14 +585,10 @@ export function TargetPredictor() {
                   </table>
                 </div>
 
-                {/* Alt footer note */}
-                <div className="px-6 py-3 border-t border-gray-800/30 bg-[#0a0a0f]/30">
-                  <p className="text-[11px] text-gray-600">
-                    <span className="text-indigo-400 font-semibold">Note: </span>
-                    Rows highlighted in blue differ from the primary recommendation above.
-                    Both combinations yield an identical SGPA of{" "}
-                    <span className="text-white font-semibold">{alt.sgpa.toFixed(2)}</span>.
-                  </p>
+                {/* Alt footer: just show achieved SGPA */}
+                <div className="px-6 py-3 border-t border-gray-800/30 bg-[#0a0a0f]/30 flex items-center gap-2">
+                  <span className="text-[10px] text-gray-600 uppercase tracking-widest font-semibold">SGPA Achieved:</span>
+                  <span className="text-indigo-400 font-bold text-sm tabular-nums">{alt.sgpa.toFixed(2)}</span>
                 </div>
               </Card>
             ))}
