@@ -205,7 +205,7 @@ export function Dashboard() {
       title: "Target CGPA",
       value: stats.targetCgpa.toFixed(2),
       icon: Target,
-      color: "from-[var(--brand-end)] to-[#8b5cf6]",
+      color: "from-[var(--brand-start)] to-amber-500",
       progress: (stats.targetCgpa / 10) * 100,
     },
     {
@@ -399,7 +399,7 @@ export function Dashboard() {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl mb-4 text-gray-900 dark:text-white">Quick Actions</h2>
+        <h2 className="text-2xl mb-4 font-bold text-foreground">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Button
             onClick={() => setShowAttendanceDialog(true)}
@@ -410,35 +410,35 @@ export function Dashboard() {
           </Button>
           <Button
             onClick={() => navigate("/app/exam-calendar")}
-            className="h-24 bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border border-[var(--brand-end)]/30 hover:border-[var(--brand-end)] hover:bg-[var(--brand-end)]/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb),0.3)]"
+            className="h-24 bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border border-[var(--brand-start)]/25 hover:border-[var(--brand-start)]/60 hover:bg-[var(--brand-start)]/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
           >
             <Calendar className="w-6 h-6" />
             <span className="text-sm">Exam Calendar</span>
           </Button>
           <Button
             onClick={() => navigate("/app/enter-marks")}
-            className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-500 hover:bg-purple-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-end-rgb),0.3)]"
+            className="h-24 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 hover:border-purple-500/60 hover:bg-purple-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
           >
             <PenLine className="w-6 h-6" />
             <span className="text-sm">Enter Marks</span>
           </Button>
           <Button
             onClick={() => navigate("/app/timetable")}
-            className="h-24 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+            className="h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
           >
             <LayoutGrid className="w-6 h-6" />
             <span className="text-sm">Timetable</span>
           </Button>
           <Button
             onClick={() => navigate("/app/target-predictor")}
-            className="h-24 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 hover:border-indigo-500 hover:bg-indigo-500/30 text-gray-800 dark:text-white flex flex-col items-center justify-center gap-1 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+            className="h-24 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-indigo-500/25 hover:border-indigo-500/60 hover:bg-indigo-500/20 text-foreground flex flex-col items-center justify-center gap-1 rounded-xl transition-all"
           >
             <TrendingUp className="w-5 h-5" />
             <span className="text-sm">Target Predictor</span>
           </Button>
           <Button
             onClick={() => navigate("/app/marks-calculator")}
-            className="h-24 bg-gradient-to-br from-rose-500/10 to-orange-500/10 dark:from-rose-500/20 dark:to-orange-500/20 border border-rose-500/30 hover:border-rose-500 hover:bg-rose-500/30 text-gray-900 dark:text-white flex flex-col items-center justify-center gap-1 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(244,63,94,0.3)]"
+            className="h-24 bg-gradient-to-br from-rose-500/10 to-orange-500/10 border border-rose-500/25 hover:border-rose-500/60 hover:bg-rose-500/20 text-foreground flex flex-col items-center justify-center gap-1 rounded-xl transition-all"
           >
             <Target className="w-5 h-5" />
             <span className="text-sm text-center leading-tight">Marks Calculator</span>
@@ -448,8 +448,8 @@ export function Dashboard() {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-2xl mb-4 text-gray-900 dark:text-white">Recent Activity</h2>
-        <Card className="bg-white dark:bg-[#111118]/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800/50 p-6">
+        <h2 className="text-2xl mb-4 font-bold text-foreground">Recent Activity</h2>
+        <Card className="bg-card border border-border/60 p-6">
           <div className="space-y-4">
             {recentActivities.length > 0 ? (
               recentActivities.map((activity, i) => (
@@ -478,23 +478,23 @@ export function Dashboard() {
 
       {/* Congrats Popup */}
       <Dialog open={showCongrats} onOpenChange={setShowCongrats}>
-        <DialogContent className="bg-[#111118]/95 backdrop-blur-2xl border-gray-800 text-center p-12 max-w-lg">
+        <DialogContent className="bg-card border border-border text-center p-12 max-w-lg">
           <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", duration: 0.8 }}>
             <div className="w-24 h-24 rounded-full bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] mx-auto mb-6 flex items-center justify-center shadow-[0_0_50px_rgba(var(--brand-start-rgb), 0.5)]">
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
             <DialogHeader>
-              <DialogTitle className="text-4xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent mb-4">
+              <DialogTitle className="text-4xl font-bold text-[var(--brand-start)] mb-4">
                 Congratulations!
               </DialogTitle>
-              <DialogDescription className="text-gray-300 text-xl leading-relaxed">
+              <DialogDescription className="text-muted-foreground text-xl leading-relaxed">
                 Welcome to your command center. Your profile, subjects, and timetable have been successfully synchronized.
               </DialogDescription>
             </DialogHeader>
             <div className="mt-8">
               <Button 
                 onClick={() => setShowCongrats(false)}
-                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] transition-all hover:scale-105"
+                className="w-full h-14 text-lg font-semibold bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] transition-all hover:scale-105"
               >
                 Let&apos;s Get Started
               </Button>
@@ -504,16 +504,16 @@ export function Dashboard() {
       </Dialog>
       {/* Target CGPA Dialog */}
       <Dialog open={showTargetDialog} onOpenChange={setShowTargetDialog}>
-        <DialogContent className="bg-[#111118] border-gray-800 text-white">
+        <DialogContent className="bg-card border border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl font-bold text-[var(--brand-start)]">
               Set Target CGPA
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="target-dashboard" className="text-gray-300">
+              <Label htmlFor="target-dashboard" className="text-muted-foreground font-semibold">
                 Target CGPA (0-10)
               </Label>
               <Input
@@ -524,7 +524,7 @@ export function Dashboard() {
                 max="10"
                 value={newTarget}
                 onChange={(e) => setNewTarget(e.target.value)}
-                className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
+                className="bg-background border-border focus:border-[var(--brand-start)] text-foreground"
                 placeholder="9.0"
               />
             </div>
@@ -533,13 +533,13 @@ export function Dashboard() {
               <Button
                 variant="outline"
                 onClick={() => setShowTargetDialog(false)}
-                className="border-gray-700 hover:border-gray-600 bg-transparent text-white"
+                className="border-border hover:bg-muted text-foreground"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveTarget}
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
               >
                 Save Target
               </Button>

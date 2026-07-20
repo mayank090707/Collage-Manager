@@ -124,7 +124,7 @@ export function LoginScreen() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
         <div className="absolute top-40 right-20 w-96 h-96 bg-[var(--brand-end)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-20 left-1/3 w-96 h-96 bg-[#8b5cf6] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute bottom-20 left-1/3 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Grid Pattern */}
@@ -305,7 +305,7 @@ export function LoginScreen() {
                   </div>
                   )}
                   {isLogin && (
-                    <button type="button" className="text-sm text-[var(--brand-start)] hover:text-[#00ffff] transition-colors">
+                    <button type="button" className="text-sm text-[var(--brand-start)] hover:text-amber-500 transition-colors">
                       Forgot Password?
                     </button>
                   )}
@@ -314,7 +314,7 @@ export function LoginScreen() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-12 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] hover:shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.5)] transition-all flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-[var(--brand-start)] hover:bg-amber-600 text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] hover:shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.5)] transition-all flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />

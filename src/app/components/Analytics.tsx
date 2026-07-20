@@ -299,7 +299,7 @@ export function Analytics() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
+            <Card className="bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border-[var(--brand-start)]/25 p-6">
               <div className="flex items-center justify-between mb-4">
                 <Target className="w-8 h-8 text-[var(--brand-end)]" />
                 <span className="text-2xl text-[var(--brand-end)]">On Track</span>

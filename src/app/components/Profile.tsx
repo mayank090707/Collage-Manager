@@ -122,35 +122,35 @@ export function Profile() {
 
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-black mb-2 bg-gradient-to-r from-[var(--brand-start)] via-amber-600 to-[var(--brand-start)] bg-clip-text text-transparent">
           Profile
         </h1>
-        <p className="text-gray-400 text-lg">View and manage your profile information</p>
+        <p className="text-muted-foreground text-base">View and manage your profile information</p>
       </div>
 
       {profile && (
         <>
           {/* Profile Header */}
-          <Card className="bg-gradient-to-br from-[#111118]/80 to-[#111118]/60 backdrop-blur-xl border-gray-800/50 p-8">
-            <div className="flex items-start justify-between mb-8">
-              <div className="flex items-center space-x-6">
-                <Avatar className="w-24 h-24 border-4 border-[var(--brand-start)] shadow-[0_0_30px_rgba(var(--brand-start-rgb), 0.4)]">
-                  <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white text-3xl">
+          <Card className="bg-card backdrop-blur-xl border border-border/60 p-5 md:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-5 mb-6 md:mb-8">
+              <div className="flex items-center space-x-4 md:space-x-6">
+                <Avatar className="w-16 h-16 md:w-24 md:h-24 border-4 border-[var(--brand-start)] shadow-lg flex-shrink-0">
+                  <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-amber-600 text-white text-2xl md:text-3xl font-bold">
                     {profile.fullName.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-3xl text-white mb-2">{profile.fullName}</h2>
-                  <p className="text-gray-400 text-lg">{profile.enrollmentNumber}</p>
-                  <p className="text-gray-400">{profile.email}</p>
+                  <h2 className="text-xl md:text-3xl font-bold text-foreground mb-1">{profile.fullName}</h2>
+                  <p className="text-muted-foreground text-sm md:text-base">{profile.enrollmentNumber}</p>
+                  <p className="text-muted-foreground text-sm">{profile.email}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <Button
                   onClick={() => setShowEditDialog(true)}
-                  className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold"
+                  className="bg-[var(--brand-start)] hover:bg-amber-600 text-white font-semibold flex-1 sm:flex-none"
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Profile
@@ -158,7 +158,7 @@ export function Profile() {
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="border-red-500/30 hover:border-red-500 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-semibold transition-all"
+                  className="border-red-500/40 hover:border-red-500 bg-red-500/5 hover:bg-red-500 text-red-500 hover:text-white font-semibold transition-all flex-1 sm:flex-none"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
@@ -166,41 +166,41 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-[var(--brand-start)]/20">
+                <div className="p-2.5 rounded-lg bg-[var(--brand-start)]/15">
                   <GraduationCap className="w-5 h-5 text-[var(--brand-start)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Course</p>
-                  <p className="text-white">{profile.course}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Course</p>
+                  <p className="text-foreground font-semibold text-sm">{profile.course}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-[var(--brand-end)]/20">
-                  <GraduationCap className="w-5 h-5 text-[var(--brand-end)]" />
+                <div className="p-2.5 rounded-lg bg-blue-500/15">
+                  <GraduationCap className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Branch</p>
-                  <p className="text-white">{profile.branch}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Branch</p>
+                  <p className="text-foreground font-semibold text-sm">{profile.branch}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-emerald-500/20">
+                <div className="p-2.5 rounded-lg bg-emerald-500/15">
                   <Calendar className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Current Semester</p>
-                  <p className="text-white">Semester {profile.currentSemester}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Current Semester</p>
+                  <p className="text-foreground font-semibold text-sm">Semester {profile.currentSemester}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-lg bg-purple-500/20">
+                <div className="p-2.5 rounded-lg bg-purple-500/15">
                   <Award className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400">Year</p>
-                  <p className="text-white">{profile.admissionYear} - {profile.graduationYear}</p>
+                  <p className="text-xs text-muted-foreground font-medium">Year</p>
+                  <p className="text-foreground font-semibold text-sm">{profile.admissionYear} - {profile.graduationYear}</p>
                 </div>
               </div>
             </div>
@@ -208,45 +208,37 @@ export function Profile() {
 
           {/* Academic Stats */}
           <div>
-            <h3 className="text-2xl text-white mb-4">Academic Overview</h3>
-            <div className="grid md:grid-cols-4 gap-6">
+            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">Academic Overview</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <CheckCircle className="w-8 h-8 text-emerald-400" />
-                  </div>
-                  <p className="text-sm text-gray-300 mb-1">Overall Attendance</p>
-                  <p className="text-3xl text-white">{stats.attendance.toFixed(1)}%</p>
+                <Card className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 p-5">
+                  <CheckCircle className="w-7 h-7 text-emerald-500 mb-3" />
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Overall Attendance</p>
+                  <p className="text-2xl md:text-3xl font-black text-foreground">{stats.attendance.toFixed(1)}%</p>
                 </Card>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-                <Card className="bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/30 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-[var(--brand-start)]" />
-                  </div>
-                  <p className="text-sm text-gray-300 mb-1">Current CGPA</p>
-                  <p className="text-3xl text-white">{stats.cgpa.toFixed(2)}</p>
+                <Card className="bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 p-5">
+                  <Award className="w-7 h-7 text-[var(--brand-start)] mb-3" />
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Current CGPA</p>
+                  <p className="text-2xl md:text-3xl font-black text-foreground">{stats.cgpa.toFixed(2)}</p>
                 </Card>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-[var(--brand-end)]" />
-                  </div>
-                  <p className="text-sm text-gray-300 mb-1">Target CGPA</p>
-                  <p className="text-3xl text-white">{stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "-"}</p>
+                <Card className="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 p-5">
+                  <Award className="w-7 h-7 text-purple-500 mb-3" />
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Target CGPA</p>
+                  <p className="text-2xl md:text-3xl font-black text-foreground">{stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "-"}</p>
                 </Card>
               </motion.div>
 
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <Card className={`bg-gradient-to-br ${stats.backlogs > 0 ? "from-red-500/20 to-orange-500/20 border-red-500/30" : "from-green-500/20 to-emerald-500/20 border-green-500/30"} p-6`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <AlertCircle className={`w-8 h-8 ${stats.backlogs > 0 ? "text-red-400" : "text-green-400"}`} />
-                  </div>
-                  <p className="text-sm text-gray-300 mb-1">Active Backlogs</p>
-                  <p className="text-3xl text-white">{stats.backlogs}</p>
+                <Card className={`${stats.backlogs > 0 ? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30" : "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30"} border p-5`}>
+                  <AlertCircle className={`w-7 h-7 mb-3 ${stats.backlogs > 0 ? "text-red-500" : "text-green-500"}`} />
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Active Backlogs</p>
+                  <p className="text-2xl md:text-3xl font-black text-foreground">{stats.backlogs}</p>
                 </Card>
               </motion.div>
             </div>
@@ -254,9 +246,9 @@ export function Profile() {
 
           {/* Academic History */}
           <div>
-            <h3 className="text-2xl text-white mb-4">Academic History</h3>
-            <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">Academic History</h3>
+            <Card className="bg-card border border-border/60 p-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
                   const semData = validSemesters.find((s: any) => s.semester === sem);
                   return (
@@ -264,12 +256,12 @@ export function Profile() {
                       key={sem}
                       className={`p-4 rounded-lg border ${
                         semData
-                          ? "bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/30"
-                          : "bg-[#0a0a0f]/30 border-gray-800"
+                          ? "bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10 border-[var(--brand-start)]/30"
+                          : "bg-muted/50 border-border"
                       }`}
                     >
-                      <p className="text-sm text-gray-400 mb-1">Semester {sem}</p>
-                      <p className="text-xl text-white">{semData ? semData.sgpa.toFixed(2) : "-"}</p>
+                      <p className="text-xs text-muted-foreground font-medium mb-1">Semester {sem}</p>
+                      <p className="text-xl font-black text-foreground">{semData ? semData.sgpa.toFixed(2) : "-"}</p>
                     </div>
                   );
                 })}
@@ -279,24 +271,24 @@ export function Profile() {
 
           {/* College Information */}
           <div>
-            <h3 className="text-2xl text-white mb-4">College Information</h3>
-            <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <h3 className="text-xl md:text-2xl font-bold text-foreground mb-4">College Information</h3>
+            <Card className="bg-card border border-border/60 p-5">
+              <div className="grid md:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">College Name</p>
-                  <p className="text-lg text-white">{profile.collegeName || "Not specified"}</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-1">College Name</p>
+                  <p className="text-base font-semibold text-foreground">{profile.collegeName || "Not specified"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Enrollment Number</p>
-                  <p className="text-lg text-white">{profile.enrollmentNumber}</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Enrollment Number</p>
+                  <p className="text-base font-semibold text-foreground">{profile.enrollmentNumber}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Admission Year</p>
-                  <p className="text-lg text-white">{profile.admissionYear}</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Admission Year</p>
+                  <p className="text-base font-semibold text-foreground">{profile.admissionYear}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-400 mb-1">Expected Graduation</p>
-                  <p className="text-lg text-white">{profile.graduationYear}</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-1">Expected Graduation</p>
+                  <p className="text-base font-semibold text-foreground">{profile.graduationYear}</p>
                 </div>
               </div>
             </Card>
@@ -306,9 +298,9 @@ export function Profile() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="bg-card border border-border text-foreground max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold text-[var(--brand-start)]">
               Edit Profile
             </DialogTitle>
           </DialogHeader>
@@ -317,55 +309,55 @@ export function Profile() {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-gray-300">Full Name</Label>
+                  <Label htmlFor="fullName" className="text-muted-foreground font-semibold text-sm">Full Name</Label>
                   <Input
                     id="fullName"
                     value={editData.fullName}
                     onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
+                    className="bg-background border-border focus:border-[var(--brand-start)] text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-300">Email</Label>
+                  <Label htmlFor="email" className="text-muted-foreground font-semibold text-sm">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={editData.email}
                     onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
+                    className="bg-background border-border focus:border-[var(--brand-start)] text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="collegeName" className="text-gray-300">College Name</Label>
+                  <Label htmlFor="collegeName" className="text-muted-foreground font-semibold text-sm">College Name</Label>
                   <Input
                     id="collegeName"
                     value={editData.collegeName}
                     onChange={(e) => setEditData({ ...editData, collegeName: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
+                    className="bg-background border-border focus:border-[var(--brand-start)] text-foreground"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="branch" className="text-gray-300">Branch</Label>
+                  <Label htmlFor="branch" className="text-muted-foreground font-semibold text-sm">Branch</Label>
                   <Input
                     id="branch"
                     value={editData.branch}
                     onChange={(e) => setEditData({ ...editData, branch: e.target.value })}
-                    className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white"
+                    className="bg-background border-border focus:border-[var(--brand-start)] text-foreground"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-border">
                 <Button
                   variant="outline"
                   onClick={() => setShowEditDialog(false)}
-                  className="border-gray-700 hover:border-gray-600 bg-transparent text-white"
+                  className="border-border hover:bg-muted text-foreground"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveProfile}
-                  className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                  className="bg-[var(--brand-start)] hover:bg-amber-600 text-white font-bold"
                 >
                   Save Changes
                 </Button>

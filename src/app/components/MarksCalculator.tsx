@@ -182,7 +182,7 @@ export function MarksCalculator() {
 
           <Button 
             onClick={calculateSgpa}
-            className="w-full h-14 text-lg font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] mt-6"
+            className="w-full h-14 text-lg font-bold bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)] mt-6"
           >
             <Calculator className="w-5 h-5 mr-2" />
             Calculate Prediction

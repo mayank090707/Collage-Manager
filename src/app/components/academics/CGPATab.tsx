@@ -111,9 +111,9 @@ export function CGPATab() {
           </div>
         </Card>
 
-        <Card className="bg-gradient-to-br from-[var(--brand-end)]/20 to-[#8b5cf6]/20 border-[var(--brand-end)]/30 p-6">
+        <Card className="bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border-[var(--brand-start)]/25 p-6">
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--brand-end)] to-[#8b5cf6]">
+            <div className="p-3 rounded-lg bg-gradient-to-br from-[var(--brand-start)] to-amber-500">
               <Target className="w-6 h-6 text-white" />
             </div>
             <Button
@@ -123,7 +123,7 @@ export function CGPATab() {
                 setNewTarget(targetCgpa.toString());
                 setShowTargetDialog(true);
               }}
-              className="text-[var(--brand-end)] hover:text-[#8b5cf6] hover:bg-[var(--brand-end)]/10"
+              className="text-[var(--brand-end)] hover:text-amber-500 hover:bg-[var(--brand-end)]/10"
             >
               Edit
             </Button>
@@ -279,7 +279,7 @@ export function CGPATab() {
               </Button>
               <Button
                 onClick={handleSaveTarget}
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
               >
                 Save Target
               </Button>

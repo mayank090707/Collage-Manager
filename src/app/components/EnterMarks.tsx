@@ -272,7 +272,7 @@ export function EnterMarks() {
               <h2 className="text-xl font-bold text-white">Semester {activeSem}</h2>
               {activeSem === currentSem && <span className="text-xs text-[var(--brand-start)]">Current semester · Subjects from your onboarding</span>}
             </div>
-            <Button onClick={() => handleSave(activeSem)} className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white">
+            <Button onClick={() => handleSave(activeSem)} className="bg-[var(--brand-start)] hover:bg-amber-600 text-white">
               <Save className="w-4 h-4 mr-2" />
               Save Semester {activeSem}
             </Button>

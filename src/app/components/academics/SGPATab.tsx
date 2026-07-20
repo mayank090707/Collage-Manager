@@ -143,7 +143,7 @@ export function SGPATab() {
           <h3 className="text-xl text-white">Semester-wise Performance</h3>
           <Button
             onClick={() => navigate("/app/enter-marks")}
-            className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+            className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
           >
             <PenLine className="w-4 h-4 mr-2" />
             Enter Marks
@@ -299,7 +299,7 @@ export function SGPATab() {
               </Button>
               <Button
                 onClick={handleSaveMarks}
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
                 Save Marks

@@ -1,67 +1,95 @@
 import { useState, useEffect } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { 
-  FolderOpen, 
-  Plus, 
-  ExternalLink, 
-  Trash2, 
-  Search, 
-  Filter, 
-  BookOpen, 
-  FileText, 
-  Bookmark, 
+import {
+  BookOpen,
+  FileText,
+  GraduationCap,
+  Youtube,
+  ChevronRight,
+  ArrowLeft,
+  LayoutGrid,
+  Star,
   FileCode,
-  GraduationCap
+  ExternalLink,
 } from "lucide-react";
-import { toast } from "sonner";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 
-interface Resource {
-  id: string;
-  title: string;
-  category: "syllabus" | "notes" | "pyq" | "book" | "other";
-  subject: string;
-  link: string;
-  addedAt: string;
-  comments?: string;
-}
+/* ─── Types ─────────────────────────────────────────────────── */
+type Section = "all" | "syllabus" | "important-topics" | "pyq" | "study-reference";
+type Breadcrumb = { label: string; onClick: () => void };
 
-const CATEGORIES = [
-  { id: "all", label: "All Items", icon: FolderOpen },
-  { id: "notes", label: "Notes", icon: FileText },
-  { id: "syllabus", label: "Syllabus", icon: FileCode },
-  { id: "pyq", label: "PYQs (Exam Papers)", icon: GraduationCap },
-  { id: "book", label: "Reference Books", icon: BookOpen },
-  { id: "other", label: "Bookmarks/Others", icon: Bookmark }
+const YEARS = ["2023-24", "2024-25", "2025-26"] as const;
+const EXAM_TYPES = ["Mid Sem-1", "Mid Sem-2", "End Sem"] as const;
+const UNITS = ["Unit-1", "Unit-2", "Unit-3", "Unit-4"] as const;
+
+const SECTION_META = [
+  {
+    id: "syllabus" as Section,
+    label: "Syllabus",
+    icon: FileCode,
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-500/10",
+    border: "border-blue-200 dark:border-blue-500/30",
+    desc: "View official course syllabus for your current semester",
+  },
+  {
+    id: "important-topics" as Section,
+    label: "Important Topics",
+    icon: Star,
+    color: "text-[var(--brand-start)]",
+    bg: "bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10",
+    border: "border-[var(--brand-start)]/30",
+    desc: "Unit-wise important topics for each subject",
+  },
+  {
+    id: "pyq" as Section,
+    label: "PYQ",
+    icon: GraduationCap,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-500/10",
+    border: "border-emerald-200 dark:border-emerald-500/30",
+    desc: "Previous year question papers — Mid Sem & End Sem",
+  },
+  {
+    id: "study-reference" as Section,
+    label: "Study Reference",
+    icon: Youtube,
+    color: "text-red-500 dark:text-red-400",
+    bg: "bg-red-50 dark:bg-red-500/10",
+    border: "border-red-200 dark:border-red-500/30",
+    desc: "YouTube reference links and video resources per unit",
+  },
 ];
 
-export function StudyMaterial() {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [currentSemester, setCurrentSemester] = useState<string>("1");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("all");
-  const [activeSubject, setActiveSubject] = useState("all");
-  const [showAddModal, setShowAddModal] = useState(false);
+/* ─── Default subjects per semester ─────────────────────────── */
+const DEFAULT_SUBJECTS: Record<string, string[]> = {
+  "1": ["Engineering Mathematics-I", "Applied Physics-I", "Applied Chemistry", "Manufacturing Processes", "Intro to IT"],
+  "2": ["Engineering Mathematics-II", "Applied Physics-II", "Environmental Studies", "Electronic Devices", "Programming in C"],
+  "3": ["Data Structures & Algorithms", "Digital Electronics", "Computer Organization", "Discrete Mathematics", "OOP with C++"],
+  "4": ["DBMS", "Software Engineering", "Operating Systems", "Theory of Computation", "Applied Mathematics-IV"],
+  "5": ["Computer Networks", "Algorithm Design", "Compiler Design", "Software Testing", "Java Programming"],
+  "6": ["Artificial Intelligence", "Information Security", "Web Engineering", "Computer Graphics", "Mobile Architecture"],
+  "7": ["Cloud Computing", "Big Data Analytics", "Distributed Systems", "Machine Learning", "Ad-hoc Networks"],
+  "8": ["Major Project", "Technical Seminar", "Professional Ethics", "Entrepreneurship", "Industrial Training"],
+};
 
-  // Form states
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Resource["category"]>("notes");
-  const [subject, setSubject] = useState("");
-  const [link, setLink] = useState("");
-  const [comments, setComments] = useState("");
+/* ══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+══════════════════════════════════════════════════════════════ */
+export function StudyMaterial() {
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [currentSemester, setCurrentSemester] = useState("1");
+
+  // Navigation state
+  const [activeSection, setActiveSection] = useState<Section>("all");
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProfileAndSubjects();
-    loadResources();
-  }, []);
-
-  const loadProfileAndSubjects = () => {
-    // Current Semester
+    // Load current semester
     const profileSaved = localStorage.getItem("student_profile");
     let sem = "1";
     if (profileSaved) {
@@ -71,427 +99,524 @@ export function StudyMaterial() {
         sem = profile.currentSemester;
       }
     }
-
-    // Subjects
+    // Load subjects
     const subsSaved = localStorage.getItem("subjects");
     if (subsSaved) {
-      const parsedSubs = JSON.parse(subsSaved);
-      if (parsedSubs.length > 0) {
-        setSubjects(parsedSubs.map((s: any) => s.name));
+      const parsed = JSON.parse(subsSaved);
+      if (parsed.length > 0) {
+        setSubjects(parsed.map((s: any) => s.name));
         return;
       }
     }
+    setSubjects(DEFAULT_SUBJECTS[sem] || DEFAULT_SUBJECTS["1"]);
+  }, []);
 
-    // Fallbacks if no subjects are configured
-    const defaultSubjects: Record<string, string[]> = {
-      "1": ["Engineering Mathematics-I", "Applied Physics-I", "Applied Chemistry", "Manufacturing Processes", "Introduction to IT"],
-      "2": ["Engineering Mathematics-II", "Applied Physics-II", "Environmental Studies", "Electronic Devices", "Programming in C"],
-      "3": ["Data Structures", "Digital Electronics", "Computer Organization", "Discrete Mathematics", "Object Oriented Programming"],
-      "4": ["Database Management Systems", "Software Engineering", "Operating Systems", "Theory of Computation", "Applied Mathematics-IV"],
-      "5": ["Computer Networks", "Algorithm Design", "Compiler Design", "Software Testing", "Java Programming"],
-      "6": ["Artificial Intelligence", "Information Security", "Web Engineering", "Computer Graphics", "Mobile Architecture"],
-      "7": ["Cloud Computing", "Big Data Analytics", "Distributed Systems", "Machine Learning", "Ad-hoc Networks"],
-      "8": ["Major Project", "Technical Seminar", "Professional Ethics", "Entrepreneurship", "Industrial Training"]
-    };
-
-    setSubjects(defaultSubjects[sem] || defaultSubjects["1"]);
+  // ── Reset drill-down when section changes ──────────────────
+  const goToSection = (section: Section) => {
+    setActiveSection(section);
+    setSelectedSubject(null);
+    setSelectedUnit(null);
+    setSelectedYear(null);
+    setSelectedExamType(null);
   };
 
-  const loadResources = () => {
-    const saved = localStorage.getItem("study_materials");
-    if (saved) {
-      setResources(JSON.parse(saved));
-    } else {
-      // Seed initial sample data so the UI isn't empty/placeholder-heavy on first visit
-      const seedData: Resource[] = [
-        {
-          id: "seed-1",
-          title: "Complete Lecture Notes (Units 1-4)",
-          category: "notes",
-          subject: subjects[0] || "Core Course Subject",
-          link: "https://drive.google.com/drive/folders/sample-notes-drive",
-          addedAt: new Date().toLocaleDateString(),
-          comments: "Includes handwritten diagrams and professor-provided slides."
-        },
-        {
-          id: "seed-2",
-          title: "Official Syllabus & Reference Schemes",
-          category: "syllabus",
-          subject: subjects[0] || "Core Course Subject",
-          link: "https://ipu.ac.in/syllabus",
-          addedAt: new Date().toLocaleDateString(),
-          comments: "Latest approved syllabus structure."
-        },
-        {
-          id: "seed-3",
-          title: "End-Term Theory PYQ 2024",
-          category: "pyq",
-          subject: subjects[1] || "Allied Science/Math",
-          link: "https://drive.google.com/file/d/sample-exam-pdf/view",
-          addedAt: new Date().toLocaleDateString(),
-          comments: "Contains solutions annotated by seniors."
-        },
-        {
-          id: "seed-4",
-          title: "Standard Reference E-Book (10th Edition)",
-          category: "book",
-          subject: subjects[2] || "Programming & Tech",
-          link: "https://example.com/books/textbook-pdf",
-          addedAt: new Date().toLocaleDateString(),
-          comments: "Recommended textbook as per IPU regulations."
-        }
-      ];
-      setResources(seedData);
-      localStorage.setItem("study_materials", JSON.stringify(seedData));
-    }
+  const goBack = () => {
+    if (selectedExamType) { setSelectedExamType(null); return; }
+    if (selectedUnit) { setSelectedUnit(null); return; }
+    if (selectedYear) { setSelectedYear(null); return; }
+    if (selectedSubject) { setSelectedSubject(null); return; }
+    goToSection("all");
   };
 
-  const handleAddResource = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !link.trim() || !subject) {
-      toast.error("Please fill in all required fields!");
-      return;
-    }
+  // ── Build breadcrumbs ──────────────────────────────────────
+  const breadcrumbs: Breadcrumb[] = [
+    { label: "Study Material", onClick: () => goToSection("all") },
+  ];
+  if (activeSection !== "all") {
+    const meta = SECTION_META.find((s) => s.id === activeSection)!;
+    breadcrumbs.push({ label: meta.label, onClick: () => { setSelectedSubject(null); setSelectedUnit(null); setSelectedYear(null); setSelectedExamType(null); } });
+  }
+  if (selectedSubject) breadcrumbs.push({ label: selectedSubject, onClick: () => { setSelectedUnit(null); setSelectedYear(null); setSelectedExamType(null); setSelectedSubject(selectedSubject); } });
+  if (selectedUnit) breadcrumbs.push({ label: selectedUnit, onClick: () => { setSelectedExamType(null); setSelectedUnit(selectedUnit); } });
+  if (selectedYear) breadcrumbs.push({ label: selectedYear, onClick: () => { setSelectedExamType(null); setSelectedYear(selectedYear); } });
+  if (selectedExamType) breadcrumbs.push({ label: selectedExamType, onClick: () => {} });
 
-    // Basic URL validation
-    let validatedLink = link.trim();
-    if (!/^https?:\/\//i.test(validatedLink)) {
-      validatedLink = "https://" + validatedLink;
-    }
+  /* ── Render helpers ───────────────────────────────────────── */
+  const renderBreadcrumbs = () => (
+    <div className="flex items-center gap-1.5 flex-wrap text-sm mb-6">
+      {breadcrumbs.map((b, i) => (
+        <span key={i} className="flex items-center gap-1.5">
+          {i > 0 && <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+          <button
+            onClick={b.onClick}
+            className={`font-semibold transition-colors ${
+              i === breadcrumbs.length - 1
+                ? "text-foreground cursor-default"
+                : "text-[var(--brand-start)] hover:opacity-80"
+            }`}
+          >
+            {b.label}
+          </button>
+        </span>
+      ))}
+    </div>
+  );
 
-    const newResource: Resource = {
-      id: "res-" + Date.now(),
-      title: title.trim(),
-      category,
-      subject,
-      link: validatedLink,
-      addedAt: new Date().toLocaleDateString(),
-      comments: comments.trim() || undefined
-    };
+  const renderBackButton = () =>
+    activeSection !== "all" && (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={goBack}
+        className="mb-4 flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </Button>
+    );
 
-    const updated = [newResource, ...resources];
-    setResources(updated);
-    localStorage.setItem("study_materials", JSON.stringify(updated));
-
-    // Reset Form
-    setTitle("");
-    setCategory("notes");
-    setSubject("");
-    setLink("");
-    setComments("");
-    setShowAddModal(false);
-    toast.success("Study material added successfully!");
-  };
-
-  const handleDeleteResource = (id: string) => {
-    const updated = resources.filter((r) => r.id !== id);
-    setResources(updated);
-    localStorage.setItem("study_materials", JSON.stringify(updated));
-    toast.success("Material removed.");
-  };
-
-  // Filter Logic
-  const filteredResources = resources.filter((res) => {
-    const matchesSearch = res.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (res.comments && res.comments.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = activeCategory === "all" || res.category === activeCategory;
-    const matchesSubject = activeSubject === "all" || res.subject === activeSubject;
-
-    return matchesSearch && matchesCategory && matchesSubject;
-  });
-
-  return (
-    <div className="p-4 md:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl md:text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-gray-800 dark:via-white to-[var(--brand-start)] bg-clip-text text-transparent font-black">
-            Study Material
-          </h1>
-          <p className="text-slate-500 dark:text-gray-400">
-            Access and organize Syllabus, PYQs, Textbooks, and Lecture notes for Semester {currentSemester}
-          </p>
-        </div>
-
-        <Button
-          onClick={() => {
-            // Auto-select first subject if possible
-            if (subjects.length > 0) setSubject(subjects[0]);
-            setShowAddModal(true);
-          }}
-          className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-start)] hover:brightness-110 text-white font-semibold shadow-md flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          Add Resource
-        </Button>
-      </div>
-
-      {/* Quick Stats Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Resources", count: resources.length, icon: FolderOpen, color: "text-[var(--brand-start)] bg-[var(--brand-start)]/10 border-[var(--brand-start)]/20" },
-          { label: "Handwritten Notes", count: resources.filter(r => r.category === "notes").length, icon: FileText, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { label: "Past Year Papers", count: resources.filter(r => r.category === "pyq").length, icon: GraduationCap, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { label: "Reference Books", count: resources.filter(r => r.category === "book").length, icon: BookOpen, color: "text-purple-500 bg-purple-500/10 border-purple-500/20" }
-        ].map((stat, i) => {
-          const Icon = stat.icon;
+  /* ══════════════════════════════════════════════════════════
+     VIEW: ALL — section selector
+   ══════════════════════════════════════════════════════════ */
+  const renderAll = () => (
+    <motion.div
+      key="all"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="space-y-6"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        {SECTION_META.map((sec) => {
+          const Icon = sec.icon;
           return (
-            <Card key={i} className="bg-card dark:bg-[#111118]/80 backdrop-blur-xl border border-border/50 dark:border-gray-800/50 p-4 flex items-center gap-4 shadow-sm">
-              <div className={`p-2.5 rounded-lg border ${stat.color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-black text-slate-800 dark:text-white">{stat.count}</p>
-                <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">{stat.label}</p>
-              </div>
-            </Card>
+            <motion.div
+              key={sec.id}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Card
+                onClick={() => goToSection(sec.id)}
+                className={`cursor-pointer p-6 border-2 ${sec.border} ${sec.bg} hover:shadow-lg transition-all duration-200 group`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`p-3 rounded-xl border ${sec.border} bg-white/50 dark:bg-white/5 shadow-sm`}>
+                    <Icon className={`w-6 h-6 ${sec.color}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`text-lg font-bold mb-1 ${sec.color}`}>{sec.label}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{sec.desc}</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform mt-1 flex-shrink-0" />
+                </div>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
+    </motion.div>
+  );
 
-      {/* Filters Pane */}
-      <Card className="bg-card dark:bg-[#111118]/80 backdrop-blur-xl border border-border/50 dark:border-gray-800/50 p-5 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          {/* Search bar */}
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500 w-4  h-4" />
-            <Input
-              type="text"
-              placeholder="Search resources, topics, descriptions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 w-full bg-slate-50 hover:bg-slate-100/50 dark:bg-[#0a0a0f]/50 border border-border/80 dark:border-gray-700/80 focus:border-[var(--brand-start)] text-slate-800 dark:text-white rounded-lg h-10 transition-all font-medium placeholder-slate-400 dark:placeholder-gray-500"
-            />
-          </div>
-
-          {/* Subject Filter */}
-          <div className="flex items-center gap-2 w-full md:w-auto flex-shrink-0">
-            <Filter className="text-slate-400 dark:text-gray-500 w-4 h-4" />
-            <select
-              value={activeSubject}
-              onChange={(e) => setActiveSubject(e.target.value)}
-              className="bg-slate-50 dark:bg-[#0a0a0f]/50 border border-border/80 dark:border-gray-700/80 focus:border-[var(--brand-start)] text-slate-800 dark:text-white rounded-lg h-10 px-3 font-medium outline-none text-sm w-full md:w-56"
-            >
-              <option value="all">Filter by Subject</option>
-              {subjects.map((sub, idx) => (
-                <option key={idx} value={sub}>{sub}</option>
-              ))}
-            </select>
-          </div>
+  /* ══════════════════════════════════════════════════════════
+     VIEW: SYLLABUS
+   ══════════════════════════════════════════════════════════ */
+  const renderSyllabus = () => (
+    <motion.div
+      key="syllabus"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-4"
+    >
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+          <FileCode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         </div>
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Syllabus</h2>
+          <p className="text-sm text-muted-foreground">Semester {currentSemester} official syllabus</p>
+        </div>
+      </div>
 
-        {/* Category Tabs */}
-        <div className="flex items-center flex-wrap gap-2 pt-2 border-t border-border/30 dark:border-gray-850">
-          {CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const active = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                  active
-                    ? "bg-[var(--brand-start)]/10 dark:bg-[var(--brand-start)]/20 text-[var(--brand-start)] border-[var(--brand-start)]/30 shadow-sm"
-                    : "bg-slate-50 dark:bg-gray-800/10 border-border/50 dark:border-gray-800/50 text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-white"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {cat.label}
-              </button>
-            );
-          })}
+      <Card className="p-8 border border-border bg-card flex flex-col items-center gap-6 text-center">
+        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+          <FileCode className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-foreground mb-2">
+            Semester {currentSemester} Syllabus
+          </h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            Click below to view the official IPU syllabus for your current semester
+          </p>
+        </div>
+        <Button
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md flex items-center gap-2"
+          onClick={() => {
+            // Placeholder: open syllabus (user will add the link later)
+            alert("Syllabus link will be added soon!");
+          }}
+        >
+          <ExternalLink className="w-4 h-4" />
+          Open Syllabus — Semester {currentSemester}
+        </Button>
+        <p className="text-xs text-muted-foreground italic">
+          * Syllabus content will be configured by your administrator
+        </p>
+      </Card>
+    </motion.div>
+  );
+
+  /* ══════════════════════════════════════════════════════════
+     VIEW: SUBJECT GRID (shared for Important Topics, PYQ, Study Reference)
+   ══════════════════════════════════════════════════════════ */
+  const renderSubjectGrid = (sectionId: Section, iconEl: React.ReactNode, colorClass: string, borderClass: string, bgClass: string) => (
+    <motion.div
+      key={`${sectionId}-subjects`}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-4"
+    >
+      <p className="text-sm text-muted-foreground">Select a subject to continue</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {subjects.map((sub, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Card
+              onClick={() => setSelectedSubject(sub)}
+              className={`cursor-pointer p-5 border ${borderClass} ${bgClass} hover:shadow-md transition-all group flex items-center gap-4`}
+            >
+              <div className={`p-2 rounded-lg border ${borderClass} bg-white/50 dark:bg-white/5`}>
+                {iconEl}
+              </div>
+              <span className="font-semibold text-foreground flex-1 text-sm">{sub}</span>
+              <ChevronRight className={`w-4 h-4 ${colorClass} opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all flex-shrink-0`} />
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+
+  /* ══════════════════════════════════════════════════════════
+     VIEW: UNIT GRID
+   ══════════════════════════════════════════════════════════ */
+  const renderUnitGrid = (colorClass: string, borderClass: string, bgClass: string) => (
+    <motion.div
+      key="units"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-4"
+    >
+      <p className="text-sm text-muted-foreground">Select a unit</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {UNITS.map((unit, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+          >
+            <Card
+              onClick={() => setSelectedUnit(unit)}
+              className={`cursor-pointer p-6 border-2 ${borderClass} ${bgClass} hover:shadow-lg transition-all text-center group`}
+            >
+              <div className={`text-2xl font-black mb-1 ${colorClass}`}>{i + 1}</div>
+              <div className="text-sm font-semibold text-foreground">{unit}</div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+
+  /* ══════════════════════════════════════════════════════════
+     VIEW: IMAGE PLACEHOLDER
+   ══════════════════════════════════════════════════════════ */
+  const renderImagePlaceholder = (label: string, iconEl: React.ReactNode, colorClass: string, borderClass: string, bgClass: string) => (
+    <motion.div
+      key="image"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+    >
+      <Card className={`border-2 ${borderClass} ${bgClass} p-10 flex flex-col items-center gap-6 text-center`}>
+        <div className={`p-4 rounded-2xl border ${borderClass} bg-white/60 dark:bg-white/5`}>
+          {iconEl}
+        </div>
+        <div>
+          <h3 className={`text-lg font-bold ${colorClass} mb-2`}>{label}</h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            Content for this section will be added soon. Stay tuned!
+          </p>
+        </div>
+        <div className={`w-full max-w-sm h-48 rounded-xl border-2 border-dashed ${borderClass} flex items-center justify-center`}>
+          <div className="text-center">
+            <div className={`text-4xl mb-2 ${colorClass} opacity-30`}>📸</div>
+            <p className="text-xs text-muted-foreground font-medium">Image placeholder</p>
+            <p className="text-xs text-muted-foreground opacity-70">Will be added later</p>
+          </div>
         </div>
       </Card>
+    </motion.div>
+  );
 
-      {/* Resources List Group */}
-      {filteredResources.length === 0 ? (
-        <Card className="bg-card dark:bg-[#111118]/80 border border-border/50 dark:border-gray-800/50 text-center py-16">
-          <BookOpen className="w-16 h-16 text-slate-300 dark:text-gray-700 mx-auto mb-4" />
-          <h3 className="text-slate-700 dark:text-gray-300 text-lg font-bold">No results found</h3>
-          <p className="text-slate-500 dark:text-gray-500 text-sm mt-1 whitespace-pre-line leading-relaxed">
-            Try adjusting your search query, selecting another category, 
-            or click "Add Resource" to register a new material.
-          </p>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {filteredResources.map((res, idx) => {
-            const catInfo = CATEGORIES.find(c => c.id === res.category) || CATEGORIES[0];
-            const CatIcon = catInfo.icon;
-            return (
-              <motion.div
-                key={res.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2, delay: idx * 0.05 }}
-              >
-                <Card className="bg-card dark:bg-[#111118]/90 border border-border/50 dark:border-gray-850 hover:border-[var(--brand-start)]/30 dark:hover:border-[var(--brand-start)]/30 shadow-sm hover:shadow-md transition-all p-5 flex flex-col h-full justify-between">
-                  <div className="space-y-3">
-                    {/* Header: Class tag & Subject */}
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded bg-[var(--brand-start)]/10 text-[var(--brand-start)] border border-[var(--brand-start)]/20">
-                        {catInfo.label}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-gray-400 font-bold max-w-[65%] truncate bg-slate-100 dark:bg-gray-800/30 px-2 py-0.5 rounded">
-                        {res.subject}
-                      </span>
-                    </div>
+  /* ══════════════════════════════════════════════════════════
+     VIEW: YEAR GRID (PYQ)
+   ══════════════════════════════════════════════════════════ */
+  const renderYearGrid = () => (
+    <motion.div
+      key="years"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-4"
+    >
+      <p className="text-sm text-muted-foreground">Select a year</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {YEARS.map((year, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Card
+              onClick={() => setSelectedYear(year)}
+              className="cursor-pointer p-6 border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 hover:shadow-md transition-all text-center group"
+            >
+              <GraduationCap className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" />
+              <div className="text-lg font-bold text-foreground">{year}</div>
+              <ChevronRight className="w-4 h-4 text-emerald-500 mx-auto mt-2 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
 
-                    {/* Title */}
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-white leading-snug line-clamp-2">
-                      {res.title}
-                    </h3>
+  /* ══════════════════════════════════════════════════════════
+     VIEW: EXAM TYPE GRID (PYQ)
+   ══════════════════════════════════════════════════════════ */
+  const renderExamTypeGrid = () => (
+    <motion.div
+      key="exam-types"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      className="space-y-4"
+    >
+      <p className="text-sm text-muted-foreground">Select exam type</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {EXAM_TYPES.map((type, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <Card
+              onClick={() => setSelectedExamType(type)}
+              className="cursor-pointer p-6 border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-500/10 hover:shadow-md transition-all text-center group"
+            >
+              <FileText className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" />
+              <div className="text-base font-bold text-foreground">{type}</div>
+              <ChevronRight className="w-4 h-4 text-emerald-500 mx-auto mt-2 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
 
-                    {/* Description/Comments */}
-                    {res.comments && (
-                      <p className="text-sm text-slate-500 dark:text-gray-450 line-clamp-3 italic leading-relaxed">
-                        "{res.comments}"
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Footer Row */}
-                  <div className="flex items-center justify-between border-t border-border/20 dark:border-gray-800/40 mt-5 pt-4">
-                    <span className="text-[10px] text-slate-400 dark:text-gray-500 font-medium">
-                      Added {res.addedAt}
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      {/* Delete */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteResource(res.id)}
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-500/10 h-8 w-8 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-
-                      {/* Open Link */}
-                      <a href={res.link} target="_blank" rel="noopener noreferrer">
-                        <Button
-                          size="sm"
-                          className="bg-gradient-to-r from-[var(--brand-start)]/15 to-[var(--brand-start)]/15 hover:from-[var(--brand-start)]/30 hover:to-[var(--brand-start)]/30 border border-[var(--brand-start)]/30 text-[var(--brand-start)] font-bold text-xs"
-                        >
-                          Access Resource
-                          <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            );
-          })}
+  /* ══════════════════════════════════════════════════════════
+     VIEW: YOUTUBE LINKS PLACEHOLDER
+   ══════════════════════════════════════════════════════════ */
+  const renderYtPlaceholder = () => (
+    <motion.div
+      key="yt-links"
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <Card className="border-2 border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 p-10 flex flex-col items-center gap-6 text-center">
+        <div className="p-4 rounded-2xl border border-red-200 dark:border-red-500/30 bg-white/60 dark:bg-white/5">
+          <Youtube className="w-12 h-12 text-red-500" />
         </div>
-      )}
-
-      {/* Add Resource Dialog Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="bg-card dark:bg-[#111118] border border-border/50 dark:border-gray-800 text-slate-800 dark:text-white max-w-lg rounded-xl shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-start)] bg-clip-text text-transparent flex items-center gap-2">
-              <FolderOpen className="w-6 h-6 text-[var(--brand-start)]" />
-              Add Study Resource
-            </DialogTitle>
-          </DialogHeader>
-
-          <form onSubmit={handleAddResource} className="space-y-4 pt-2">
-            {/* Title */}
-            <div className="space-y-1.5">
-              <Label htmlFor="title" className="text-slate-600 dark:text-gray-300 font-semibold text-sm">Resource Name/Title <span className="text-red-500">*</span></Label>
-              <Input
-                id="title"
-                placeholder="e.g. Unit 3 Trees & Graphs Notes PDF"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="bg-slate-50 dark:bg-[#0a0a0f]/50 border-gray-300 dark:border-gray-700/80 focus:border-[var(--brand-start)] focus:ring-0 text-slate-800 dark:text-white text-sm"
-              />
-            </div>
-
-            {/* Category and Subject in row */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="category" className="text-slate-600 dark:text-gray-300 font-semibold text-sm">Category</Label>
-                <select
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as Resource["category"])}
-                  className="w-full bg-slate-50 dark:bg-[#0a0a0f]/50 border border-gray-300 dark:border-gray-700/80 focus:border-[var(--brand-start)] text-slate-850 dark:text-white rounded-lg h-9 px-3 text-sm focus:outline-none"
-                >
-                  <option value="notes">Notes</option>
-                  <option value="syllabus">Syllabus</option>
-                  <option value="pyq">PYQs (Exams)</option>
-                  <option value="book">Reference Books</option>
-                  <option value="other">Bookmarks/Other</option>
-                </select>
+        <div>
+          <h3 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">
+            YouTube References — {selectedUnit}
+          </h3>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            YouTube video links for this unit will be added soon.
+          </p>
+        </div>
+        <div className="w-full max-w-sm space-y-3">
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-red-200 dark:border-red-500/30 bg-white/40 dark:bg-white/5"
+            >
+              <Youtube className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <div className="flex-1 text-left">
+                <p className="text-xs font-semibold text-muted-foreground">Video {n} — Placeholder</p>
+                <p className="text-xs text-muted-foreground opacity-60">Link will be added later</p>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="subject" className="text-slate-600 dark:text-gray-300 font-semibold text-sm">Subject <span className="text-red-500">*</span></Label>
-                <select
-                  id="subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  required
-                  className="w-full bg-slate-50 dark:bg-[#0a0a0f]/50 border border-gray-300 dark:border-gray-700/80 focus:border-[var(--brand-start)] text-slate-850 dark:text-white rounded-lg h-9 px-3 text-sm focus:outline-none"
-                >
-                  <option value="" disabled>Select Subject</option>
-                  {subjects.map((sub, idx) => (
-                    <option key={idx} value={sub}>{sub}</option>
-                  ))}
-                  <option value="General/Other">General/Other Topic</option>
-                </select>
-              </div>
+              <ExternalLink className="w-4 h-4 text-muted-foreground opacity-30" />
             </div>
+          ))}
+        </div>
+      </Card>
+    </motion.div>
+  );
 
-            {/* URL Link */}
-            <div className="space-y-1.5">
-              <Label htmlFor="link" className="text-slate-600 dark:text-gray-300 font-semibold text-sm">URL / Drive Link <span className="text-red-500">*</span></Label>
-              <Input
-                id="link"
-                placeholder="e.g. drive.google.com/xyz..."
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                required
-                className="bg-slate-50 dark:bg-[#0a0a0f]/50 border-gray-300 dark:border-gray-700/80 focus:border-[var(--brand-start)] focus:ring-0 text-slate-800 dark:text-white text-sm"
-              />
-            </div>
+  /* ══════════════════════════════════════════════════════════
+     SECTION TABS
+   ══════════════════════════════════════════════════════════ */
+  const renderSectionTabs = () => {
+    const tabs = [
+      { id: "all" as Section, label: "All", icon: LayoutGrid },
+      ...SECTION_META.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
+    ];
+    return (
+      <div className="flex items-center gap-2 flex-wrap mb-6 p-1 bg-muted/50 rounded-xl border border-border">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = activeSection === id;
+          return (
+            <button
+              key={id}
+              onClick={() => goToSection(id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-1 sm:flex-none justify-center sm:justify-start ${
+                active
+                  ? "bg-[var(--brand-start)] text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
-            {/* Comments / Description */}
-            <div className="space-y-1.5">
-              <Label htmlFor="comments" className="text-slate-600 dark:text-gray-300 font-semibold text-sm">Comments / Notes (Optional)</Label>
-              <textarea
-                id="comments"
-                rows={3}
-                placeholder="e.g. Prepared by Prof. Garg, cover page missing but content is fully accurate."
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-[#0a0a0f]/50 border border-gray-300 dark:border-gray-700/80 rounded-lg text-slate-800 dark:text-white text-sm focus:border-[var(--brand-start)] focus:outline-none focus:ring-0"
-              />
-            </div>
+  /* ══════════════════════════════════════════════════════════
+     RENDER LOGIC PER SECTION
+   ══════════════════════════════════════════════════════════ */
+  const renderContent = () => {
+    /* ── ALL ── */
+    if (activeSection === "all") return renderAll();
 
-            {/* Buttons */}
-            <div className="flex justify-end space-x-3 pt-3 border-t border-border/20 dark:border-gray-800/40">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAddModal(false)}
-                className="border-gray-300 dark:border-gray-705 dark:hover:bg-gray-850 hover:bg-slate-100 text-slate-600 dark:text-white"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-start)] text-white hover:brightness-110 font-bold"
-              >
-                Add Resource
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+    /* ── SYLLABUS ── */
+    if (activeSection === "syllabus") return renderSyllabus();
+
+    /* ── IMPORTANT TOPICS ── */
+    if (activeSection === "important-topics") {
+      if (!selectedSubject) {
+        return renderSubjectGrid(
+          "important-topics",
+          <Star className="w-4 h-4 text-[var(--brand-start)]" />,
+          "text-[var(--brand-start)]",
+          "border-[var(--brand-start)]/30",
+          "bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10"
+        );
+      }
+      if (!selectedUnit) {
+        return renderUnitGrid(
+          "text-[var(--brand-start)]",
+          "border-[var(--brand-start)]/30",
+          "bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10"
+        );
+      }
+      return renderImagePlaceholder(
+        `${selectedSubject} — ${selectedUnit} Important Topics`,
+        <Star className="w-12 h-12 text-[var(--brand-start)]" />,
+        "text-[var(--brand-start)]",
+        "border-[var(--brand-start)]/30",
+        "bg-[var(--brand-start)]/5 dark:bg-[var(--brand-start)]/10"
+      );
+    }
+
+    /* ── PYQ ── */
+    if (activeSection === "pyq") {
+      if (!selectedSubject) {
+        return renderSubjectGrid(
+          "pyq",
+          <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
+          "text-emerald-600 dark:text-emerald-400",
+          "border-emerald-200 dark:border-emerald-500/30",
+          "bg-emerald-50 dark:bg-emerald-500/10"
+        );
+      }
+      if (!selectedYear) return renderYearGrid();
+      if (!selectedExamType) return renderExamTypeGrid();
+      return renderImagePlaceholder(
+        `${selectedSubject} — ${selectedYear} ${selectedExamType}`,
+        <GraduationCap className="w-12 h-12 text-emerald-600 dark:text-emerald-400" />,
+        "text-emerald-600 dark:text-emerald-400",
+        "border-emerald-200 dark:border-emerald-500/30",
+        "bg-emerald-50 dark:bg-emerald-500/10"
+      );
+    }
+
+    /* ── STUDY REFERENCE ── */
+    if (activeSection === "study-reference") {
+      if (!selectedSubject) {
+        return renderSubjectGrid(
+          "study-reference",
+          <Youtube className="w-4 h-4 text-red-500" />,
+          "text-red-500",
+          "border-red-200 dark:border-red-500/30",
+          "bg-red-50 dark:bg-red-500/10"
+        );
+      }
+      if (!selectedUnit) {
+        return renderUnitGrid(
+          "text-red-500",
+          "border-red-200 dark:border-red-500/30",
+          "bg-red-50 dark:bg-red-500/10"
+        );
+      }
+      return renderYtPlaceholder();
+    }
+
+    return null;
+  };
+
+  /* ══════════════════════════════════════════════════════════
+     JSX
+   ══════════════════════════════════════════════════════════ */
+  return (
+    <div className="p-4 md:p-8 space-y-4">
+      {/* Header */}
+      <div className="mb-2">
+        <h1 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-[var(--brand-start)] via-amber-600 to-[var(--brand-start)] bg-clip-text text-transparent mb-1">
+          Study Material
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Semester {currentSemester} — Syllabus, Important Topics, PYQ & Study References
+        </p>
+      </div>
+
+      {/* Section Tabs */}
+      {renderSectionTabs()}
+
+      {/* Breadcrumbs (only when drilling down) */}
+      {breadcrumbs.length > 1 && renderBreadcrumbs()}
+
+      {/* Back button */}
+      {(selectedSubject || selectedUnit || selectedYear || selectedExamType) && renderBackButton()}
+
+      {/* Content */}
+      <AnimatePresence mode="wait">
+        {renderContent()}
+      </AnimatePresence>
     </div>
   );
 }

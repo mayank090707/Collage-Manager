@@ -454,7 +454,7 @@ export function OnboardingFlow() {
                     Previous
                   </Button>
                 )}
-                <Button type="button" onClick={handleNext} className="ml-auto bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]">
+                <Button type="button" onClick={handleNext} className="ml-auto bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]">
                   {step === 3 ? "Complete Setup" : "Next →"}
                 </Button>
               </div>

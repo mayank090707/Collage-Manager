@@ -370,7 +370,7 @@ export function ExamCalendar() {
 
             <Button
               onClick={handleSetupSubmit}
-              className="w-full h-12 bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white font-semibold shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
+              className="w-full h-12 bg-[var(--brand-start)] hover:bg-amber-600 text-white font-semibold shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
             >
               Create Semester Calendar →
             </Button>
@@ -741,7 +741,7 @@ export function ExamCalendar() {
               <Button variant="outline" onClick={() => setEditingPeriod(null)} className="flex-1 border-gray-700 bg-transparent text-white">
                 Cancel
               </Button>
-              <Button onClick={handleSavePeriod} className={`flex-1 ${editingPeriod ? `bg-gradient-to-r ${editingPeriod === "midsem1" ? "from-[var(--brand-start)] to-[var(--brand-start)]" : editingPeriod === "midsem2" ? "from-[var(--brand-end)] to-[#8b5cf6]" : "from-orange-500 to-amber-500"}` : ""} text-white`}>
+              <Button onClick={handleSavePeriod} className={`flex-1 ${editingPeriod ? `bg-gradient-to-r ${editingPeriod === "midsem1" ? "from-[var(--brand-start)] to-[var(--brand-start)]" : editingPeriod === "midsem2" ? "from-[var(--brand-start)] to-amber-500" : "from-orange-500 to-amber-500"}` : ""} text-white`}>
                 <Check className="w-4 h-4 mr-2" />
                 Confirm Dates
               </Button>

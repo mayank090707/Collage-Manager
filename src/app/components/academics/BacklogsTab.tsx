@@ -168,7 +168,7 @@ export function BacklogsTab() {
       <div className="flex justify-end">
         <Button
           onClick={() => setShowAddDialog(true)}
-          className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+          className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Backlog
@@ -334,7 +334,7 @@ export function BacklogsTab() {
               </Button>
               <Button
                 onClick={handleAddBacklog}
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white"
+                className="bg-[var(--brand-start)] hover:bg-amber-600 text-white"
               >
                 Add Backlog
               </Button>

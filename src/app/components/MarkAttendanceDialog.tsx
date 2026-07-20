@@ -164,7 +164,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
             <Button
               onClick={handleSave}
               disabled={todaySubjects.length === 0}
-              className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] hover:from-[#00ffff] hover:to-[#8b5cf6] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
+              className="bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
             >
               Save Attendance
             </Button>
