@@ -8,6 +8,7 @@ import { Progress } from "../ui/progress";
 import { Target, TrendingUp, Award } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { getCGPAFromStorage, computeRequiredSGPA, getRealSemesters } from "../../../lib/academicUtils";
 
 interface SemesterData {
   semester: number;
@@ -29,39 +30,36 @@ export function CGPATab() {
   }, []);
 
   const loadData = () => {
-    const savedSemesterData = JSON.parse(localStorage.getItem("semester_data") || "[]");
+    // ── Read from semester_marks (canonical) ──────────────────────────────────
+    const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
     const savedTarget = parseFloat(localStorage.getItem("target_cgpa") || "0");
 
-    setSemesterData(savedSemesterData);
     setTargetCgpa(savedTarget);
 
-    // Calculate CGPA from all semesters
-    const validSemesters = savedSemesterData.filter(
-      (sem: SemesterData) => sem.sgpa > 0
-    );
-    setCompletedSemesters(validSemesters.length);
+    // Credit-weighted CGPA using shared utility
+    const calculatedCgpa = getCGPAFromStorage();
+    setCgpa(calculatedCgpa ?? 0);
 
-    if (validSemesters.length > 0) {
-      const totalSgpa = validSemesters.reduce(
-        (sum: number, sem: SemesterData) => sum + sem.sgpa,
-        0
-      );
-      const calculatedCgpa = totalSgpa / validSemesters.length;
-      setCgpa(calculatedCgpa);
-    }
+    // Completed semesters = those with real marks
+    const real = getRealSemesters(savedMarks);
+    setCompletedSemesters(real.length);
 
-    // Calculate required SGPA for CURRENT semester to reach target (simple average)
+    // Build semester-by-semester history for the grid
+    const history: SemesterData[] = real.map((s) => ({
+      semester: s.semester,
+      sgpa: s.sgpa,
+    }));
+    setSemesterData(history);
+
+    // Required SGPA using shared utility
     if (savedTarget > 0) {
       const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
       const currentSemNum = parseInt(profile.currentSemester || "1");
-      const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-      const previousSemMarks = savedMarks.filter((m: any) => m.semester < currentSemNum);
-      const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
-      
-      const reqSGPA = (savedTarget * currentSemNum) - sumPreviousSGPAs;
-      setRequiredSgpa(Math.max(0, reqSGPA));
+      const req = computeRequiredSGPA(savedMarks, savedTarget, currentSemNum);
+      setRequiredSgpa(req);
     }
   };
+
 
   useEffect(() => {
     const handleStorage = () => loadData();

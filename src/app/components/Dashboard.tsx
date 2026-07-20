@@ -12,6 +12,7 @@ import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import { computeCGPA, computeRequiredSGPA } from "../../lib/academicUtils";
 
 interface StudentProfile {
   fullName: string;
@@ -132,37 +133,19 @@ export function Dashboard() {
         }).length;
       }
 
-      // 4. CGPA Calculation (credit-weighted average, skip sentinel entries)
+      // 4. CGPA — credit-weighted via shared utility (skips sentinel -1 & zero-mark entries)
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-      // Only include semesters that have actual marks (sgpa !== -1 sentinel)
-      const realMarks = savedMarks.filter((s: any) => s.sgpa !== -1);
-      if (realMarks.length > 0) {
-        const allResults = realMarks.flatMap((s: any) => s.results);
-        const totalCredits = allResults.reduce((s: number, r: any) => s + (r.credits || 0), 0);
-        const weighted = allResults.reduce((s: number, r: any) => s + (r.gradePoint * (r.credits || 0)), 0);
-        updatedStats.cgpa = totalCredits > 0 ? weighted / totalCredits : 0;
+      const cgpaVal = computeCGPA(savedMarks);
+      updatedStats.cgpa = cgpaVal ?? 0;
 
-        // 5. Required SGPA for Target
-        // Formula: (SGPA1 + SGPA2 + ... + x) / N = targetCGPA
-        // => x = (targetCGPA × N) - (SGPA1 + SGPA2 + ...)
-        if (updatedStats.targetCgpa > 0) {
-          const savedProfileRaw = localStorage.getItem("student_profile");
-          const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
-          const currentSemNum = parseInt(localProfile.currentSemester || "1");
-
-          // Only use previous semesters' SGPAs (exclude sentinel)
-          const previousSemMarks = realMarks.filter((m: any) => m.semester < currentSemNum);
-          const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
-
-          // Required SGPA this semester = targetCGPA × N − sum of past SGPAs
-          const reqSGPA = (updatedStats.targetCgpa * currentSemNum) - sumPreviousSGPAs;
-          updatedStats.requiredSgpa = Math.max(0, reqSGPA);
-        }
-      } else {
-        // No marks entered yet — if there's a target, required SGPA = target CGPA
-        if (updatedStats.targetCgpa > 0) {
-          updatedStats.requiredSgpa = updatedStats.targetCgpa;
-        }
+      // 5. Required SGPA via shared utility
+      if (updatedStats.targetCgpa > 0) {
+        const savedProfileRaw = localStorage.getItem("student_profile");
+        const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
+        const currentSemNum = parseInt(localProfile.currentSemester || "1");
+        updatedStats.requiredSgpa = computeRequiredSGPA(savedMarks, updatedStats.targetCgpa, currentSemNum);
+      } else if (updatedStats.targetCgpa > 0) {
+        updatedStats.requiredSgpa = updatedStats.targetCgpa;
       }
 
 

@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Edit, Mail, Phone, GraduationCap, Calendar, Award, CheckCircle, AlertCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { computeCGPA } from "../../lib/academicUtils";
 
 interface StudentProfile {
   fullName: string;
@@ -86,16 +87,9 @@ export function Profile() {
       totalAttendance = totalPossible > 0 ? (totalAttended / totalPossible) * 100 : 0;
     }
 
-    // Load CGPA — use semester_marks (canonical), skip sentinel -1 entries
+    // Load CGPA — credit-weighted via shared utility (matches Dashboard & Academics)
     const semesterMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-    const realMarks = semesterMarks.filter((s: any) => s.sgpa !== -1 && s.sgpa > 0);
-    let cgpa = 0;
-    if (realMarks.length > 0) {
-      const allResults = realMarks.flatMap((s: any) => s.results || []);
-      const tc = allResults.reduce((sum: number, r: any) => sum + (r.credits || 0), 0);
-      const wp = allResults.reduce((sum: number, r: any) => sum + (r.gradePoint || 0) * (r.credits || 0), 0);
-      cgpa = tc > 0 ? wp / tc : 0;
-    }
+    const cgpa = computeCGPA(semesterMarks) ?? 0;
 
     // Load target CGPA
     const targetCgpa = parseFloat(localStorage.getItem("target_cgpa") || "0");
