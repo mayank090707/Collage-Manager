@@ -125,22 +125,22 @@ export function Timetable() {
   const ReadView = () => (
     <>
       {timetable.length === 0 ? (
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-16 text-center">
-          <BookOpen className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">No timetable set up yet</p>
-          <p className="text-gray-600 text-sm mt-1">Click Edit Timetable to create your schedule</p>
+        <Card className="bg-card border border-border/80 p-16 text-center shadow-sm">
+          <BookOpen className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground text-lg font-medium">No timetable set up yet</p>
+          <p className="text-muted-foreground text-sm mt-1">Click Edit Timetable to create your schedule</p>
         </Card>
       ) : (
         <>
           {/* Grid timetable */}
-          <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 overflow-hidden">
+          <Card className="bg-card border border-border/80 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800/60">
-                    <th className="p-4 text-left text-gray-400 font-medium w-28 bg-[#0a0a0f]/40">Day</th>
+                  <tr className="border-b border-border">
+                    <th className="p-4 text-left text-muted-foreground font-semibold text-sm w-28 bg-muted/50">Day</th>
                     {Array.from({ length: maxPeriods }, (_, i) => (
-                      <th key={i} className="p-4 text-center text-gray-400 font-medium min-w-[140px] bg-[#0a0a0f]/20">
+                      <th key={i} className="p-4 text-center text-muted-foreground font-semibold text-sm min-w-[140px] bg-muted/30">
                         Period {i + 1}
                       </th>
                     ))}
@@ -156,14 +156,14 @@ export function Timetable() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: dayIdx * 0.05 }}
-                        className="border-b border-gray-800/40 hover:bg-gray-800/10 transition-colors"
+                        className="border-b border-border/60 hover:bg-muted/40 transition-colors"
                       >
-                        <td className="p-4 bg-[#0a0a0f]/30">
-                          <span className={`font-semibold text-sm ${hasClasses ? "text-white" : "text-gray-600"}`}>
+                        <td className="p-4 bg-muted/20">
+                          <span className={`font-bold text-sm ${hasClasses ? "text-foreground" : "text-muted-foreground"}`}>
                             {day}
                           </span>
                           {!hasClasses && (
-                            <p className="text-xs text-gray-700 mt-0.5">Free</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">Free</p>
                           )}
                         </td>
                         {Array.from({ length: maxPeriods }, (_, i) => {
@@ -172,13 +172,13 @@ export function Timetable() {
                             <td key={i} className="p-2">
                               {slot ? (
                                 <div
-                                  className={`bg-gradient-to-br ${subjectColorMap[slot.subject] || PERIOD_COLORS[0]} border rounded-lg p-3 text-center`}
+                                  className={`bg-gradient-to-br ${subjectColorMap[slot.subject] || PERIOD_COLORS[0]} border rounded-lg p-3 text-center shadow-xs`}
                                 >
-                                  <p className="text-sm font-medium leading-tight">{slot.subject}</p>
+                                  <p className="text-sm font-bold leading-tight">{slot.subject}</p>
                                 </div>
                               ) : (
-                                <div className="h-12 rounded-lg border border-dashed border-gray-800/40 flex items-center justify-center">
-                                  <span className="text-gray-700 text-xs">—</span>
+                                <div className="h-12 rounded-lg border border-dashed border-border/60 flex items-center justify-center">
+                                  <span className="text-muted-foreground text-xs">—</span>
                                 </div>
                               )}
                             </td>
@@ -193,13 +193,13 @@ export function Timetable() {
           </Card>
 
           {/* Legend */}
-          <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-            <h3 className="text-white font-semibold mb-4">Subject Legend</h3>
+          <Card className="bg-card border border-border/80 p-6 shadow-sm">
+            <h3 className="text-foreground font-bold mb-4">Subject Legend</h3>
             <div className="flex flex-wrap gap-3">
               {Object.entries(subjectColorMap).map(([subj, cls]) => (
                 <div
                   key={subj}
-                  className={`bg-gradient-to-r ${cls} border rounded-lg px-4 py-2 text-sm font-medium`}
+                  className={`bg-gradient-to-r ${cls} border rounded-lg px-4 py-2 text-sm font-bold`}
                 >
                   {subj}
                 </div>
@@ -213,15 +213,15 @@ export function Timetable() {
 
   // ── Edit view ──────────────────────────────────────────────────────────────────
   const EditView = () => (
-    <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6 space-y-6">
+    <Card className="bg-card border border-border/80 p-6 space-y-6 shadow-sm">
       {/* Add a new subject to the palette */}
       <div>
-        <Label className="text-gray-300 text-sm mb-2 block">Subject Palette</Label>
+        <Label className="text-foreground font-semibold text-sm mb-2 block">Subject Palette</Label>
         <div className="flex flex-wrap gap-2 mb-3">
           {subjects.map((s) => (
             <span
               key={s}
-              className="px-3 py-1 rounded-md bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 text-[var(--brand-start)] text-xs font-medium"
+              className="px-3 py-1 rounded-md bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 text-[var(--brand-start)] text-xs font-bold"
             >
               {s}
             </span>
@@ -233,14 +233,14 @@ export function Timetable() {
             onChange={(e) => setNewSubject(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addNewSubjectToList()}
             placeholder="Add a subject…"
-            className="bg-[#0a0a0f]/50 border-gray-700 focus:border-[var(--brand-start)] text-white text-sm"
+            className="bg-background border-border focus:border-[var(--brand-start)] text-foreground text-sm"
           />
           <Button
             type="button"
             onClick={addNewSubjectToList}
             size="sm"
             variant="outline"
-            className="border-gray-700 bg-transparent text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10"
+            className="border-border bg-transparent text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10"
           >
             <Plus className="w-4 h-4" />
           </Button>
@@ -252,10 +252,10 @@ export function Timetable() {
         {DAYS.map((day) => {
           const daySlots = getSlotsForDay(editTimetable, day);
           return (
-            <div key={day} className="p-4 rounded-xl bg-[#0a0a0f]/30 border border-gray-800/50 space-y-3">
-              <div className="flex items-center justify-between border-b border-gray-800/50 pb-2">
+            <div key={day} className="p-4 rounded-xl bg-muted/40 border border-border/60 space-y-3">
+              <div className="flex items-center justify-between border-b border-border/60 pb-2">
                 <Label className="text-[var(--brand-start)] font-bold text-base">{day}</Label>
-                <span className="text-xs text-gray-500 uppercase tracking-widest">{daySlots.length} Slots</span>
+                <span className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">{daySlots.length} Slots</span>
               </div>
 
               {/* Current slots */}
@@ -264,14 +264,14 @@ export function Timetable() {
                   {daySlots.map((slot, idx) => (
                     <div
                       key={`${day}-${idx}`}
-                      className="group flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border border-[var(--brand-start)]/30 text-white text-sm"
+                      className="group flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 text-foreground text-sm font-semibold"
                     >
-                      <span className="text-[10px] font-bold opacity-50">P{slot.period}</span>
+                      <span className="text-[10px] font-bold text-[var(--brand-start)]">P{slot.period}</span>
                       <span className="font-medium">{slot.subject}</span>
                       <button
                         type="button"
                         onClick={() => removeSlot(day, idx)}
-                        className="p-1 rounded-full hover:bg-black/20 text-gray-400 hover:text-red-400 transition-colors"
+                        className="p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-red-500 transition-colors"
                       >
                         <X size={13} />
                       </button>
@@ -287,7 +287,7 @@ export function Timetable() {
                     key={subject}
                     type="button"
                     onClick={() => addSlot(day, subject)}
-                    className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800/30 text-gray-300 text-xs hover:border-[var(--brand-start)] hover:text-white transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-md border border-border bg-card text-foreground text-xs font-semibold hover:border-[var(--brand-start)] hover:text-[var(--brand-start)] transition-all flex items-center gap-1.5 shadow-2xs"
                   >
                     <Plus size={12} />
                     {subject}
@@ -306,7 +306,7 @@ export function Timetable() {
           variant="ghost"
           size="sm"
           onClick={() => setEditTimetable([])}
-          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          className="text-red-500 hover:text-red-600 hover:bg-red-500/10 font-bold"
         >
           <Trash2 className="w-4 h-4 mr-1.5" />
           Clear All
@@ -320,10 +320,10 @@ export function Timetable() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl md:text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent font-black">
+          <h1 className="text-3xl md:text-4xl mb-2 text-foreground font-black">
             Weekly Timetable
           </h1>
-          <p className="text-gray-400">Your class schedule at a glance</p>
+          <p className="text-muted-foreground text-lg">Your class schedule at a glance</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {editMode ? (
@@ -331,14 +331,14 @@ export function Timetable() {
               <Button
                 onClick={cancelEdit}
                 variant="outline"
-                className="border-gray-700 bg-transparent text-gray-300 hover:text-white"
+                className="border-border bg-card text-foreground hover:bg-muted font-bold"
               >
                 <X className="w-4 h-4 mr-1.5" />
                 Cancel
               </Button>
               <Button
                 onClick={saveEdit}
-                className="bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white hover:bg-amber-600"
+                className="bg-[var(--brand-start)] hover:bg-amber-600 text-white font-bold"
               >
                 <Save className="w-4 h-4 mr-1.5" />
                 Save Timetable
@@ -347,7 +347,7 @@ export function Timetable() {
           ) : (
             <Button
               onClick={enterEditMode}
-              className="bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 border border-[var(--brand-start)]/40 text-white hover:from-[var(--brand-start)]/30 hover:to-[var(--brand-end)]/30"
+              className="bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/40 text-[var(--brand-start)] hover:bg-[var(--brand-start)]/20 font-bold"
             >
               <Edit2 className="w-4 h-4 mr-1.5 text-[var(--brand-start)]" />
               Edit Timetable
@@ -364,13 +364,13 @@ export function Timetable() {
             { label: "Total Periods / Week", value: totalPeriods, icon: BookOpen },
             { label: "Subjects", value: totalSubjects, icon: BookOpen },
           ].map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-[var(--brand-start)]/20 to-[var(--brand-end)]/20 flex items-center justify-center flex-shrink-0">
+            <Card key={label} className="bg-card border border-border/80 p-4 flex items-center gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded-lg bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/20 flex items-center justify-center flex-shrink-0">
                 <Icon className="w-5 h-5 text-[var(--brand-start)]" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{value}</p>
-                <p className="text-xs text-gray-400">{label}</p>
+                <p className="text-2xl font-black text-foreground">{value}</p>
+                <p className="text-xs text-muted-foreground font-semibold">{label}</p>
               </div>
             </Card>
           ))}

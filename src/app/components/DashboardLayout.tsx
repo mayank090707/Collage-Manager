@@ -11,7 +11,8 @@ import {
   LayoutGrid,
   Menu,
   X,
-  FolderOpen
+  FolderOpen,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
@@ -43,6 +44,7 @@ export function DashboardLayout() {
     { icon: BarChart3, label: "Analytics", path: "/app/analytics" },
     { icon: FolderOpen, label: "Study Material", path: "/app/study-material" },
     { icon: User, label: "Profile", path: "/app/profile" },
+    { icon: ShieldCheck, label: "Admin Panel", path: "/app/admin" },
   ];
 
   const isActive = (path: string) => {

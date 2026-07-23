@@ -11,37 +11,37 @@ export function Academics() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-black text-foreground mb-2">
           Academics
         </h1>
-        <p className="text-gray-400 text-lg">
+        <p className="text-muted-foreground text-lg">
           Manage your academic records and performance
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-[#111118]/80 border border-gray-800/50 p-1 h-auto">
+        <TabsList className="bg-muted border border-border p-1.5 h-auto rounded-xl flex gap-1">
           <TabsTrigger
             value="attendance"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[var(--brand-start)]/20 data-[state=active]:to-[var(--brand-end)]/20 data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-[0_0_10px_rgba(var(--brand-start-rgb), 0.2)] text-gray-400"
+            className="data-[state=active]:bg-card data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-sm text-muted-foreground font-bold px-5 py-2.5 rounded-lg transition-all"
           >
             Attendance
           </TabsTrigger>
           <TabsTrigger
             value="sgpa"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[var(--brand-start)]/20 data-[state=active]:to-[var(--brand-end)]/20 data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-[0_0_10px_rgba(var(--brand-start-rgb), 0.2)] text-gray-400"
+            className="data-[state=active]:bg-card data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-sm text-muted-foreground font-bold px-5 py-2.5 rounded-lg transition-all"
           >
             SGPA
           </TabsTrigger>
           <TabsTrigger
             value="cgpa"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[var(--brand-start)]/20 data-[state=active]:to-[var(--brand-end)]/20 data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-[0_0_10px_rgba(var(--brand-start-rgb), 0.2)] text-gray-400"
+            className="data-[state=active]:bg-card data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-sm text-muted-foreground font-bold px-5 py-2.5 rounded-lg transition-all"
           >
             CGPA
           </TabsTrigger>
           <TabsTrigger
             value="backlogs"
-            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[var(--brand-start)]/20 data-[state=active]:to-[var(--brand-end)]/20 data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-[0_0_10px_rgba(var(--brand-start-rgb), 0.2)] text-gray-400"
+            className="data-[state=active]:bg-card data-[state=active]:text-[var(--brand-start)] data-[state=active]:shadow-sm text-muted-foreground font-bold px-5 py-2.5 rounded-lg transition-all"
           >
             Backlogs
           </TabsTrigger>

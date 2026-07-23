@@ -14,6 +14,7 @@ import { RequiredMarks } from "./components/RequiredMarks";
 import { MarksCalculator } from "./components/MarksCalculator";
 import { TargetPredictor } from "./components/TargetPredictor";
 import { StudyMaterial } from "./components/StudyMaterial";
+import { AdminDashboard } from "./components/AdminDashboard";
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
       { path: "study-material", element: <StudyMaterial /> },
       { path: "profile", element: <Profile /> },
       { path: "analytics", element: <Analytics /> },
+      { path: "admin", element: <AdminDashboard /> },
     ],
   },
 ]);

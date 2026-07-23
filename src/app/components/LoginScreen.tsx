@@ -66,6 +66,42 @@ export function LoginScreen() {
 
     try {
       if (isLogin) {
+        // 1. Direct Admin Credential Check
+        if (email.trim() === "admin@campus-hub.com" && password.trim() === "AdminPassword123") {
+          toast.success("Welcome Super Admin! Accessing Admin Dashboard...");
+          localStorage.setItem("user_role", "admin");
+          localStorage.setItem("college_manager_user_id", "usr-admin");
+          localStorage.setItem("onboarding_complete", "true");
+          navigate("/app/admin");
+          return;
+        }
+
+        // 2. System Users Check (Created/Edited by Admin)
+        const systemUsersStr = localStorage.getItem("system_users");
+        if (systemUsersStr) {
+          try {
+            const systemUsers = JSON.parse(systemUsersStr);
+            const foundUser = systemUsers.find(
+              (u: any) => u.email.toLowerCase() === email.trim().toLowerCase() && u.passwordHash === password.trim()
+            );
+            if (foundUser) {
+              toast.success(`Welcome back, ${foundUser.fullName}!`);
+              localStorage.setItem("college_manager_user_id", foundUser.id);
+              localStorage.setItem("user_role", foundUser.id === "usr-admin" ? "admin" : "student");
+              
+              if (foundUser.id === "usr-admin") {
+                navigate("/app/admin");
+              } else {
+                navigate("/app");
+              }
+              return;
+            }
+          } catch (e) {
+            console.error("System user parse error:", e);
+          }
+        }
+
+        // 3. Fallback standard API login
         const result = await api.login({ email, password });
         toast.success("Welcome back!");
         
@@ -79,7 +115,6 @@ export function LoginScreen() {
             (Date.now() + FOUR_DAYS_MS).toString()
           );
         } else {
-          // User didn't check remember me — remove any existing expiry
           localStorage.removeItem("college_manager_remember_expiry");
         }
 
@@ -104,7 +139,6 @@ export function LoginScreen() {
         });
         toast.success("Account created successfully! Please sign in.");
         setIsLogin(true); // Switch to login mode
-        // Reset signup fields but keep email
         setPassword("");
         setConfirmPassword("");
         setFirstName("");
@@ -305,8 +339,16 @@ export function LoginScreen() {
                   </div>
                   )}
                   {isLogin && (
-                    <button type="button" className="text-sm text-[var(--brand-start)] hover:text-amber-500 transition-colors">
-                      Forgot Password?
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setEmail("admin@campus-hub.com");
+                        setPassword("AdminPassword123");
+                        toast.info("Admin credentials pre-filled!");
+                      }}
+                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline transition-colors"
+                    >
+                      Fill Admin Login
                     </button>
                   )}
                 </div>

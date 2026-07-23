@@ -2,7 +2,7 @@
 
 :root {
   --font-size: 16px;
-  --background: #f4f4f5; /* Light grey background */
+  --background: #ffffff; /* Pure white background */
   --foreground: #09090b; /* Pitch carbon black */
   --card: #ffffff;
   --card-foreground: #09090b;
@@ -10,7 +10,7 @@
   --popover-foreground: #09090b;
   --primary: #ca8a04; /* Classy rich yellow */
   --primary-foreground: #ffffff;
-  --secondary: #e4e4e7;
+  --secondary: #f4f4f5;
   --secondary-foreground: #09090b;
   --muted: #f4f4f5;
   --muted-foreground: #52525b;
@@ -18,9 +18,9 @@
   --accent-foreground: #09090b;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #d4d4d8;
+  --border: #e4e4e7;
   --input: transparent;
-  --input-background: #e4e4e7;
+  --input-background: #f4f4f5;
   --switch-background: #cbced4;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
