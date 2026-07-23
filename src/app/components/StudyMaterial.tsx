@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { logActivity } from "../../lib/activityTracker";
 
 /* ─── Types ─────────────────────────────────────────────────── */
 type Section = "all" | "syllabus" | "important-topics" | "pyq" | "study-reference";
@@ -253,7 +254,14 @@ export function StudyMaterial() {
         <Button
           className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md flex items-center gap-2"
           onClick={() => {
-            // Placeholder: open syllabus (user will add the link later)
+            logActivity(
+              "SYLLABUS_ACCESSED",
+              `Student accessed Semester ${currentSemester} official course syllabus repository.`,
+              "StudyMaterial",
+              undefined,
+              undefined,
+              "info"
+            );
             alert("Syllabus link will be added soon!");
           }}
         >

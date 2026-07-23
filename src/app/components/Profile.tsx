@@ -10,6 +10,7 @@ import { Edit, Mail, Phone, GraduationCap, Calendar, Award, CheckCircle, AlertCi
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { computeCGPA } from "../../lib/academicUtils";
+import { logActivity } from "../../lib/activityTracker";
 
 interface StudentProfile {
   fullName: string;
@@ -113,6 +114,16 @@ export function Profile() {
     localStorage.setItem("student_profile", JSON.stringify(editData));
     setProfile(editData);
     setShowEditDialog(false);
+
+    logActivity(
+      "PROFILE_UPDATED",
+      `Student profile updated (${editData.fullName}, ${editData.branch}, Sem ${editData.currentSemester}).`,
+      "Profile",
+      editData.email,
+      editData.fullName,
+      "info"
+    );
+
     toast.success("Profile updated successfully!");
   };
 

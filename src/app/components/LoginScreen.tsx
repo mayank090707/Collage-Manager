@@ -8,6 +8,7 @@ import { GraduationCap, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../../lib/api";
 import { toast } from "sonner";
+import { logActivity } from "../../lib/activityTracker";
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -72,6 +73,16 @@ export function LoginScreen() {
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
           localStorage.setItem("onboarding_complete", "true");
+          
+          logActivity(
+            "ADMIN_LOGIN_SUCCESS",
+            "Super Admin authenticated via master credentials (admin@campus-hub.com). Accessing Admin Control Center.",
+            "System",
+            "admin@campus-hub.com",
+            "System Admin",
+            "warning"
+          );
+
           navigate("/app/admin");
           return;
         }
@@ -87,9 +98,19 @@ export function LoginScreen() {
             if (foundUser) {
               toast.success(`Welcome back, ${foundUser.fullName}!`);
               localStorage.setItem("college_manager_user_id", foundUser.id);
-              localStorage.setItem("user_role", foundUser.id === "usr-admin" ? "admin" : "student");
+              const isAdmin = foundUser.id === "usr-admin";
+              localStorage.setItem("user_role", isAdmin ? "admin" : "student");
               
-              if (foundUser.id === "usr-admin") {
+              logActivity(
+                isAdmin ? "ADMIN_LOGIN_SUCCESS" : "LOGIN_SUCCESS",
+                `${foundUser.fullName} logged in successfully using registered credentials (${foundUser.email}).`,
+                isAdmin ? "System" : "Login",
+                foundUser.email,
+                foundUser.fullName,
+                "success"
+              );
+
+              if (isAdmin) {
                 navigate("/app/admin");
               } else {
                 navigate("/app");
@@ -107,6 +128,7 @@ export function LoginScreen() {
         
         // Save user ID & remember-me expiry (4 days from now)
         localStorage.setItem("college_manager_user_id", result.userId);
+        localStorage.setItem("user_role", "student");
         localStorage.setItem("college_manager_remember", rememberMe.toString());
         if (rememberMe) {
           const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
@@ -120,6 +142,15 @@ export function LoginScreen() {
 
         // Sync data from DB
         await api.syncFromDB();
+
+        logActivity(
+          "LOGIN_SUCCESS",
+          `Student logged in via standard authentication (${email}).`,
+          "Login",
+          email,
+          "Student User",
+          "success"
+        );
 
         const isOnboarded = localStorage.getItem("onboarding_complete") === "true";
         const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
@@ -137,6 +168,16 @@ export function LoginScreen() {
           lastName, 
           dob 
         });
+
+        logActivity(
+          "USER_SIGNUP",
+          `New user account registered for ${firstName} ${lastName} (${email}).`,
+          "Login",
+          email,
+          `${firstName} ${lastName}`,
+          "success"
+        );
+
         toast.success("Account created successfully! Please sign in.");
         setIsLogin(true); // Switch to login mode
         setPassword("");

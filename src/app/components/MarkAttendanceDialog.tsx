@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { logActivity } from "../../lib/activityTracker";
 
 interface TimetableSlot {
   day: string;
@@ -71,6 +72,16 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     }
 
     localStorage.setItem("attendance_records", JSON.stringify(attendanceRecords));
+
+    logActivity(
+      "ATTENDANCE_RECORDED",
+      `Recorded attendance for date ${format(selectedDate, "MMM dd, yyyy")} (${newRecord.subjects.length} classes attended).`,
+      "Attendance",
+      undefined,
+      undefined,
+      "success"
+    );
+
     toast.success("Attendance marked successfully!");
     onClose();
   };

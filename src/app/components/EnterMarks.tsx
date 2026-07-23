@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { ArrowLeft, Save, BookOpen, Award, TrendingUp, X, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
+import { logActivity } from "../../lib/activityTracker";
 
 interface SubjectMark {
   subjectName: string;
@@ -187,6 +188,15 @@ export function EnterMarks() {
       sgpa: sv.sgpa,
     }))));
     toast.success(`Semester ${sem} marks saved!`);
+
+    logActivity(
+      "MARKS_UPDATED",
+      `Saved marks for Semester ${sem} (${results.length} subjects recorded). ${hasAnyMarks ? `Calculated SGPA: ${sgpa.toFixed(2)}` : "Subject list updated."}`,
+      "Marks",
+      undefined,
+      undefined,
+      "info"
+    );
     
     // If this is the current semester, update the global subjects list for sync with Required Marks
     if (sem === currentSem) {

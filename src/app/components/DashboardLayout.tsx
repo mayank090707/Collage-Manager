@@ -36,7 +36,11 @@ export function DashboardLayout() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const menuItems = [
+  const userRole = localStorage.getItem("user_role");
+  const userId = localStorage.getItem("college_manager_user_id");
+  const isAdmin = userRole === "admin" || userId === "usr-admin";
+
+  const baseMenuItems = [
     { icon: Home, label: "Dashboard", path: "/app" },
     { icon: BookOpen, label: "Academics", path: "/app/academics" },
     { icon: Calendar, label: "Exams", path: "/app/exams" },
@@ -44,8 +48,11 @@ export function DashboardLayout() {
     { icon: BarChart3, label: "Analytics", path: "/app/analytics" },
     { icon: FolderOpen, label: "Study Material", path: "/app/study-material" },
     { icon: User, label: "Profile", path: "/app/profile" },
-    { icon: ShieldCheck, label: "Admin Panel", path: "/app/admin" },
   ];
+
+  const menuItems = isAdmin
+    ? [...baseMenuItems, { icon: ShieldCheck, label: "Admin Control", path: "/app/admin" }]
+    : baseMenuItems;
 
   const isActive = (path: string) => {
     if (path === "/app") {
