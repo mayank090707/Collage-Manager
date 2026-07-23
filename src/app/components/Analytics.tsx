@@ -113,15 +113,15 @@ export function Analytics() {
   return (
     <div className="p-8 space-y-8">
       <div>
-        <h1 className="text-4xl mb-2 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
+        <h1 className="text-4xl font-black mb-2 bg-gradient-to-r from-[var(--brand-start)] to-amber-600 bg-clip-text text-transparent">
           Analytics
         </h1>
-        <p className="text-gray-400 text-lg">Visualize your academic performance and insights</p>
+        <p className="text-muted-foreground text-lg">Visualize your academic performance and insights</p>
       </div>
 
       {/* Key Insights */}
       <div>
-        <h2 className="text-2xl text-white mb-4">AI-Powered Insights</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">AI-Powered Insights</h2>
         <div className="grid gap-4">
           {insights.map((insight, index) => (
             <motion.div
@@ -130,9 +130,9 @@ export function Analytics() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="bg-gradient-to-r from-[var(--brand-start)]/10 to-[var(--brand-end)]/10 border-[var(--brand-start)]/30 backdrop-blur-xl p-4">
+              <Card className="bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 backdrop-blur-xl p-4">
                 <div className="flex items-start space-x-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] mt-1">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--brand-start)] to-amber-600 mt-1 flex-shrink-0">
                     {insight.includes("improved") || insight.includes("Excellent") || insight.includes("Outstanding") || insight.includes("Congratulations") ? (
                       <TrendingUp className="w-4 h-4 text-white" />
                     ) : insight.includes("decreased") || insight.includes("below") || insight.includes("backlog") ? (
@@ -141,14 +141,14 @@ export function Analytics() {
                       <Award className="w-4 h-4 text-white" />
                     )}
                   </div>
-                  <p className="text-white flex-1">{insight}</p>
+                  <p className="text-foreground font-medium flex-1 leading-relaxed">{insight}</p>
                 </div>
               </Card>
             </motion.div>
           ))}
           {insights.length === 0 && (
-            <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-8 text-center">
-              <p className="text-gray-400">Complete your academic records to see personalized insights</p>
+            <Card className="bg-card backdrop-blur-xl border border-border/60 p-8 text-center">
+              <p className="text-muted-foreground">Complete your academic records to see personalized insights</p>
             </Card>
           )}
         </div>
@@ -157,20 +157,20 @@ export function Analytics() {
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* SGPA Trend */}
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-          <h3 className="text-xl text-white mb-6">SGPA Trend</h3>
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
+          <h3 className="text-xl font-bold text-foreground mb-6">SGPA Trend</h3>
           {sgpaData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={sgpaData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="semester" stroke="#9ca3af" />
-                <YAxis domain={[0, 10]} stroke="#9ca3af" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="semester" stroke="var(--muted-foreground)" />
+                <YAxis domain={[0, 10]} stroke="var(--muted-foreground)" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#111118",
-                    border: "1px solid #374151",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
-                    color: "#fff",
+                    color: "var(--foreground)",
                   }}
                 />
                 <Line
@@ -190,27 +190,27 @@ export function Analytics() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-400">
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
               No SGPA data available
             </div>
           )}
         </Card>
 
         {/* Attendance by Subject */}
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-          <h3 className="text-xl text-white mb-6">Attendance by Subject</h3>
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
+          <h3 className="text-xl font-bold text-foreground mb-6">Attendance by Subject</h3>
           {attendanceData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={attendanceData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="subject" stroke="#9ca3af" angle={-45} textAnchor="end" height={100} />
-                <YAxis domain={[0, 100]} stroke="#9ca3af" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="subject" stroke="var(--muted-foreground)" angle={-45} textAnchor="end" height={100} />
+                <YAxis domain={[0, 100]} stroke="var(--muted-foreground)" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#111118",
-                    border: "1px solid #374151",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "8px",
-                    color: "#fff",
+                    color: "var(--foreground)",
                   }}
                 />
                 <Bar dataKey="attendance" fill="url(#attendanceGradient)" radius={[8, 8, 0, 0]} />
@@ -223,7 +223,7 @@ export function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-400">
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
               No attendance data available
             </div>
           )}
@@ -232,13 +232,13 @@ export function Analytics() {
 
       {/* Subject Performance Radar */}
       {subjectPerformance.length > 0 && (
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
-          <h3 className="text-xl text-white mb-6">Subject Performance Distribution</h3>
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
+          <h3 className="text-xl font-bold text-foreground mb-6">Subject Performance Distribution</h3>
           <ResponsiveContainer width="100%" height={400}>
             <RadarChart data={subjectPerformance}>
-              <PolarGrid stroke="#374151" />
-              <PolarAngleAxis dataKey="subject" stroke="#9ca3af" />
-              <PolarRadiusAxis domain={[0, 100]} stroke="#9ca3af" />
+              <PolarGrid stroke="var(--border)" />
+              <PolarAngleAxis dataKey="subject" stroke="var(--muted-foreground)" />
+              <PolarRadiusAxis domain={[0, 100]} stroke="var(--muted-foreground)" />
               <Radar
                 name="Score"
                 dataKey="score"
@@ -249,10 +249,10 @@ export function Analytics() {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#111118",
-                  border: "1px solid #374151",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "8px",
-                  color: "#fff",
+                  color: "var(--foreground)",
                 }}
               />
             </RadarChart>
@@ -262,20 +262,20 @@ export function Analytics() {
 
       {/* Performance Indicators */}
       <div>
-        <h2 className="text-2xl text-white mb-4">Performance Indicators</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Performance Indicators</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30 p-6">
+            <Card className="bg-emerald-500/10 border border-emerald-500/30 p-6">
               <div className="flex items-center justify-between mb-4">
-                <CheckCircle className="w-8 h-8 text-emerald-400" />
-                <span className="text-2xl text-emerald-400">85%</span>
+                <CheckCircle className="w-8 h-8 text-emerald-500" />
+                <span className="text-2xl font-black text-emerald-500">85%</span>
               </div>
-              <p className="text-sm text-gray-300 mb-1">Placement Readiness</p>
-              <p className="text-xs text-gray-400">Based on CGPA and attendance</p>
+              <p className="text-sm text-foreground font-semibold mb-1">Placement Readiness</p>
+              <p className="text-xs text-muted-foreground">Based on CGPA and attendance</p>
             </Card>
           </motion.div>
 
@@ -284,13 +284,13 @@ export function Analytics() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-gradient-to-br from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/30 p-6">
+            <Card className="bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 p-6">
               <div className="flex items-center justify-between mb-4">
                 <TrendingUp className="w-8 h-8 text-[var(--brand-start)]" />
-                <span className="text-2xl text-[var(--brand-start)]">Good</span>
+                <span className="text-2xl font-black text-[var(--brand-start)]">Good</span>
               </div>
-              <p className="text-sm text-gray-300 mb-1">Academic Trend</p>
-              <p className="text-xs text-gray-400">Consistent performance</p>
+              <p className="text-sm text-foreground font-semibold mb-1">Academic Trend</p>
+              <p className="text-xs text-muted-foreground">Consistent performance</p>
             </Card>
           </motion.div>
 
@@ -299,13 +299,13 @@ export function Analytics() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border-[var(--brand-start)]/25 p-6">
+            <Card className="bg-amber-500/10 border border-amber-500/30 p-6">
               <div className="flex items-center justify-between mb-4">
-                <Target className="w-8 h-8 text-[var(--brand-end)]" />
-                <span className="text-2xl text-[var(--brand-end)]">On Track</span>
+                <Target className="w-8 h-8 text-amber-500" />
+                <span className="text-2xl font-black text-amber-500">On Track</span>
               </div>
-              <p className="text-sm text-gray-300 mb-1">Target Progress</p>
-              <p className="text-xs text-gray-400">Meeting expectations</p>
+              <p className="text-sm text-foreground font-semibold mb-1">Target Progress</p>
+              <p className="text-xs text-muted-foreground">Meeting expectations</p>
             </Card>
           </motion.div>
         </div>

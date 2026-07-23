@@ -102,43 +102,43 @@ export function AttendanceTab() {
     <div className="space-y-6">
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">Overall Attendance</span>
+            <span className="text-sm text-muted-foreground">Overall Attendance</span>
             <TrendingUp className="w-5 h-5 text-[var(--brand-start)]" />
           </div>
-          <div className="text-3xl text-white mb-2">{overallAttendance.toFixed(1)}%</div>
-          <Progress value={overallAttendance} className="h-2 bg-gray-800" />
+          <div className="text-3xl font-black text-foreground mb-2">{overallAttendance.toFixed(1)}%</div>
+          <Progress value={overallAttendance} className="h-2 bg-muted" />
         </Card>
 
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">Classes Attended</span>
+            <span className="text-sm text-muted-foreground">Classes Attended</span>
             <CheckCircle className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="text-3xl text-white">{totalAttended}</div>
+          <div className="text-3xl font-black text-foreground">{totalAttended}</div>
         </Card>
 
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">Classes Conducted</span>
-            <XCircle className="w-5 h-5 text-gray-500" />
+            <span className="text-sm text-muted-foreground">Classes Conducted</span>
+            <XCircle className="w-5 h-5 text-muted-foreground" />
           </div>
-          <div className="text-3xl text-white">{totalConducted}</div>
+          <div className="text-3xl font-black text-foreground">{totalConducted}</div>
         </Card>
 
-        <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6">
+        <Card className="bg-card backdrop-blur-xl border border-border/60 p-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">Classes Missed</span>
+            <span className="text-sm text-muted-foreground">Classes Missed</span>
             <AlertTriangle className="w-5 h-5 text-orange-500" />
           </div>
-          <div className="text-3xl text-white">{totalConducted - totalAttended}</div>
+          <div className="text-3xl font-black text-foreground">{totalConducted - totalAttended}</div>
         </Card>
       </div>
 
       {/* Subject-wise Attendance */}
       <div>
-        <h3 className="text-xl text-white mb-4">Subject-wise Attendance</h3>
+        <h3 className="text-xl font-bold text-foreground mb-4">Subject-wise Attendance</h3>
         <div className="grid gap-4">
           {subjects.map((subject, index) => {
             const stats = subjectStats[subject.name];
@@ -153,17 +153,17 @@ export function AttendanceTab() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-6 hover:border-gray-700 transition-colors">
+                <Card className="bg-card backdrop-blur-xl border border-border/60 p-6 hover:border-[var(--brand-start)]/40 transition-colors">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h4 className="text-lg text-white">{subject.name}</h4>
-                      <p className="text-sm text-gray-400">{subject.code}</p>
+                      <h4 className="text-lg font-bold text-foreground">{subject.name}</h4>
+                      <p className="text-sm text-muted-foreground">{subject.code}</p>
                     </div>
                     <div
-                      className={`px-3 py-1 rounded-full text-sm ${
+                      className={`px-3 py-1 rounded-full text-sm font-bold ${
                         isLow
-                          ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                          : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-red-500/20 text-red-500 border border-red-500/30"
+                          : "bg-emerald-500/20 text-emerald-500 border border-emerald-500/30"
                       }`}
                     >
                       {stats.percentage.toFixed(1)}%
@@ -172,25 +172,25 @@ export function AttendanceTab() {
 
                   <Progress
                     value={stats.percentage}
-                    className="h-3 bg-gray-800 mb-4"
+                    className="h-3 bg-muted mb-4"
                   />
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-400">Attended</p>
-                      <p className="text-white">{stats.attended}</p>
+                      <p className="text-muted-foreground">Attended</p>
+                      <p className="text-foreground font-semibold">{stats.attended}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Total</p>
-                      <p className="text-white">{stats.total}</p>
+                      <p className="text-muted-foreground">Total</p>
+                      <p className="text-foreground font-semibold">{stats.total}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Classes Needed (75%)</p>
-                      <p className="text-white">{stats.classesNeeded}</p>
+                      <p className="text-muted-foreground">Classes Needed (75%)</p>
+                      <p className="text-foreground font-semibold">{stats.classesNeeded}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Safe Bunks</p>
-                      <p className="text-white">{stats.safeBunks}</p>
+                      <p className="text-muted-foreground">Safe Bunks</p>
+                      <p className="text-foreground font-semibold">{stats.safeBunks}</p>
                     </div>
                   </div>
                 </Card>
@@ -199,8 +199,8 @@ export function AttendanceTab() {
           })}
 
           {subjects.length === 0 && (
-            <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-12 text-center">
-              <p className="text-gray-400">No subjects found. Please complete onboarding first.</p>
+            <Card className="bg-card backdrop-blur-xl border border-border/60 p-12 text-center">
+              <p className="text-muted-foreground">No subjects found. Please complete onboarding first.</p>
             </Card>
           )}
         </div>
