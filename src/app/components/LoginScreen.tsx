@@ -368,29 +368,16 @@ export function LoginScreen() {
                 <div className="flex items-center justify-between">
                   {isLogin && (
                     <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="remember" 
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                      className="border-gray-600 data-[state=checked]:bg-[var(--brand-start)] data-[state=checked]:border-[var(--brand-start)]"
-                    />
-                    <Label htmlFor="remember" className="text-sm text-gray-400 cursor-pointer">
-                      Remember me
-                    </Label>
-                  </div>
-                  )}
-                  {isLogin && (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setEmail("admin@campus-hub.com");
-                        setPassword("AdminPassword123");
-                        toast.info("Admin credentials pre-filled!");
-                      }}
-                      className="text-xs text-amber-400 hover:text-amber-300 font-bold underline transition-colors"
-                    >
-                      Fill Admin Login
-                    </button>
+                      <Checkbox 
+                        id="remember" 
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                        className="border-gray-600 data-[state=checked]:bg-[var(--brand-start)] data-[state=checked]:border-[var(--brand-start)]"
+                      />
+                      <Label htmlFor="remember" className="text-sm text-gray-400 cursor-pointer">
+                        Remember me
+                      </Label>
+                    </div>
                   )}
                 </div>
 

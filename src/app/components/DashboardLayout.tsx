@@ -40,7 +40,14 @@ export function DashboardLayout() {
   const userId = localStorage.getItem("college_manager_user_id");
   const isAdmin = userRole === "admin" || userId === "usr-admin";
 
-  const baseMenuItems = [
+  // Redirect admin users to /app/admin automatically when on default /app
+  useEffect(() => {
+    if (isAdmin && location.pathname === "/app") {
+      navigate("/app/admin", { replace: true });
+    }
+  }, [isAdmin, location.pathname, navigate]);
+
+  const studentMenuItems = [
     { icon: Home, label: "Dashboard", path: "/app" },
     { icon: BookOpen, label: "Academics", path: "/app/academics" },
     { icon: Calendar, label: "Exams", path: "/app/exams" },
@@ -50,9 +57,12 @@ export function DashboardLayout() {
     { icon: User, label: "Profile", path: "/app/profile" },
   ];
 
-  const menuItems = isAdmin
-    ? [...baseMenuItems, { icon: ShieldCheck, label: "Admin Control", path: "/app/admin" }]
-    : baseMenuItems;
+  const adminMenuItems = [
+    { icon: ShieldCheck, label: "Admin Telemetry Hub", path: "/app/admin" },
+    { icon: User, label: "Admin Profile", path: "/app/profile" },
+  ];
+
+  const menuItems = isAdmin ? adminMenuItems : studentMenuItems;
 
   const isActive = (path: string) => {
     if (path === "/app") {
