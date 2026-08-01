@@ -38,6 +38,8 @@ export function OnboardingFlow() {
     targetCgpa: "",
     backlogCount: "0",
     backlogSubjects: [] as string[],
+    semesterStartDate: "",
+    semesterEndDate: "",
   });
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export function OnboardingFlow() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
 
   const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
   const addSubject = () => {
     setSubjects([...subjects, { id: Date.now().toString(), name: "", credits: 0 }]);
@@ -312,6 +314,24 @@ export function OnboardingFlow() {
                         onChange={(e) => handleBacklogCountChange(e.target.value)}
                         className={inputCls}
                         placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-300">Semester Start Date</Label>
+                      <Input
+                        type="date"
+                        value={studentInfo.semesterStartDate}
+                        onChange={(e) => setStudentInfo({ ...studentInfo, semesterStartDate: e.target.value })}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-gray-300">Semester End Date</Label>
+                      <Input
+                        type="date"
+                        value={studentInfo.semesterEndDate}
+                        onChange={(e) => setStudentInfo({ ...studentInfo, semesterEndDate: e.target.value })}
+                        className={inputCls}
                       />
                     </div>
                   </div>

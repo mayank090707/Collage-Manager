@@ -13,7 +13,7 @@ interface TimetableSlot {
   period: number;
 }
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 const PERIOD_COLORS = [
   "from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/40 text-[var(--brand-start)]",

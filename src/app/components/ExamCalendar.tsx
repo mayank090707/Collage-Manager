@@ -76,6 +76,54 @@ const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const YEARS = [2022, 2023, 2024, 2025, 2026, 2027, 2028];
 
+// ─── Indian National Holidays (fixed-date or approximate floating dates) ───────
+// Format: MM-DD for annual fixed dates, YYYY-MM-DD for specific year dates
+const FIXED_HOLIDAYS: Record<string, string> = {
+  "01-26": "Republic Day",
+  "08-15": "Independence Day",
+  "10-02": "Gandhi Jayanti",
+  "12-25": "Christmas Day",
+  "11-01": "Diwali (Approx.)",  // approximate — adjust per year
+};
+
+// Specific year-based holidays (Diwali, Holi shift every year)
+const SPECIFIC_HOLIDAYS: Record<string, string> = {
+  // 2024
+  "2024-03-25": "Holi",
+  "2024-11-01": "Diwali",
+  "2024-04-14": "Ambedkar Jayanti / Baisakhi",
+  "2024-08-26": "Janmashtami",
+  "2024-10-12": "Dussehra",
+  "2024-11-15": "Guru Nanak Jayanti",
+  "2024-01-22": "Ram Mandir Prana Pratishtha",
+  // 2025
+  "2025-03-14": "Holi",
+  "2025-10-20": "Diwali",
+  "2025-04-14": "Ambedkar Jayanti / Baisakhi",
+  "2025-08-16": "Janmashtami",
+  "2025-10-02": "Gandhi Jayanti / Dussehra",
+  "2025-11-05": "Guru Nanak Jayanti",
+  "2025-03-31": "Id-ul-Fitr (Eid)",
+  // 2026
+  "2026-03-03": "Holi",
+  "2026-11-08": "Diwali",
+  "2026-04-14": "Ambedkar Jayanti / Baisakhi",
+  "2026-08-05": "Janmashtami",
+  "2026-10-22": "Dussehra",
+  "2026-10-25": "Guru Nanak Jayanti",
+};
+
+function getNationalHoliday(dateStr: string): string | null {
+  if (SPECIFIC_HOLIDAYS[dateStr]) return SPECIFIC_HOLIDAYS[dateStr];
+  const monthDay = dateStr.slice(5); // "MM-DD"
+  return FIXED_HOLIDAYS[monthDay] || null;
+}
+
+function isWeekend(day: Date): boolean {
+  const dow = day.getDay();
+  return dow === 0 || dow === 6; // 0=Sunday, 6=Saturday
+}
+
 function makeDate(year: number, month: number, day: number) {
   return format(new Date(year, month, day), "yyyy-MM-dd");
 }
@@ -492,7 +540,10 @@ export function ExamCalendar() {
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />Custom Event
         </span>
-        <span className="ml-auto text-gray-500">Click any date to add an event or label</span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/70" />Weekend / Holiday
+        </span>
+        <span className="ml-auto text-gray-500">Click any date to add an event or note</span>
       </div>
 
       {/* ── Month Navigation ── */}
@@ -566,6 +617,31 @@ export function ExamCalendar() {
                   const events = getEventsOnDate(dateStr);
                   const isCurrentDay = isToday(day);
                   const meta = examType ? EXAM_META[examType] : null;
+                  const weekend = isWeekend(day);
+                  const holiday = getNationalHoliday(dateStr);
+                  const isRedDay = weekend || !!holiday;
+
+                  // Determine cell background class
+                  let cellClass = "";
+                  if (examType && meta) {
+                    cellClass = `${meta.bg} border ${meta.border} ${meta.glow}`;
+                  } else if (isCurrentDay) {
+                    cellClass = "bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/30";
+                  } else if (isRedDay) {
+                    cellClass = "bg-red-500/10 border border-red-500/25 hover:bg-red-500/15";
+                  } else {
+                    cellClass = "border border-transparent hover:bg-gray-800/30 hover:border-gray-700/50";
+                  }
+
+                  // Date number color
+                  let dateNumClass = "text-gray-300";
+                  if (isCurrentDay) {
+                    dateNumClass = "bg-[var(--brand-start)] text-[#0a0a0f]";
+                  } else if (examType && meta) {
+                    dateNumClass = meta.color;
+                  } else if (isRedDay) {
+                    dateNumClass = "text-red-400";
+                  }
 
                   return (
                     <motion.button
@@ -573,29 +649,24 @@ export function ExamCalendar() {
                       onClick={() => openDayDialog(dateStr)}
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
-                      className={`relative rounded-xl p-1.5 flex flex-col items-center min-h-[72px] border transition-all text-left ${
-                        examType && meta
-                          ? `${meta.bg} border ${meta.border} ${meta.glow}`
-                          : isCurrentDay
-                          ? "bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/30"
-                          : "border border-transparent hover:bg-gray-800/30 hover:border-gray-700/50"
-                      }`}
+                      className={`relative rounded-xl p-1.5 flex flex-col items-center min-h-[72px] transition-all text-left ${cellClass}`}
                     >
                       {/* Date number */}
                       <span
-                        className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-1 ${
-                          isCurrentDay
-                            ? "bg-[var(--brand-start)] text-[#0a0a0f]"
-                            : examType && meta
-                            ? meta.color
-                            : "text-gray-300"
-                        }`}
+                        className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-0.5 ${dateNumClass}`}
                       >
                         {format(day, "d")}
                       </span>
 
-                      {/* Exam type label */}
-                      {examType && meta && (
+                      {/* Holiday label (national) */}
+                      {holiday && (
+                        <span className="text-[8px] font-bold text-red-400 leading-tight text-center px-1 line-clamp-2">
+                          {holiday}
+                        </span>
+                      )}
+
+                      {/* Exam type label (non-red days) */}
+                      {examType && meta && !holiday && (
                         <span className={`text-[9px] font-semibold ${meta.color} leading-tight text-center px-1`}>
                           {examType === "midsem1" ? "MID-1" : examType === "midsem2" ? "MID-2" : "END"}
                         </span>
@@ -622,10 +693,10 @@ export function ExamCalendar() {
                         <span className="text-[9px] text-gray-500 mt-0.5">+{events.length - 2} more</span>
                       )}
 
-                      {/* Add icon on hover */}
+                      {/* Add icon on hover (only show if no events) */}
                       {events.length === 0 && !examType && (
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                          <Plus className="w-4 h-4 text-gray-600" />
+                          <Plus className={`w-4 h-4 ${isRedDay ? "text-red-500/60" : "text-gray-600"}`} />
                         </div>
                       )}
                     </motion.button>
