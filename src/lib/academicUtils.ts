@@ -55,14 +55,22 @@ export function getCGPAFromStorage(): number | null {
 /**
  * Required SGPA for the current semester so that simple-average CGPA = target.
  * Formula: reqSGPA = (targetCGPA × currentSemNum) − sumOfPreviousSGPAs
+ * Returns null if target <= 0 OR if currentSemNum > 1 and no previous semester results are saved.
  */
 export function computeRequiredSGPA(
   savedMarks: SavedSemesterEntry[],
   targetCgpa: number,
   currentSemNum: number
-): number {
+): number | null {
+  if (targetCgpa <= 0) return null;
   const real = getRealSemesters(savedMarks);
   const prevReal = real.filter((m) => m.semester < currentSemNum);
+
+  // If in semester > 1, require previous semester results to be entered first
+  if (currentSemNum > 1 && prevReal.length === 0) {
+    return null;
+  }
+
   const sumPrev = prevReal.reduce((acc, m) => acc + (m.sgpa || 0), 0);
   return Math.max(0, targetCgpa * currentSemNum - sumPrev);
 }

@@ -122,7 +122,7 @@ export function Timetable() {
   };
 
   // ── Read-only view ─────────────────────────────────────────────────────────────
-  const ReadView = () => (
+  const renderReadView = () => (
     <>
       {timetable.length === 0 ? (
         <Card className="bg-card border border-border/80 p-16 text-center shadow-sm">
@@ -212,7 +212,7 @@ export function Timetable() {
   );
 
   // ── Edit view ──────────────────────────────────────────────────────────────────
-  const EditView = () => (
+  const renderEditView = () => (
     <Card className="bg-card border border-border/80 p-6 space-y-6 shadow-sm">
       {/* Add a new subject to the palette */}
       <div>
@@ -377,7 +377,7 @@ export function Timetable() {
         </div>
       )}
 
-      {editMode ? <EditView /> : <ReadView />}
+      {editMode ? renderEditView() : renderReadView()}
     </div>
   );
 }

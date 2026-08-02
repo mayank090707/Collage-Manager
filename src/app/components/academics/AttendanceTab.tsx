@@ -220,7 +220,8 @@ export function AttendanceTab() {
             const stats = subjectStats[subject.name];
             if (!stats) return null;
 
-            const isLow = stats.percentage < 75;
+            const hasMarked = stats.total > 0;
+            const isLow = hasMarked && stats.percentage < 75;
 
             return (
               <motion.div
@@ -239,46 +240,47 @@ export function AttendanceTab() {
                     </div>
                     <div
                       className={`px-3 py-1 rounded-full text-xs font-black ${
-                        isLow
+                        !hasMarked
+                          ? "bg-muted text-muted-foreground border border-border"
+                          : isLow
                           ? "bg-red-500/20 text-red-600 border border-red-500/30 dark:text-red-400"
                           : "bg-emerald-500/20 text-emerald-600 border border-emerald-500/30 dark:text-emerald-400"
                       }`}
                     >
-                      {stats.percentage.toFixed(1)}%
+                      {hasMarked ? `${stats.percentage.toFixed(1)}%` : "N/A"}
                     </div>
                   </div>
 
                   <Progress
-                    value={stats.percentage}
+                    value={hasMarked ? stats.percentage : 0}
                     className="h-3 bg-muted mb-4"
                   />
 
                   {/* Recommendation Alert Badge */}
-                  <div
-                    className={`p-3 rounded-lg border text-xs font-semibold mb-4 flex items-center gap-2 ${
-                      isLow
-                        ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
-                        : "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-                    }`}
-                  >
-                    {isLow ? (
-                      <>
-                        <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
-                        <span>
-                          <strong>Low Attendance Warning:</strong> Attend the next{" "}
-                          <strong>{stats.classesNeeded}</strong> consecutive classes to reach 75%.
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-500" />
-                        <span>
-                          <strong>Safe Attendance:</strong> You can safely bunk{" "}
-                          <strong>{stats.safeBunks}</strong> classes and stay above 75%.
-                        </span>
-                      </>
-                    )}
-                  </div>
+                  {!hasMarked ? (
+                    <div className="p-3 rounded-lg border text-xs font-semibold mb-4 flex items-center gap-2 bg-muted/40 border-border text-muted-foreground">
+                      <Calendar className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+                      <span>
+                        <strong>No attendance marked yet:</strong> Tracking will activate once the first class attendance is marked.
+                      </span>
+                    </div>
+                  ) : isLow ? (
+                    <div className="p-3 rounded-lg border text-xs font-semibold mb-4 flex items-center gap-2 bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
+                      <span>
+                        <strong>Low Attendance Warning:</strong> Attend the next{" "}
+                        <strong>{stats.classesNeeded}</strong> consecutive classes to reach 75%.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-lg border text-xs font-semibold mb-4 flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-500" />
+                      <span>
+                        <strong>Safe Attendance:</strong> You can safely bunk{" "}
+                        <strong>{stats.safeBunks}</strong> classes and stay above 75%.
+                      </span>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
@@ -292,13 +294,13 @@ export function AttendanceTab() {
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
                       <p className="text-muted-foreground font-medium">Classes Needed (75%)</p>
                       <p className="text-amber-600 dark:text-amber-400 font-black text-sm">
-                        {stats.classesNeeded}
+                        {hasMarked ? stats.classesNeeded : "-"}
                       </p>
                     </div>
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
                       <p className="text-muted-foreground font-medium">Safe Bunks</p>
                       <p className="text-emerald-600 dark:text-emerald-400 font-black text-sm">
-                        {stats.safeBunks}
+                        {hasMarked ? stats.safeBunks : "-"}
                       </p>
                     </div>
                   </div>

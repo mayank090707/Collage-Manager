@@ -56,7 +56,9 @@ export function CGPATab() {
       const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
       const currentSemNum = parseInt(profile.currentSemester || "1");
       const req = computeRequiredSGPA(savedMarks, savedTarget, currentSemNum);
-      setRequiredSgpa(req);
+      setRequiredSgpa(req !== null ? req : 0);
+    } else {
+      setRequiredSgpa(0);
     }
   };
 
@@ -68,18 +70,22 @@ export function CGPATab() {
   }, []);
 
   const handleSaveTarget = () => {
-    const target = parseFloat(newTarget);
-    if (isNaN(target) || target < 0 || target > 10) {
-      toast.error("Please enter a valid CGPA between 0 and 10");
+    if (!newTarget || parseFloat(newTarget) < 0 || parseFloat(newTarget) > 10) {
+      toast.error("Please enter a valid CGPA target between 0 and 10");
       return;
     }
 
-    localStorage.setItem("target_cgpa", target.toString());
-    setTargetCgpa(target);
+    const val = parseFloat(newTarget);
+    localStorage.setItem("target_cgpa", val.toString());
+    setTargetCgpa(val);
     setShowTargetDialog(false);
     toast.success("Target CGPA updated successfully!");
-    window.dispatchEvent(new Event("storage"));
-    loadData();
+
+    const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
+    const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
+    const currentSemNum = parseInt(profile.currentSemester || "1");
+    const req = computeRequiredSGPA(savedMarks, val, currentSemNum);
+    setRequiredSgpa(req !== null ? req : 0);
   };
 
   const remainingSemesters = totalSemesters - completedSemesters;

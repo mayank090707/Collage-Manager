@@ -53,10 +53,10 @@ export function Analytics() {
     }
 
     // Generate insights
-    generateInsights(sgpaChart, attendanceChart, semesterData);
+    generateInsights(sgpaChart, attendanceChart, semesterData, attendanceRecords.length > 0);
   };
 
-  const generateInsights = (sgpaChart: any[], attendanceChart: any[], semesterData: any[]) => {
+  const generateInsights = (sgpaChart: any[], attendanceChart: any[], semesterData: any[], hasAttendanceMarked: boolean) => {
     const newInsights: string[] = [];
 
     // SGPA trend
@@ -71,11 +71,13 @@ export function Analytics() {
     }
 
     // Attendance
-    const avgAttendance = attendanceChart.reduce((sum, item) => sum + item.attendance, 0) / attendanceChart.length;
-    if (avgAttendance >= 85) {
-      newInsights.push("Excellent attendance record! You're well above the minimum requirement.");
-    } else if (avgAttendance < 75) {
-      newInsights.push("Your attendance is below 75%. Consider improving it to meet requirements.");
+    if (hasAttendanceMarked && attendanceChart.length > 0) {
+      const avgAttendance = attendanceChart.reduce((sum, item) => sum + item.attendance, 0) / attendanceChart.length;
+      if (avgAttendance >= 85) {
+        newInsights.push("Excellent attendance record! You're well above the minimum requirement.");
+      } else if (avgAttendance < 75) {
+        newInsights.push("Your attendance is below 75%. Consider improving it to meet requirements.");
+      }
     }
 
     // CGPA calculation

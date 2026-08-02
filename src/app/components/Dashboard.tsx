@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut } from "lucide-react";
+import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut, History, AlertTriangle, X, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Progress } from "./ui/progress";
 import { motion } from "motion/react";
@@ -20,11 +20,22 @@ interface StudentProfile {
   [key: string]: string;
 }
 
+interface NotificationItem {
+  id: string;
+  type: "attendance" | "exam";
+  title: string;
+  message: string;
+  link: string;
+  level: "warning" | "urgent";
+}
+
 export function Dashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const [showTargetDialog, setShowTargetDialog] = useState(false);
+  const [showRecentActivityDialog, setShowRecentActivityDialog] = useState(false);
+  const [showNotificationsPopover, setShowNotificationsPopover] = useState(false);
   const [newTarget, setNewTarget] = useState("");
   const [showCongrats, setShowCongrats] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -47,13 +58,21 @@ export function Dashboard() {
   };
 
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [stats, setStats] = useState({
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [stats, setStats] = useState<{
+    attendance: number;
+    cgpa: number;
+    targetCgpa: number;
+    backlogs: number;
+    upcomingExams: number;
+    requiredSgpa: number | null;
+  }>({
     attendance: 0,
     cgpa: 0,
     targetCgpa: 0,
     backlogs: 0,
     upcomingExams: 0,
-    requiredSgpa: 0,
+    requiredSgpa: null,
   });
 
   const getGreeting = () => {
@@ -71,7 +90,7 @@ export function Dashboard() {
         targetCgpa: 0,
         backlogs: 0,
         upcomingExams: 0,
-        requiredSgpa: 0,
+        requiredSgpa: null as number | null,
       };
 
       // 1. Profile & Basic Info
@@ -88,21 +107,23 @@ export function Dashboard() {
       // 2. Attendance Calculation (Strict Period-Based)
       const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
       const timetable = JSON.parse(localStorage.getItem("timetable") || "[]");
-      
+      const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
+
       if (attendanceRecords.length > 0 && timetable.length > 0) {
         let totalAttended = 0;
         let totalPossible = 0;
-        
+
         attendanceRecords.forEach((record: any) => {
-          const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(record.date));
+          const dateObj = new Date(record.date + "T00:00:00");
+          const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(dateObj);
           const slotsForDay = timetable.filter((s: any) => s.day === dayName);
-          
+
           if (slotsForDay.length > 0) {
             totalAttended += record.subjects?.length || 0;
             totalPossible += slotsForDay.length;
           }
         });
-        
+
         updatedStats.attendance = totalPossible > 0 ? Math.round((totalAttended / totalPossible) * 100) : 0;
       }
 
@@ -110,7 +131,6 @@ export function Dashboard() {
       if (localStorage.getItem("show_congrats_popup") === "true") {
         setShowCongrats(true);
         localStorage.removeItem("show_congrats_popup");
-        // Fire confetti!
         setTimeout(() => {
           confetti({
             particleCount: 150,
@@ -126,15 +146,15 @@ export function Dashboard() {
       if (examData.dayEvents) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         updatedStats.upcomingExams = examData.dayEvents.filter((ev: any) => {
-          const evDate = new Date(ev.date);
+          const evDate = new Date(ev.date + "T00:00:00");
           evDate.setHours(0, 0, 0, 0);
-          return ev.examType !== "custom" && evDate >= today;
+          return ev.examType && ev.examType !== "custom" && evDate >= today;
         }).length;
       }
 
-      // 4. CGPA — credit-weighted via shared utility (skips sentinel -1 & zero-mark entries)
+      // 4. CGPA — credit-weighted via shared utility
       const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
       const cgpaVal = computeCGPA(savedMarks);
       updatedStats.cgpa = cgpaVal ?? 0;
@@ -145,23 +165,91 @@ export function Dashboard() {
         const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
         const currentSemNum = parseInt(localProfile.currentSemester || "1");
         updatedStats.requiredSgpa = computeRequiredSGPA(savedMarks, updatedStats.targetCgpa, currentSemNum);
-      } else if (updatedStats.targetCgpa > 0) {
-        updatedStats.requiredSgpa = updatedStats.targetCgpa;
       }
 
+      // 6. Notifications Calculation (Low Attendance & Exams within 3 days ONLY)
+      const notifList: NotificationItem[] = [];
 
-      // 6. Recent Activity Logic
+      // A) Low Attendance Alerts (only if attendance has been marked)
+      if (attendanceRecords.length > 0 && timetable.length > 0 && subjects.length > 0) {
+        subjects.forEach((subject: any) => {
+          let attended = 0;
+          let total = 0;
+
+          attendanceRecords.forEach((record: any) => {
+            const dateObj = new Date(record.date + "T00:00:00");
+            const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(dateObj);
+            const slots = timetable.filter((t: any) => t.day === dayName && t.subject === subject.name);
+
+            slots.forEach((slot: any) => {
+              const key = `${slot.subject}-${slot.period}`;
+              const isCancelled = record.cancelled?.some((c: any) => c.key === key);
+              if (!isCancelled) {
+                total++;
+                if (record.subjects?.includes(key)) {
+                  attended++;
+                }
+              }
+            });
+          });
+
+          if (total > 0) {
+            const pct = (attended / total) * 100;
+            if (pct < 75) {
+              notifList.push({
+                id: `low-att-${subject.name}`,
+                type: "attendance",
+                title: "Low Attendance Warning",
+                message: `Attendance in ${subject.name} is ${pct.toFixed(1)}% (below required 75%).`,
+                link: "/app/academics",
+                level: "warning"
+              });
+            }
+          }
+        });
+      }
+
+      // B) Exams within 3 days Alert
+      if (examData.dayEvents) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        examData.dayEvents.forEach((ev: any) => {
+          if (ev.examType && ev.examType !== "custom" && ev.date) {
+            const evDate = new Date(ev.date + "T00:00:00");
+            evDate.setHours(0, 0, 0, 0);
+            const diffTime = evDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0 && diffDays <= 3) {
+              const dayStr = diffDays === 0 ? "Today" : diffDays === 1 ? "Tomorrow" : `in ${diffDays} days`;
+              notifList.push({
+                id: `exam-${ev.date}-${ev.title || ev.subject || "Exam"}`,
+                type: "exam",
+                title: "Upcoming Exam Alert",
+                message: `${ev.title || ev.subject || "Exam"} is scheduled ${dayStr} (${ev.date}).`,
+                link: "/app/exams",
+                level: "urgent"
+              });
+            }
+          }
+        });
+      }
+
+      setNotifications(notifList);
+
+      // 7. Recent Activity Logic
       const activities: any[] = [];
-      const sortedAttendance = [...attendanceRecords].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 2);
+      const sortedAttendance = [...attendanceRecords].sort((a: any, b: any) => b.date.localeCompare(a.date)).slice(0, 3);
       sortedAttendance.forEach(a => {
         activities.push({
-          text: `Attendance marked for ${new Date(a.date).toLocaleDateString()}`,
+          text: `Attendance marked for ${a.date}`,
           time: a.date,
           color: "bg-[var(--brand-start)]"
         });
       });
 
-      const sortedMarks = [...savedMarks].sort((a, b) => b.semester - a.semester).slice(0, 1);
+      const sortedMarks = [...savedMarks].sort((a: any, b: any) => b.semester - a.semester).slice(0, 2);
       sortedMarks.forEach(m => {
         activities.push({
           text: `Semester ${m.semester} result updated`,
@@ -169,16 +257,25 @@ export function Dashboard() {
           color: "bg-[var(--brand-end)]"
         });
       });
+
+      if (updatedStats.targetCgpa > 0) {
+        activities.push({
+          text: `Target CGPA set to ${updatedStats.targetCgpa.toFixed(2)}`,
+          time: "Active",
+          color: "bg-emerald-500"
+        });
+      }
+
       setRecentActivities(activities);
       setStats(updatedStats);
     };
 
     calculateStats();
-    
+
     // Listen for storage changes from other components
     const handleStorageChange = () => calculateStats();
     window.addEventListener("storage", handleStorageChange);
-    
+
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => {
       clearInterval(timer);
@@ -193,6 +290,7 @@ export function Dashboard() {
       icon: CheckCircle,
       color: "from-emerald-500 to-teal-500",
       progress: stats.attendance,
+      subtitle: stats.attendance >= 75 ? "On track" : "Needs attention"
     },
     {
       title: "Current CGPA",
@@ -200,13 +298,15 @@ export function Dashboard() {
       icon: TrendingUp,
       color: "from-[var(--brand-start)] to-[var(--brand-start)]",
       progress: (stats.cgpa / 10) * 100,
+      subtitle: "Credit-weighted"
     },
     {
       title: "Target CGPA",
-      value: stats.targetCgpa.toFixed(2),
+      value: stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "Not Set",
       icon: Target,
       color: "from-[var(--brand-start)] to-amber-500",
       progress: (stats.targetCgpa / 10) * 100,
+      subtitle: "Graduation Goal"
     },
     {
       title: "Active Backlogs",
@@ -214,6 +314,7 @@ export function Dashboard() {
       icon: AlertCircle,
       color: stats.backlogs > 0 ? "from-red-500 to-orange-500" : "from-green-500 to-emerald-500",
       progress: stats.backlogs > 0 ? 100 : 0,
+      subtitle: stats.backlogs > 0 ? "Clear soon" : "Clean record"
     },
     {
       title: "Upcoming Exams",
@@ -221,13 +322,15 @@ export function Dashboard() {
       icon: Calendar,
       color: "from-purple-500 to-pink-500",
       progress: Math.min((stats.upcomingExams / 10) * 100, 100),
+      subtitle: "Scheduled exams"
     },
     {
       title: "Required SGPA",
-      value: stats.requiredSgpa.toFixed(2),
+      value: stats.requiredSgpa !== null ? (stats.requiredSgpa > 10 ? "10.0+" : stats.requiredSgpa.toFixed(2)) : "N/A",
       icon: TrendingUp,
       color: "from-cyan-500 to-blue-500",
-      progress: (stats.requiredSgpa / 10) * 100,
+      progress: stats.requiredSgpa !== null ? Math.min((stats.requiredSgpa / 10) * 100, 100) : 0,
+      subtitle: stats.requiredSgpa !== null ? "Current sem target" : "Enter prev sem results first"
     },
   ];
 
@@ -239,24 +342,9 @@ export function Dashboard() {
     }
 
     localStorage.setItem("target_cgpa", target.toString());
-    setStats(prev => ({ ...prev, targetCgpa: target }));
     setShowTargetDialog(false);
     toast.success("Target CGPA updated successfully!");
-    
-    // Notify other components
     window.dispatchEvent(new Event("storage"));
-    
-    // Recalculate stats to update required SGPA using simple average
-    const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
-    const savedProfileRaw = localStorage.getItem("student_profile");
-    const localProfile = savedProfileRaw ? JSON.parse(savedProfileRaw) : {};
-    const currentSemNum = parseInt(localProfile.currentSemester || "1");
-
-    const previousSemMarks = savedMarks.filter((m: any) => m.semester < currentSemNum);
-    const sumPreviousSGPAs = previousSemMarks.reduce((acc: number, m: any) => acc + (m.sgpa || 0), 0);
-
-    const req = (target * currentSemNum) - sumPreviousSGPAs;
-    setStats(prev => ({ ...prev, requiredSgpa: Math.max(0, req) }));
   };
 
   return (
@@ -272,19 +360,98 @@ export function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-4 self-end sm:self-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-full"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--brand-start)] rounded-full"></span>
-          </Button>
+        <div className="flex items-center space-x-4 self-end sm:self-auto relative">
+          {/* Notification Bell Button */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                setShowNotificationsPopover(!showNotificationsPopover);
+                setShowProfileDropdown(false);
+              }}
+              className="relative text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-800/50 rounded-full"
+            >
+              <Bell className="w-5 h-5" />
+              {notifications.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background">
+                  {notifications.length}
+                </span>
+              )}
+            </Button>
+
+            {/* Notification Popover Dropdown */}
+            {showNotificationsPopover && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowNotificationsPopover(false)}
+                />
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 origin-top-right rounded-2xl border border-slate-200 dark:border-gray-800 bg-white/95 dark:bg-[#111118]/95 backdrop-blur-xl p-4 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-[var(--brand-start)]" />
+                      <span className="font-bold text-foreground text-sm">Notifications</span>
+                    </div>
+                    {notifications.length > 0 && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[var(--brand-start)]/10 text-[var(--brand-start)] border border-[var(--brand-start)]/30">
+                        {notifications.length} Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {notifications.length > 0 ? (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          className={`p-3 rounded-xl border text-xs flex items-start gap-3 transition-all ${
+                            n.level === "urgent"
+                              ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-300"
+                              : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-300"
+                          }`}
+                        >
+                          <div className="mt-0.5 flex-shrink-0">
+                            {n.type === "attendance" ? (
+                              <AlertTriangle className="w-4 h-4 text-red-500" />
+                            ) : (
+                              <Calendar className="w-4 h-4 text-purple-500" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-foreground mb-0.5">{n.title}</p>
+                            <p className="text-muted-foreground leading-relaxed">{n.message}</p>
+                            <button
+                              onClick={() => {
+                                setShowNotificationsPopover(false);
+                                navigate(n.link);
+                              }}
+                              className="mt-2 text-[11px] font-bold text-[var(--brand-start)] hover:underline flex items-center gap-1"
+                            >
+                              View Details <ChevronRight size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center text-muted-foreground text-xs">
+                        <CheckCircle className="w-8 h-8 mx-auto mb-2 text-emerald-500/60" />
+                        <p className="font-semibold text-foreground mb-0.5">All Caught Up!</p>
+                        <p>No low attendance warnings or upcoming exams within 3 days.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
           
           <div className="relative">
             <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              onClick={() => {
+                setShowProfileDropdown(!showProfileDropdown);
+                setShowNotificationsPopover(false);
+              }}
               className="focus:outline-none rounded-full block"
             >
               <Avatar className="w-12 h-12 border-2 border-[var(--brand-start)] shadow-[0_0_15px_rgba(var(--brand-start-rgb), 0.3)] hover:scale-105 transition-transform cursor-pointer">
@@ -296,7 +463,7 @@ export function Dashboard() {
 
             {showProfileDropdown && (
               <>
-                {/* Backdrop overlay to close when clicking outside */}
+                {/* Backdrop overlay */}
                 <div 
                   className="fixed inset-0 z-40" 
                   onClick={() => setShowProfileDropdown(false)}
@@ -331,7 +498,19 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-800">
+                  {/* Profile Actions */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-gray-800 space-y-2">
+                    <button
+                      onClick={() => {
+                        setShowRecentActivityDialog(true);
+                        setShowProfileDropdown(false);
+                      }}
+                      className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-[var(--brand-start)]/10 hover:bg-[var(--brand-start)]/20 text-[var(--brand-start)] font-semibold transition-all border border-[var(--brand-start)]/20 text-sm active:scale-[0.98]"
+                    >
+                      <History className="w-4 h-4" />
+                      <span>View Recent Activity</span>
+                    </button>
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-semibold transition-all border border-red-500/20 hover:border-transparent text-sm active:scale-[0.98]"
@@ -446,28 +625,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div>
-        <h2 className="text-2xl mb-4 font-bold text-foreground">Recent Activity</h2>
-        <Card className="bg-card border border-border/60 p-6">
-          <div className="space-y-4">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity, i) => (
-                <div key={i} className="flex items-start space-x-4 pb-4 last:pb-0 last:border-b-0 border-b border-gray-100 dark:border-gray-800">
-                  <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`}></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-slate-800 dark:text-white">{activity.text}</p>
-                    <p className="text-sm text-slate-500 dark:text-gray-400 font-medium">{activity.time}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-sm">No recent activity detected</p>
-            )}
-          </div>
-        </Card>
-      </div>
-
       {/* Mark Attendance Dialog */}
       {showAttendanceDialog && (
         <MarkAttendanceDialog
@@ -475,6 +632,47 @@ export function Dashboard() {
           onClose={() => setShowAttendanceDialog(false)}
         />
       )}
+
+      {/* Recent Activity Modal */}
+      <Dialog open={showRecentActivityDialog} onOpenChange={setShowRecentActivityDialog}>
+        <DialogContent className="bg-card border border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-[var(--brand-start)] flex items-center gap-2">
+              <History className="w-5 h-5 text-[var(--brand-start)]" />
+              Recent Activity History
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 max-h-96 overflow-y-auto pr-1">
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity, i) => (
+                <div key={i} className="flex items-start space-x-3 p-3 rounded-xl bg-muted/40 border border-border/50">
+                  <div className={`w-2.5 h-2.5 mt-1.5 rounded-full ${activity.color}`}></div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-foreground text-sm">{activity.text}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{activity.time}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-muted-foreground text-sm">
+                <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No recent activities recorded.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowRecentActivityDialog(false)}
+              className="border-border text-foreground"
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Congrats Popup */}
       <Dialog open={showCongrats} onOpenChange={setShowCongrats}>
@@ -502,6 +700,7 @@ export function Dashboard() {
           </motion.div>
         </DialogContent>
       </Dialog>
+
       {/* Target CGPA Dialog */}
       <Dialog open={showTargetDialog} onOpenChange={setShowTargetDialog}>
         <DialogContent className="bg-card border border-border text-foreground">
