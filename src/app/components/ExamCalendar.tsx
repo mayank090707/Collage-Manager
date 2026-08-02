@@ -168,12 +168,62 @@ export function ExamCalendar() {
   const [viewMonth, setViewMonth] = useState(0); // index into semester months
 
   useEffect(() => {
+    // 1) Try to restore from previously saved exam calendar state
     const saved = loadState();
-    if (saved) {
+    if (saved && saved.semConfig) {
       setSemConfig(saved.semConfig);
       setExamPeriods(saved.examPeriods);
       setDayEvents(saved.dayEvents || []);
+      return; // already configured — skip onboarding auto-fill
     }
+
+    // 2) Auto-configure from onboarding student_profile data
+    try {
+      const profile = JSON.parse(localStorage.getItem("student_profile") || "null");
+      if (profile) {
+        const semNum = parseInt(profile.currentSemester || "1");
+        if (!isNaN(semNum)) setSetupSem(semNum.toString());
+
+        const startRaw: string = profile.semesterStartDate || "";
+        const endRaw: string   = profile.semesterEndDate || "";
+
+        if (startRaw) {
+          const d = new Date(startRaw);
+          if (!isNaN(d.getTime())) {
+            setSetupStartMonth(d.getMonth());
+            setSetupStartYear(d.getFullYear());
+          }
+        }
+        if (endRaw) {
+          const d = new Date(endRaw);
+          if (!isNaN(d.getTime())) {
+            setSetupEndMonth(d.getMonth());
+            setSetupEndYear(d.getFullYear());
+          }
+        }
+
+        // 3) If both dates are available, auto-create the config and skip the setup screen
+        if (startRaw && endRaw) {
+          const startD = new Date(startRaw);
+          const endD   = new Date(endRaw);
+          if (!isNaN(startD.getTime()) && !isNaN(endD.getTime())) {
+            const startDate = format(new Date(startD.getFullYear(), startD.getMonth(), 1), "yyyy-MM-dd");
+            const endDate   = format(endOfMonth(new Date(endD.getFullYear(), endD.getMonth(), 1)), "yyyy-MM-dd");
+            const config: SemesterConfig = { semester: semNum, startDate, endDate };
+            const fresh: ExamPeriod[] = [
+              { type: "midsem1", label: "Mid Semester 1", startDate: null, endDate: null },
+              { type: "midsem2", label: "Mid Semester 2", startDate: null, endDate: null },
+              { type: "endsem",  label: "End Semester",   startDate: null, endDate: null },
+            ];
+            setSemConfig(config);
+            setExamPeriods(fresh);
+            setDayEvents([]);
+            persist(config, fresh, []);
+            toast.success("Exam calendar set up from your onboarding data!");
+          }
+        }
+      }
+    } catch (e) {}
   }, []);
 
   const persist = (config: SemesterConfig, periods: ExamPeriod[], events: DayEvent[]) => {
@@ -299,6 +349,10 @@ export function ExamCalendar() {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   // ─── SETUP SCREEN ───────────────────────────────────────────────────────────
+  // Check if onboarding gave us partial data (semester number but not dates)
+  const profileRaw = (() => { try { return JSON.parse(localStorage.getItem("student_profile") || "null"); } catch { return null; } })();
+  const profileHasPartialData = profileRaw && profileRaw.currentSemester && !(profileRaw.semesterStartDate && profileRaw.semesterEndDate);
+
   if (!semConfig) {
     return (
       <div className="p-8 max-w-2xl mx-auto space-y-8">
@@ -313,6 +367,21 @@ export function ExamCalendar() {
             <p className="text-gray-400 mt-1">Set up your semester to get started</p>
           </div>
         </div>
+
+        {/* Onboarding data detected banner */}
+        {profileHasPartialData && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="flex items-start gap-3 p-4 rounded-xl bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30"
+          >
+            <AlertTriangle className="w-5 h-5 text-[var(--brand-start)] flex-shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-bold text-[var(--brand-start)]">Profile detected — Semester {profileRaw.currentSemester} pre-selected</p>
+              <p className="text-gray-400 mt-0.5">
+                Your semester start/end dates were not filled in during onboarding. Please set them below, or go back to your <strong className="text-white">Profile → Edit</strong> to add them.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-8 space-y-8">
