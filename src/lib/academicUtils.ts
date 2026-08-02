@@ -74,3 +74,139 @@ export function computeRequiredSGPA(
   const sumPrev = prevReal.reduce((acc, m) => acc + (m.sgpa || 0), 0);
   return Math.max(0, targetCgpa * currentSemNum - sumPrev);
 }
+
+/**
+ * Unified Attendance Calculation Helper.
+ * All views (Dashboard, Academics AttendanceTab, Analytics, Profile)
+ * use this function to calculate overall attendance %, subject stats,
+ * total attended, and total conducted classes.
+ */
+export interface SubjectAttendanceStat {
+  subject: string;
+  code?: string;
+  credits?: number;
+  attended: number;
+  total: number;
+  percentage: number;
+  classesNeeded: number;
+  safeBunks: number;
+}
+
+export interface OverallAttendanceResult {
+  overallAttendance: number;
+  totalAttended: number;
+  totalConducted: number;
+  subjectStats: Record<string, SubjectAttendanceStat>;
+  subjectList: SubjectAttendanceStat[];
+  hasData: boolean;
+}
+
+export function computeAttendanceStats(): OverallAttendanceResult {
+  const subjectsStr = localStorage.getItem("subjects");
+  const recordsStr = localStorage.getItem("attendance_records");
+  const timetableStr = localStorage.getItem("timetable");
+
+  if (!subjectsStr || !recordsStr || !timetableStr) {
+    return {
+      overallAttendance: 0,
+      totalAttended: 0,
+      totalConducted: 0,
+      subjectStats: {},
+      subjectList: [],
+      hasData: false,
+    };
+  }
+
+  let subjects: { id: string; name: string; code: string; credits: number }[] = [];
+  let records: { date: string; subjects: string[]; cancelled?: { key: string }[] }[] = [];
+  let timetable: { day: string; subject: string; period: number }[] = [];
+
+  try {
+    subjects = JSON.parse(subjectsStr);
+    records = JSON.parse(recordsStr);
+    timetable = JSON.parse(timetableStr);
+  } catch {
+    return {
+      overallAttendance: 0,
+      totalAttended: 0,
+      totalConducted: 0,
+      subjectStats: {},
+      subjectList: [],
+      hasData: false,
+    };
+  }
+
+  if (subjects.length === 0 || records.length === 0 || timetable.length === 0) {
+    return {
+      overallAttendance: 0,
+      totalAttended: 0,
+      totalConducted: 0,
+      subjectStats: {},
+      subjectList: [],
+      hasData: false,
+    };
+  }
+
+  let grandAttended = 0;
+  let grandConducted = 0;
+  const statsMap: Record<string, SubjectAttendanceStat> = {};
+  const statsList: SubjectAttendanceStat[] = [];
+
+  subjects.forEach((subject) => {
+    let attended = 0;
+    let conducted = 0;
+
+    records.forEach((record) => {
+      const parts = record.date.split("-").map(Number);
+      if (parts.length !== 3) return;
+      const [year, month, day] = parts;
+      const dateObj = new Date(year, month - 1, day);
+      const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(dateObj);
+
+      const slots = timetable.filter((t) => t.day === dayName && t.subject === subject.name);
+      slots.forEach((slot) => {
+        const key = `${slot.subject}-${slot.period}`;
+        const isCancelled = record.cancelled?.some((c) => c.key === key);
+        if (!isCancelled) {
+          conducted++;
+          if (record.subjects?.includes(key)) {
+            attended++;
+          }
+        }
+      });
+    });
+
+    grandAttended += attended;
+    grandConducted += conducted;
+
+    const percentage = conducted > 0 ? (attended / conducted) * 100 : 0;
+    const classesNeeded = Math.max(0, Math.ceil((0.75 * conducted - attended) / 0.25));
+    const safeBunks = percentage > 75 ? Math.max(0, Math.floor((attended - 0.75 * conducted) / 0.75)) : 0;
+
+    const statItem: SubjectAttendanceStat = {
+      subject: subject.name,
+      code: subject.code,
+      credits: subject.credits,
+      attended,
+      total: conducted,
+      percentage: parseFloat(percentage.toFixed(1)),
+      classesNeeded,
+      safeBunks,
+    };
+
+    statsMap[subject.name] = statItem;
+    statsList.push(statItem);
+  });
+
+  const overallAttendance = grandConducted > 0 ? parseFloat(((grandAttended / grandConducted) * 100).toFixed(1)) : 0;
+
+  return {
+    overallAttendance,
+    totalAttended: grandAttended,
+    totalConducted: grandConducted,
+    subjectStats: statsMap,
+    subjectList: statsList,
+    hasData: grandConducted > 0,
+  };
+}
+

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Edit, Mail, Phone, GraduationCap, Calendar, Award, CheckCircle, AlertCircle, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
-import { computeCGPA } from "../../lib/academicUtils";
+import { computeCGPA, computeAttendanceStats } from "../../lib/academicUtils";
 import { logActivity } from "../../lib/activityTracker";
 
 interface StudentProfile {
@@ -67,27 +67,9 @@ export function Profile() {
   };
 
   const loadStats = () => {
-    // Load attendance
-    const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
-    const timetable = JSON.parse(localStorage.getItem("timetable") || "[]");
-
-    let totalAttendance = 0;
-    if (attendanceRecords.length > 0 && timetable.length > 0) {
-      let totalAttended = 0;
-      let totalPossible = 0;
-      
-      attendanceRecords.forEach((record: any) => {
-        const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(record.date));
-        const slotsForDay = timetable.filter((s: any) => s.day === dayName);
-        
-        if (slotsForDay.length > 0) {
-          totalAttended += record.subjects?.length || 0;
-          totalPossible += slotsForDay.length;
-        }
-      });
-      
-      totalAttendance = totalPossible > 0 ? (totalAttended / totalPossible) * 100 : 0;
-    }
+    // Load attendance via shared utility
+    const attResult = computeAttendanceStats();
+    const totalAttendance = attResult.overallAttendance;
 
     // Load CGPA — credit-weighted via shared utility (matches Dashboard & Academics)
     const semesterMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");

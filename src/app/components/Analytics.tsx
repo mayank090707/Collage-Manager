@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { format } from "date-fns";
-import { getRealSemesters, computeCGPA } from "../../lib/academicUtils";
+import { getRealSemesters, computeCGPA, computeAttendanceStats } from "../../lib/academicUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -164,61 +164,28 @@ export function Analytics() {
     );
 
     // -------- Attendance --------
-    const subjects: Subject[] = JSON.parse(localStorage.getItem("subjects") || "[]");
-    const records: AttendanceRecord[] = JSON.parse(localStorage.getItem("attendance_records") || "[]");
-    const timetable: TimetableSlot[] = JSON.parse(localStorage.getItem("timetable") || "[]");
+    const attResult = computeAttendanceStats();
+    setHasAttendanceData(attResult.hasData);
 
-    const hasAtt = records.length > 0 && subjects.length > 0 && timetable.length > 0;
-    setHasAttendanceData(hasAtt);
-
-    if (hasAtt) {
-      let totalAttended = 0;
-      let totalConducted = 0;
-
-      const subjectStats: SubjectAttendanceStat[] = subjects.map((subject) => {
-        let attended = 0;
-        let conducted = 0;
-
-        records.forEach((record) => {
-          const day = dayName(record.date);
-          const slots = timetable.filter(
-            (t) => t.day === day && t.subject === subject.name
-          );
-          slots.forEach((slot) => {
-            const key = `${slot.subject}-${slot.period}`;
-            const isCancelled = record.cancelled?.some((c) => c.key === key);
-            if (!isCancelled) {
-              conducted++;
-              if (record.subjects.includes(key)) attended++;
-            }
-          });
-        });
-
-        totalAttended += attended;
-        totalConducted += conducted;
-
-        const pct = conducted > 0 ? (attended / conducted) * 100 : 0;
-        return {
-          subject:
-            subject.name.length > 14
-              ? subject.name.substring(0, 14) + "…"
-              : subject.name,
-          attended,
-          total: conducted,
-          percentage: parseFloat(pct.toFixed(1)),
-        };
-      });
+    if (attResult.hasData) {
+      const subjectStats: SubjectAttendanceStat[] = attResult.subjectList.map((sub) => ({
+        subject: sub.subject.length > 14 ? sub.subject.substring(0, 14) + "…" : sub.subject,
+        attended: sub.attended,
+        total: sub.total,
+        percentage: sub.percentage,
+      }));
 
       setAttendanceBySubject(subjectStats.filter((s) => s.total > 0));
-      setOverallAttendance(
-        totalConducted > 0 ? parseFloat(((totalAttended / totalConducted) * 100).toFixed(1)) : 0
-      );
+      setOverallAttendance(attResult.overallAttendance);
     } else {
       setAttendanceBySubject([]);
       setOverallAttendance(0);
     }
 
     // -------- Insights --------
+    const records: AttendanceRecord[] = JSON.parse(localStorage.getItem("attendance_records") || "[]");
+    const subjects: Subject[] = JSON.parse(localStorage.getItem("subjects") || "[]");
+    const timetable: TimetableSlot[] = JSON.parse(localStorage.getItem("timetable") || "[]");
     buildInsights(sgpaChart, realSemesters, records, subjects, timetable, cgpaVal, tgt);
   };
 

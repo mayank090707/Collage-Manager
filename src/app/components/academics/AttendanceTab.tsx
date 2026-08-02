@@ -4,6 +4,7 @@ import { Progress } from "../ui/progress";
 import { CheckCircle, XCircle, TrendingUp, AlertTriangle, Ban, Calendar } from "lucide-react";
 import { motion } from "motion/react";
 import { format } from "date-fns";
+import { computeAttendanceStats } from "../../../lib/academicUtils";
 
 interface Subject {
   id: string;
@@ -39,6 +40,9 @@ export function AttendanceTab() {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [cancelledClasses, setCancelledClasses] = useState<CancelledEntry[]>([]);
   const [semesterDuration, setSemesterDuration] = useState<string>("");
+  const [overallAttendance, setOverallAttendance] = useState<number>(0);
+  const [totalAttended, setTotalAttended] = useState<number>(0);
+  const [totalConducted, setTotalConducted] = useState<number>(0);
   const [subjectStats, setSubjectStats] = useState<
     Record<
       string,
@@ -71,103 +75,32 @@ export function AttendanceTab() {
 
     const subjectsStr = localStorage.getItem("subjects");
     const recordsStr = localStorage.getItem("attendance_records");
-    const timetableStr = localStorage.getItem("timetable");
 
-    if (!subjectsStr) return;
+    if (subjectsStr) {
+      const loadedSubjects: Subject[] = JSON.parse(subjectsStr);
+      setSubjects(loadedSubjects);
+    }
 
-    const loadedSubjects: Subject[] = JSON.parse(subjectsStr);
-    setSubjects(loadedSubjects);
+    if (recordsStr) {
+      const records: AttendanceRecord[] = JSON.parse(recordsStr);
+      setAttendanceRecords(records);
 
-    if (!recordsStr || !timetableStr) return;
-
-    const records: AttendanceRecord[] = JSON.parse(recordsStr);
-    const timetable: TimetableSlot[] = JSON.parse(timetableStr);
-    setAttendanceRecords(records);
-
-    // Collect all cancelled entries across all records
-    const allCancelled: CancelledEntry[] = [];
-    records.forEach((r) => {
-      if (r.cancelled && r.cancelled.length > 0) {
-        allCancelled.push(...r.cancelled);
-      }
-    });
-    setCancelledClasses(allCancelled);
-
-    // Calculate stats for each subject
-    const stats: typeof subjectStats = {};
-    loadedSubjects.forEach((subject) => {
-      // For each record (day), count how many timetable slots exist for that subject on that day
-      // Only count the slot as "conducted" if it was NOT cancelled
-      let attendedCount = 0;
-      let conductedCount = 0;
-
-      records.forEach((record) => {
-        // Get day of week for this record's date
-        const dateObj = new Date(record.date + "T00:00:00");
-        const dayName = format(dateObj, "EEEE");
-
-        // Get timetable slots for this subject on this day
-        const subjectSlotsForDay = timetable.filter(
-          (t) => t.day === dayName && t.subject === subject.name
-        );
-
-        subjectSlotsForDay.forEach((slot) => {
-          const key = `${slot.subject}-${slot.period}`;
-          const isCancelled = record.cancelled?.some((c) => c.key === key);
-
-          if (!isCancelled) {
-            // Class was conducted (whether or not attended)
-            conductedCount++;
-            if (record.subjects.includes(key)) {
-              attendedCount++;
-            }
-          }
-        });
+      const allCancelled: CancelledEntry[] = [];
+      records.forEach((r) => {
+        if (r.cancelled && r.cancelled.length > 0) {
+          allCancelled.push(...r.cancelled);
+        }
       });
+      setCancelledClasses(allCancelled);
+    }
 
-      const percentage = conductedCount > 0 ? (attendedCount / conductedCount) * 100 : 0;
-
-      // Classes needed to reach 75%
-      // We need: (attended + x) / (conducted + x) >= 0.75
-      // => attended + x >= 0.75 * conducted + 0.75x
-      // => 0.25x >= 0.75 * conducted - attended
-      // => x >= (0.75 * conducted - attended) / 0.25
-      const classesNeeded = Math.max(
-        0,
-        Math.ceil((0.75 * conductedCount - attendedCount) / 0.25)
-      );
-
-      // Safe bunks: if above 75%, how many can we miss?
-      // (attended) / (conducted + x) >= 0.75
-      // => attended >= 0.75 * conducted + 0.75x
-      // => 0.75x <= attended - 0.75 * conducted
-      // => x <= (attended - 0.75 * conducted) / 0.75
-      const safeBunks =
-        percentage > 75
-          ? Math.floor((attendedCount - 0.75 * conductedCount) / 0.75)
-          : 0;
-
-      stats[subject.name] = {
-        attended: attendedCount,
-        total: conductedCount,
-        percentage,
-        classesNeeded,
-        safeBunks: Math.max(0, safeBunks),
-      };
-    });
-
-    setSubjectStats(stats);
+    // Unified Attendance Stats via shared helper
+    const attResult = computeAttendanceStats();
+    setOverallAttendance(attResult.overallAttendance);
+    setTotalAttended(attResult.totalAttended);
+    setTotalConducted(attResult.totalConducted);
+    setSubjectStats(attResult.subjectStats);
   };
-
-  const overallAttendance =
-    subjects.length > 0
-      ? subjects.reduce((sum, subject) => {
-          return sum + (subjectStats[subject.name]?.percentage || 0);
-        }, 0) / subjects.length
-      : 0;
-
-  const totalAttended = Object.values(subjectStats).reduce((sum, stat) => sum + stat.attended, 0);
-  const totalConducted = Object.values(subjectStats).reduce((sum, stat) => sum + stat.total, 0);
 
   return (
     <div className="space-y-6">

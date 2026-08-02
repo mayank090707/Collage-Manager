@@ -12,7 +12,7 @@ import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { computeCGPA, computeRequiredSGPA } from "../../lib/academicUtils";
+import { computeCGPA, computeRequiredSGPA, computeAttendanceStats } from "../../lib/academicUtils";
 
 interface StudentProfile {
   fullName: string;
@@ -104,28 +104,9 @@ export function Dashboard() {
       // Load target CGPA from global key
       updatedStats.targetCgpa = parseFloat(localStorage.getItem("target_cgpa") || "0");
 
-      // 2. Attendance Calculation (Strict Period-Based)
-      const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
-      const timetable = JSON.parse(localStorage.getItem("timetable") || "[]");
-      const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
-
-      if (attendanceRecords.length > 0 && timetable.length > 0) {
-        let totalAttended = 0;
-        let totalPossible = 0;
-
-        attendanceRecords.forEach((record: any) => {
-          const dateObj = new Date(record.date + "T00:00:00");
-          const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(dateObj);
-          const slotsForDay = timetable.filter((s: any) => s.day === dayName);
-
-          if (slotsForDay.length > 0) {
-            totalAttended += record.subjects?.length || 0;
-            totalPossible += slotsForDay.length;
-          }
-        });
-
-        updatedStats.attendance = totalPossible > 0 ? Math.round((totalAttended / totalPossible) * 100) : 0;
-      }
+      // 2. Attendance Calculation via shared utility
+      const attResult = computeAttendanceStats();
+      updatedStats.attendance = attResult.overallAttendance;
 
       // 2.5 Check for Congrats
       if (localStorage.getItem("show_congrats_popup") === "true") {
@@ -171,40 +152,17 @@ export function Dashboard() {
       const notifList: NotificationItem[] = [];
 
       // A) Low Attendance Alerts (only if attendance has been marked)
-      if (attendanceRecords.length > 0 && timetable.length > 0 && subjects.length > 0) {
-        subjects.forEach((subject: any) => {
-          let attended = 0;
-          let total = 0;
-
-          attendanceRecords.forEach((record: any) => {
-            const dateObj = new Date(record.date + "T00:00:00");
-            const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(dateObj);
-            const slots = timetable.filter((t: any) => t.day === dayName && t.subject === subject.name);
-
-            slots.forEach((slot: any) => {
-              const key = `${slot.subject}-${slot.period}`;
-              const isCancelled = record.cancelled?.some((c: any) => c.key === key);
-              if (!isCancelled) {
-                total++;
-                if (record.subjects?.includes(key)) {
-                  attended++;
-                }
-              }
+      if (attResult.hasData) {
+        attResult.subjectList.forEach((sub) => {
+          if (sub.total > 0 && sub.percentage < 75) {
+            notifList.push({
+              id: `low-att-${sub.subject}`,
+              type: "attendance",
+              title: "Low Attendance Warning",
+              message: `Attendance in ${sub.subject} is ${sub.percentage}% (below required 75%).`,
+              link: "/app/academics",
+              level: "warning"
             });
-          });
-
-          if (total > 0) {
-            const pct = (attended / total) * 100;
-            if (pct < 75) {
-              notifList.push({
-                id: `low-att-${subject.name}`,
-                type: "attendance",
-                title: "Low Attendance Warning",
-                message: `Attendance in ${subject.name} is ${pct.toFixed(1)}% (below required 75%).`,
-                link: "/app/academics",
-                level: "warning"
-              });
-            }
           }
         });
       }
@@ -239,8 +197,9 @@ export function Dashboard() {
       setNotifications(notifList);
 
       // 7. Recent Activity Logic
+      const rawAttendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
       const activities: any[] = [];
-      const sortedAttendance = [...attendanceRecords].sort((a: any, b: any) => b.date.localeCompare(a.date)).slice(0, 3);
+      const sortedAttendance = [...rawAttendanceRecords].sort((a: any, b: any) => b.date.localeCompare(a.date)).slice(0, 3);
       sortedAttendance.forEach(a => {
         activities.push({
           text: `Attendance marked for ${a.date}`,
