@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -14,6 +14,16 @@ interface TimetableSlot {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+// Period timing labels (50-min periods, lunch break after Period 4)
+const PERIOD_TIMINGS: Record<number, string> = {
+  1: "9:30 – 10:20 AM",
+  2: "10:20 – 11:10 AM",
+  3: "11:10 – 12:00 PM",
+  4: "12:00 – 12:50 PM",
+  5: "1:40 – 2:30 PM",
+  6: "2:30 – 3:20 PM",
+};
 
 const PERIOD_COLORS = [
   "from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/40 text-[var(--brand-start)]",
@@ -139,11 +149,30 @@ export function Timetable() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="p-4 text-left text-muted-foreground font-semibold text-sm w-28 bg-muted/50">Day</th>
-                    {Array.from({ length: maxPeriods }, (_, i) => (
-                      <th key={i} className="p-4 text-center text-muted-foreground font-semibold text-sm min-w-[140px] bg-muted/30">
-                        Period {i + 1}
-                      </th>
-                    ))}
+                    {Array.from({ length: maxPeriods }, (_, i) => {
+                      const periodNum = i + 1;
+                      const timing = PERIOD_TIMINGS[periodNum];
+                      return (
+                        <Fragment key={periodNum}>
+                          <th className="p-3 text-center text-muted-foreground font-semibold text-sm min-w-[140px] bg-muted/30">
+                            <div className="font-bold text-foreground">Period {periodNum}</div>
+                            {timing && (
+                              <div className="text-[10px] font-medium text-muted-foreground mt-0.5 flex items-center justify-center gap-1">
+                                <Clock className="w-2.5 h-2.5" />
+                                {timing}
+                              </div>
+                            )}
+                          </th>
+                          {/* Insert Lunch Break column after Period 4 */}
+                          {periodNum === 4 && (
+                            <th className="p-3 text-center min-w-[110px] bg-amber-500/8 border-x border-amber-500/20">
+                              <div className="text-amber-600 dark:text-amber-400 font-bold text-xs">🍽 Lunch Break</div>
+                              <div className="text-[10px] font-medium text-amber-500/80 mt-0.5">12:50 – 1:40 PM</div>
+                            </th>
+                          )}
+                        </Fragment>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -167,21 +196,33 @@ export function Timetable() {
                           )}
                         </td>
                         {Array.from({ length: maxPeriods }, (_, i) => {
+                          const periodNum = i + 1;
                           const slot = slots[i];
                           return (
-                            <td key={i} className="p-2">
-                              {slot ? (
-                                <div
-                                  className={`bg-gradient-to-br ${subjectColorMap[slot.subject] || PERIOD_COLORS[0]} border rounded-lg p-3 text-center shadow-xs`}
-                                >
-                                  <p className="text-sm font-bold leading-tight">{slot.subject}</p>
-                                </div>
-                              ) : (
-                                <div className="h-12 rounded-lg border border-dashed border-border/60 flex items-center justify-center">
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                </div>
+                            <Fragment key={periodNum}>
+                              <td className="p-2">
+                                {slot ? (
+                                  <div
+                                    className={`bg-gradient-to-br ${subjectColorMap[slot.subject] || PERIOD_COLORS[0]} border rounded-lg p-3 text-center shadow-xs`}
+                                  >
+                                    <p className="text-sm font-bold leading-tight">{slot.subject}</p>
+                                  </div>
+                                ) : (
+                                  <div className="h-12 rounded-lg border border-dashed border-border/60 flex items-center justify-center">
+                                    <span className="text-muted-foreground text-xs">—</span>
+                                  </div>
+                                )}
+                              </td>
+                              {/* Lunch Break cell after Period 4 */}
+                              {periodNum === 4 && (
+                                <td className="p-2 bg-amber-500/5 border-x border-amber-500/15">
+                                  <div className="h-12 rounded-lg border border-amber-500/30 bg-amber-500/10 flex flex-col items-center justify-center gap-0.5">
+                                    <span className="text-amber-600 dark:text-amber-400 text-sm">🍽</span>
+                                    <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold">Lunch</span>
+                                  </div>
+                                </td>
                               )}
-                            </td>
+                            </Fragment>
                           );
                         })}
                       </motion.tr>
