@@ -37,6 +37,7 @@ import {
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { getActivities, clearActivities, logActivity, ActivityLog } from "../../lib/activityTracker";
+import { api } from "../../lib/api";
 
 interface UserAccount {
   id: string;
@@ -49,7 +50,7 @@ interface UserAccount {
   admissionYear: number;
   graduationYear: number;
   lastLogin: string;
-  status: "active" | "offline";
+  status: "active" | "offline" | "blocked";
 }
 
 export function AdminDashboard() {
@@ -79,6 +80,7 @@ export function AdminDashboard() {
   const [editEmail, setEditEmail] = useState("");
   const [editPassword, setEditPassword] = useState("");
   const [editName, setEditName] = useState("");
+  const [editStatus, setEditStatus] = useState<"active" | "offline" | "blocked">("active");
 
   // Add Form State
   const [newName, setNewName] = useState("");
@@ -102,16 +104,24 @@ export function AdminDashboard() {
     }
   }, [isAdmin]);
 
-  const loadRealDatabaseData = () => {
-    // 1. Read real system users from localStorage
-    const storedUsersStr = localStorage.getItem("system_users");
+  const loadRealDatabaseData = async () => {
     let loadedUsers: UserAccount[] = [];
 
-    if (storedUsersStr) {
-      try {
-        loadedUsers = JSON.parse(storedUsersStr);
-      } catch (e) {
-        loadedUsers = [];
+    // 1. Try fetching live users from API
+    try {
+      const apiUsers = await api.getAdminUsers();
+      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
+        loadedUsers = apiUsers;
+      }
+    } catch (e) {
+      console.warn("API admin users fetch failed, reading local storage.");
+    }
+
+    // 2. Read local fallback if API returns empty
+    if (loadedUsers.length === 0) {
+      const storedUsersStr = localStorage.getItem("system_users");
+      if (storedUsersStr) {
+        try { loadedUsers = JSON.parse(storedUsersStr); } catch (e) {}
       }
     }
 
@@ -134,6 +144,19 @@ export function AdminDashboard() {
           status: "active",
         },
         {
+          id: "user_mayanksharma",
+          fullName: "Mayank Sharma",
+          email: "mayanksharma@gmail.com",
+          passwordHash: "Student @123",
+          enrollmentNumber: "02920802725",
+          collegeName: "Bhagwan Parshuram Institute of Technology (BPIT)",
+          branch: "CSE - Computer Science & Engineering",
+          admissionYear: 2025,
+          graduationYear: 2029,
+          lastLogin: "Active Now",
+          status: "active",
+        },
+        {
           id: "usr-student-1",
           fullName: currentProfile.fullName || "Mayank Verma",
           email: currentProfile.email || "demo@gmail.com",
@@ -147,15 +170,16 @@ export function AdminDashboard() {
           status: "active",
         },
       ];
-      localStorage.setItem("system_users", JSON.stringify(loadedUsers));
     }
-    setUsers(loadedUsers);
 
-    // 2. Read real Telemetry Logs from activityTracker
+    setUsers(loadedUsers);
+    localStorage.setItem("system_users", JSON.stringify(loadedUsers));
+
+    // 3. Read real Telemetry Logs from activityTracker
     const loadedActivities = getActivities();
     setActivities(loadedActivities);
 
-    // 3. Read dynamic student database tables
+    // 4. Read dynamic student database tables
     try {
       setProfileData(currentProfile);
       setMarksData(JSON.parse(localStorage.getItem("semester_marks") || "[]"));
@@ -183,10 +207,11 @@ export function AdminDashboard() {
     setEditName(user.fullName);
     setEditEmail(user.email);
     setEditPassword(user.passwordHash);
+    setEditStatus(user.status || "active");
     setShowEditDialog(true);
   };
 
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!selectedUser) return;
     if (!editEmail.trim() || !editPassword.trim()) {
       toast.error("Email and password cannot be empty");
@@ -195,12 +220,24 @@ export function AdminDashboard() {
 
     const updated = users.map((u) =>
       u.id === selectedUser.id
-        ? { ...u, fullName: editName, email: editEmail, passwordHash: editPassword }
+        ? { ...u, fullName: editName, email: editEmail, passwordHash: editPassword, status: editStatus }
         : u
     );
 
     setUsers(updated);
     localStorage.setItem("system_users", JSON.stringify(updated));
+
+    try {
+      await api.updateAdminUser({
+        id: selectedUser.id,
+        fullName: editName,
+        email: editEmail,
+        passwordHash: editPassword,
+        status: editStatus
+      });
+    } catch (err) {
+      console.error("API update error:", err);
+    }
 
     if (selectedUser.id !== "usr-admin") {
       const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
@@ -223,7 +260,7 @@ export function AdminDashboard() {
     loadRealDatabaseData();
   };
 
-  const handleDeleteUser = (id: string, name: string) => {
+  const handleDeleteUser = async (id: string, name: string) => {
     if (id === "usr-admin") {
       toast.error("Cannot delete root admin account!");
       return;
@@ -233,6 +270,12 @@ export function AdminDashboard() {
       const updated = users.filter((u) => u.id !== id);
       setUsers(updated);
       localStorage.setItem("system_users", JSON.stringify(updated));
+
+      try {
+        await api.deleteAdminUser(id);
+      } catch (err) {
+        console.error("API delete user error:", err);
+      }
 
       logActivity(
         "ACCOUNT_DELETED",
@@ -248,10 +291,21 @@ export function AdminDashboard() {
     }
   };
 
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     if (!newEmail.trim() || !newPassword.trim() || !newName.trim()) {
       toast.error("Please fill in all required fields");
       return;
+    }
+
+    try {
+      await api.createAdminUser({
+        fullName: newName,
+        email: newEmail,
+        password: newPassword,
+        enrollmentNumber: newEnrollment
+      });
+    } catch (err: any) {
+      console.error("API create user error:", err);
     }
 
     const newUser: UserAccount = {
@@ -262,8 +316,8 @@ export function AdminDashboard() {
       enrollmentNumber: newEnrollment || "00" + Math.floor(10000000 + Math.random() * 90000000),
       collegeName: "GGSIPU Affiliate",
       branch: "CSE",
-      admissionYear: 2024,
-      graduationYear: 2028,
+      admissionYear: 2025,
+      graduationYear: 2029,
       lastLogin: "Created just now",
       status: "active",
     };
@@ -461,7 +515,7 @@ export function AdminDashboard() {
       </div>
 
       {/* PARTITION 2: TOP-LEVEL CONTROL PARTITION TABS */}
-      <div className="flex items-center gap-2 border-b border-border pb-1">
+      <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto whitespace-nowrap scrollbar-none">
         <button
           onClick={() => setActivePartition("telemetry")}
           className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border ${
@@ -996,9 +1050,21 @@ export function AdminDashboard() {
                 className="bg-background border-border text-foreground text-sm font-mono font-semibold"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Account Status</Label>
+              <select
+                value={editStatus}
+                onChange={(e) => setEditStatus(e.target.value as any)}
+                className="w-full bg-background border border-border text-foreground text-sm rounded-lg p-2 font-semibold"
+              >
+                <option value="active">Active</option>
+                <option value="offline">Offline</option>
+                <option value="blocked">Blocked</option>
+              </select>
+            </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowEditDialog(false)} className="border-border text-foreground font-bold text-xs">
               Cancel
             </Button>

@@ -86,7 +86,7 @@ const FIXED_HOLIDAYS: Record<string, string> = {
   "11-01": "Diwali (Approx.)",  // approximate — adjust per year
 };
 
-// Specific year-based holidays (Diwali, Holi shift every year)
+// Specific year-based holidays (Diwali, Holi, Janmashtami shift every year)
 const SPECIFIC_HOLIDAYS: Record<string, string> = {
   // 2024
   "2024-03-25": "Holi",
@@ -104,13 +104,14 @@ const SPECIFIC_HOLIDAYS: Record<string, string> = {
   "2025-10-02": "Gandhi Jayanti / Dussehra",
   "2025-11-05": "Guru Nanak Jayanti",
   "2025-03-31": "Id-ul-Fitr (Eid)",
-  // 2026
-  "2026-03-03": "Holi",
-  "2026-11-08": "Diwali",
+  // 2026 (Official Indian Gazetted Calendar Dates)
+  "2026-03-03": "Holika Dahan",
+  "2026-03-04": "Holi",
   "2026-04-14": "Ambedkar Jayanti / Baisakhi",
-  "2026-08-05": "Janmashtami",
-  "2026-10-22": "Dussehra",
-  "2026-10-25": "Guru Nanak Jayanti",
+  "2026-09-04": "Janmashtami",
+  "2026-10-20": "Dussehra (Vijayadashami)",
+  "2026-11-08": "Diwali (Deepavali)",
+  "2026-11-24": "Guru Nanak Jayanti",
 };
 
 function getNationalHoliday(dateStr: string): string | null {
@@ -610,7 +611,10 @@ export function ExamCalendar() {
           <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />Custom Event
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/70" />Weekend / Holiday
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/50" />Weekend (Sat/Sun)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-rose-500/80 border border-rose-400" />🎉 Festival Holiday
         </span>
         <span className="ml-auto text-gray-500">Click any date to add an event or note</span>
       </div>
@@ -688,7 +692,8 @@ export function ExamCalendar() {
                   const meta = examType ? EXAM_META[examType] : null;
                   const weekend = isWeekend(day);
                   const holiday = getNationalHoliday(dateStr);
-                  const isRedDay = weekend || !!holiday;
+                  const isFestival = !!holiday;
+                  const isRedDay = weekend || isFestival;
 
                   // Determine cell background class
                   let cellClass = "";
@@ -696,7 +701,10 @@ export function ExamCalendar() {
                     cellClass = `${meta.bg} border ${meta.border} ${meta.glow}`;
                   } else if (isCurrentDay) {
                     cellClass = "bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/30";
-                  } else if (isRedDay) {
+                  } else if (isFestival) {
+                    // Distinct Light Rose Warm Festival Color
+                    cellClass = "bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.25)]";
+                  } else if (weekend) {
                     cellClass = "bg-red-500/10 border border-red-500/25 hover:bg-red-500/15";
                   } else {
                     cellClass = "border border-transparent hover:bg-gray-800/30 hover:border-gray-700/50";
@@ -708,7 +716,9 @@ export function ExamCalendar() {
                     dateNumClass = "bg-[var(--brand-start)] text-[#0a0a0f]";
                   } else if (examType && meta) {
                     dateNumClass = meta.color;
-                  } else if (isRedDay) {
+                  } else if (isFestival) {
+                    dateNumClass = "text-rose-300 font-black";
+                  } else if (weekend) {
                     dateNumClass = "text-red-400";
                   }
 
@@ -727,14 +737,14 @@ export function ExamCalendar() {
                         {format(day, "d")}
                       </span>
 
-                      {/* Holiday label (national) */}
+                      {/* Festival / Holiday badge */}
                       {holiday && (
-                        <span className="text-[8px] font-bold text-red-400 leading-tight text-center px-1 line-clamp-2">
-                          {holiday}
+                        <span className="text-[9px] font-bold text-rose-300 bg-rose-500/25 border border-rose-500/40 rounded px-1.5 py-0.5 leading-tight text-center mt-0.5 max-w-full truncate shadow-xs">
+                          🎉 {holiday}
                         </span>
                       )}
 
-                      {/* Exam type label (non-red days) */}
+                      {/* Exam type label (non-festival days) */}
                       {examType && meta && !holiday && (
                         <span className={`text-[9px] font-semibold ${meta.color} leading-tight text-center px-1`}>
                           {examType === "midsem1" ? "MID-1" : examType === "midsem2" ? "MID-2" : "END"}

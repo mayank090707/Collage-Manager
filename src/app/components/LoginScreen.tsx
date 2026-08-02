@@ -66,9 +66,11 @@ export function LoginScreen() {
     setIsLoading(true);
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
       if (isLogin) {
         // 1. Direct Admin Credential Check
-        if (email.trim() === "admin@campus-hub.com" && password.trim() === "AdminPassword123") {
+        if (cleanEmail === "admin@campus-hub.com" && password.trim() === "AdminPassword123") {
           toast.success("Welcome Super Admin! Accessing Admin Dashboard...");
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
@@ -87,82 +89,86 @@ export function LoginScreen() {
           return;
         }
 
-        // 2. System Users Check (Created/Edited by Admin)
-        const systemUsersStr = localStorage.getItem("system_users");
-        if (systemUsersStr) {
-          try {
-            const systemUsers = JSON.parse(systemUsersStr);
-            const foundUser = systemUsers.find(
-              (u: any) => u.email.toLowerCase() === email.trim().toLowerCase() && u.passwordHash === password.trim()
+        // 2. Try Standard Backend API Login First
+        try {
+          const result = await api.login({ email: cleanEmail, password });
+          toast.success("Welcome back!");
+          
+          // Save user ID & remember-me expiry (4 days from now)
+          localStorage.setItem("college_manager_user_id", result.userId);
+          localStorage.setItem("user_role", "student");
+          localStorage.setItem("college_manager_remember", rememberMe.toString());
+          if (rememberMe) {
+            const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
+            localStorage.setItem(
+              "college_manager_remember_expiry",
+              (Date.now() + FOUR_DAYS_MS).toString()
             );
-            if (foundUser) {
-              toast.success(`Welcome back, ${foundUser.fullName}!`);
-              localStorage.setItem("college_manager_user_id", foundUser.id);
-              const isAdmin = foundUser.id === "usr-admin";
-              localStorage.setItem("user_role", isAdmin ? "admin" : "student");
-              
-              logActivity(
-                isAdmin ? "ADMIN_LOGIN_SUCCESS" : "LOGIN_SUCCESS",
-                `${foundUser.fullName} logged in successfully using registered credentials (${foundUser.email}).`,
-                isAdmin ? "System" : "Login",
-                foundUser.email,
-                foundUser.fullName,
-                "success"
-              );
-
-              if (isAdmin) {
-                navigate("/app/admin");
-              } else {
-                navigate("/app");
-              }
-              return;
-            }
-          } catch (e) {
-            console.error("System user parse error:", e);
+          } else {
+            localStorage.removeItem("college_manager_remember_expiry");
           }
-        }
 
-        // 3. Fallback standard API login
-        const result = await api.login({ email, password });
-        toast.success("Welcome back!");
-        
-        // Save user ID & remember-me expiry (4 days from now)
-        localStorage.setItem("college_manager_user_id", result.userId);
-        localStorage.setItem("user_role", "student");
-        localStorage.setItem("college_manager_remember", rememberMe.toString());
-        if (rememberMe) {
-          const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
-          localStorage.setItem(
-            "college_manager_remember_expiry",
-            (Date.now() + FOUR_DAYS_MS).toString()
+          // Sync user specific data from DB
+          await api.syncFromDB();
+
+          logActivity(
+            "LOGIN_SUCCESS",
+            `Student logged in via standard authentication (${cleanEmail}).`,
+            "Login",
+            cleanEmail,
+            "Student User",
+            "success"
           );
-        } else {
-          localStorage.removeItem("college_manager_remember_expiry");
-        }
 
-        // Sync data from DB
-        await api.syncFromDB();
+          const isOnboarded = localStorage.getItem("onboarding_complete") === "true";
+          const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
+          
+          if (isOnboarded && subjects.length > 0) {
+            navigate("/app");
+          } else {
+            navigate("/onboarding");
+          }
+          return;
+        } catch (apiErr) {
+          // If API backend login failed, check local system_users fallback
+          const systemUsersStr = localStorage.getItem("system_users");
+          if (systemUsersStr) {
+            try {
+              const systemUsers = JSON.parse(systemUsersStr);
+              const foundUser = systemUsers.find(
+                (u: any) => u.email.toLowerCase() === cleanEmail && (u.passwordHash === password.trim() || u.passwordHash === password)
+              );
+              if (foundUser) {
+                toast.success(`Welcome back, ${foundUser.fullName}!`);
+                localStorage.setItem("college_manager_user_id", foundUser.id);
+                const isAdmin = foundUser.id === "usr-admin";
+                localStorage.setItem("user_role", isAdmin ? "admin" : "student");
+                
+                logActivity(
+                  isAdmin ? "ADMIN_LOGIN_SUCCESS" : "LOGIN_SUCCESS",
+                  `${foundUser.fullName} logged in successfully using registered credentials (${foundUser.email}).`,
+                  isAdmin ? "System" : "Login",
+                  foundUser.email,
+                  foundUser.fullName,
+                  "success"
+                );
 
-        logActivity(
-          "LOGIN_SUCCESS",
-          `Student logged in via standard authentication (${email}).`,
-          "Login",
-          email,
-          "Student User",
-          "success"
-        );
-
-        const isOnboarded = localStorage.getItem("onboarding_complete") === "true";
-        const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
-        
-        if (isOnboarded && subjects.length > 0) {
-          navigate("/app");
-        } else {
-          navigate("/onboarding");
+                if (isAdmin) {
+                  navigate("/app/admin");
+                } else {
+                  navigate("/app");
+                }
+                return;
+              }
+            } catch (e) {
+              console.error("System user parse error:", e);
+            }
+          }
+          throw apiErr;
         }
       } else {
         await api.signup({ 
-          email, 
+          email: cleanEmail, 
           password, 
           firstName, 
           lastName, 
@@ -171,9 +177,9 @@ export function LoginScreen() {
 
         logActivity(
           "USER_SIGNUP",
-          `New user account registered for ${firstName} ${lastName} (${email}).`,
+          `New user account registered for ${firstName} ${lastName} (${cleanEmail}).`,
           "Login",
-          email,
+          cleanEmail,
           `${firstName} ${lastName}`,
           "success"
         );

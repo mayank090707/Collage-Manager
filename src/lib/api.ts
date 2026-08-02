@@ -68,6 +68,42 @@ export const api = {
     return response.json();
   },
 
+  async getAdminUsers() {
+    const response = await fetch(`${API_BASE_URL}/admin/users`);
+    if (!response.ok) throw new Error('Failed to fetch admin users');
+    return response.json();
+  },
+
+  async updateAdminUser(userData: any) {
+    const response = await fetch(`${API_BASE_URL}/admin/users/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error('Failed to update user');
+    return response.json();
+  },
+
+  async createAdminUser(userData: any) {
+    const response = await fetch(`${API_BASE_URL}/admin/users/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error((await response.json()).error || 'Failed to create user');
+    return response.json();
+  },
+
+  async deleteAdminUser(id: string) {
+    const response = await fetch(`${API_BASE_URL}/admin/users/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) throw new Error('Failed to delete user');
+    return response.json();
+  },
+
   /**
    * Fetches the entire state from the server and populates localStorage
    */

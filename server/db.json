@@ -1,6 +1,16 @@
 {
   "users": [
     {
+      "email": "mayanksharma@gmail.com",
+      "password": "$2b$10$pd9YUulXaUOR2lPGwg.xKuSCYmIBgZ2GBO.tQldPd55czCxj7uMXa",
+      "rawPassword": "Student @123",
+      "userId": "user_mayanksharma",
+      "firstName": "Mayank",
+      "lastName": "Sharma",
+      "dob": "2006-08-15",
+      "status": "active"
+    },
+    {
       "email": "xyz@gmail.com",
       "password": "$2b$10$c/WlAZB6IAm5.DOaZEbtou31lzeCY0UfQAmmJXoiY.SE8fWl9ANXW",
       "userId": "user_1781938581496",
@@ -26,6 +36,33 @@
     }
   ],
   "userData": [
+    {
+      "userId": "user_mayanksharma",
+      "profile": {
+        "fullName": "Mayank Sharma",
+        "enrollmentNumber": "02920802725",
+        "email": "mayanksharma@gmail.com",
+        "collegeName": "Bhagwan Parshuram Institute of Technology (BPIT)",
+        "course": "B.Tech",
+        "branch": "CSE - Computer Science & Engineering",
+        "currentSemester": "3",
+        "admissionYear": "2025",
+        "graduationYear": "2029",
+        "targetCgpa": "9.8",
+        "backlogCount": "0",
+        "backlogSubjects": [],
+        "dob": "2006-08-15"
+      },
+      "subjects": [],
+      "timetable": [],
+      "attendanceRecords": [],
+      "semesterData": [],
+      "semesterMarks": [],
+      "backlogs": [],
+      "examCalendar": null,
+      "targetCgpa": 9.8,
+      "isOnboarded": true
+    },
     {
       "userId": "user_1781938581496",
       "profile": {
