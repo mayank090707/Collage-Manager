@@ -32,8 +32,10 @@ export function LoginScreen() {
     if (savedUserId && expiryStr) {
       const expiry = parseInt(expiryStr, 10);
       if (Date.now() < expiry) {
-        // Still within the 4-day window — auto-login
-        navigate("/app");
+        // Still within the 4-day window — auto-login & sync DB data
+        api.syncFromDB().then(() => {
+          navigate("/app");
+        });
       } else {
         // Expired — clear saved session so user must log in again
         localStorage.removeItem("college_manager_user_id");

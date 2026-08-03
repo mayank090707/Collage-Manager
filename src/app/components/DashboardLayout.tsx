@@ -84,6 +84,7 @@ export function DashboardLayout() {
     localStorage.removeItem("backlogs");
     localStorage.removeItem("exam_calendar_v2");
     localStorage.removeItem("target_cgpa");
+    localStorage.removeItem("onboarding_complete");
     navigate("/");
   };
 

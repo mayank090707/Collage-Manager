@@ -1,6 +1,4 @@
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:5000/api'
-  : '/api';
+const API_BASE_URL = '/api';
 
 // Helper to get current user ID
 const getUserId = () => localStorage.getItem('college_manager_user_id');
@@ -119,22 +117,30 @@ export const api = {
       
       // Update localStorage with fresh DB data
       isSyncing = true; // Start bypassing interceptor
-      if (data.profile) localStorage.setItem('student_profile', JSON.stringify(data.profile));
-      if (data.subjects) localStorage.setItem('subjects', JSON.stringify(data.subjects));
-      if (data.timetable) localStorage.setItem('timetable', JSON.stringify(data.timetable));
-      if (data.attendanceRecords) localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords));
-      if (data.semesterData) localStorage.setItem('semester_data', JSON.stringify(data.semesterData));
-      if (data.semesterMarks) localStorage.setItem('semester_marks', JSON.stringify(data.semesterMarks));
-      if (data.backlogs) localStorage.setItem('backlogs', JSON.stringify(data.backlogs));
-      if (data.examCalendar) localStorage.setItem('exam_calendar_v2', JSON.stringify(data.examCalendar));
-      if (data.targetCgpa) localStorage.setItem('target_cgpa', data.targetCgpa.toString());
-      if (data.isOnboarded) localStorage.setItem('onboarding_complete', data.isOnboarded.toString());
+      if (data.profile) {
+        localStorage.setItem('student_profile', JSON.stringify(data.profile));
+      }
+      localStorage.setItem('subjects', JSON.stringify(data.subjects || []));
+      localStorage.setItem('timetable', JSON.stringify(data.timetable || []));
+      localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords || []));
+      localStorage.setItem('semester_data', JSON.stringify(data.semesterData || []));
+      localStorage.setItem('semester_marks', JSON.stringify(data.semesterMarks || []));
+      localStorage.setItem('backlogs', JSON.stringify(data.backlogs || []));
+      if (data.examCalendar) {
+        localStorage.setItem('exam_calendar_v2', JSON.stringify(data.examCalendar));
+      }
+      if (data.targetCgpa !== undefined && data.targetCgpa !== null) {
+        localStorage.setItem('target_cgpa', data.targetCgpa.toString());
+      }
+      if (data.isOnboarded !== undefined && data.isOnboarded !== null) {
+        localStorage.setItem('onboarding_complete', data.isOnboarded.toString());
+      }
       isSyncing = false; // End bypassing interceptor
       
       return data;
     } catch (error) {
       isSyncing = false;
-      console.warn('Backend offline, using local storage.');
+      console.warn('Backend sync failed, using local storage.', error);
       return null;
     }
   },
