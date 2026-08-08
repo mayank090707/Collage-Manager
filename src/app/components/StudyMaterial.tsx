@@ -12,6 +12,9 @@ import {
   Star,
   FileCode,
   ExternalLink,
+  Download,
+  Eye,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { logActivity } from "../../lib/activityTracker";
@@ -75,12 +78,22 @@ const DEFAULT_SUBJECTS: Record<string, string[]> = {
   "8": ["Major Project", "Technical Seminar", "Professional Ethics", "Entrepreneurship", "Industrial Training"],
 };
 
+const SYLLABUS_PDF_MAP: Record<string, { title: string; url: string; branch: string; filename: string }> = {
+  "3": {
+    title: "Semester 3 B.Tech Official Syllabus (IPU CSE / IT)",
+    url: "/syllabus/Sem_3_IPU_CSE_IT.pdf",
+    branch: "Computer Science & Engineering / Information Technology",
+    filename: "Sem_3_IPU_CSE_IT_Syllabus.pdf",
+  },
+};
+
 /* ══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 export function StudyMaterial() {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [currentSemester, setCurrentSemester] = useState("1");
+  const [activeSyllabusSem, setActiveSyllabusSem] = useState<string>("3");
 
   // Navigation state
   const [activeSection, setActiveSection] = useState<Section>("all");
@@ -221,59 +234,155 @@ export function StudyMaterial() {
   /* ══════════════════════════════════════════════════════════
      VIEW: SYLLABUS
    ══════════════════════════════════════════════════════════ */
-  const renderSyllabus = () => (
-    <motion.div
-      key="syllabus"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-4"
-    >
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
-          <FileCode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Syllabus</h2>
-          <p className="text-sm text-muted-foreground">Semester {currentSemester} official syllabus</p>
-        </div>
-      </div>
+  const renderSyllabus = () => {
+    const activeData = SYLLABUS_PDF_MAP[activeSyllabusSem];
 
-      <Card className="p-8 border border-border bg-card flex flex-col items-center gap-6 text-center">
-        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
-          <FileCode className="w-12 h-12 text-blue-600 dark:text-blue-400" />
+    return (
+      <motion.div
+        key="syllabus"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="space-y-6"
+      >
+        {/* Header & Semester Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+              <FileCode className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Official IPU Syllabus</h2>
+              <p className="text-sm text-muted-foreground">Select a semester to view or download course curriculum</p>
+            </div>
+          </div>
+
+          {/* Semester Selector Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {["1", "2", "3", "4", "5", "6", "7", "8"].map((sem) => {
+              const isAvailable = Boolean(SYLLABUS_PDF_MAP[sem]);
+              const isActive = activeSyllabusSem === sem;
+              return (
+                <button
+                  key={sem}
+                  onClick={() => setActiveSyllabusSem(sem)}
+                  className={`relative px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isActive
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span>Sem {sem}</span>
+                  {isAvailable && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="PDF Available" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-bold text-foreground mb-2">
-            Semester {currentSemester} Syllabus
-          </h3>
-          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-            Click below to view the official IPU syllabus for your current semester
-          </p>
-        </div>
-        <Button
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl shadow-md flex items-center gap-2"
-          onClick={() => {
-            logActivity(
-              "SYLLABUS_ACCESSED",
-              `Student accessed Semester ${currentSemester} official course syllabus repository.`,
-              "StudyMaterial",
-              undefined,
-              undefined,
-              "info"
-            );
-            alert("Syllabus link will be added soon!");
-          }}
-        >
-          <ExternalLink className="w-4 h-4" />
-          Open Syllabus — Semester {currentSemester}
-        </Button>
-        <p className="text-xs text-muted-foreground italic">
-          * Syllabus content will be configured by your administrator
-        </p>
-      </Card>
-    </motion.div>
-  );
+
+        {/* Content Box */}
+        {activeData ? (
+          <div className="space-y-4">
+            {/* Action Bar & Metadata */}
+            <Card className="p-5 border border-blue-500/30 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-background flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30">
+                    SEMESTER {activeSyllabusSem} • {activeData.branch}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground">{activeData.title}</h3>
+              </div>
+
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 md:flex-initial gap-2 border-blue-200 dark:border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                  onClick={() => {
+                    logActivity(
+                      "SYLLABUS_ACCESSED",
+                      `Opened Semester ${activeSyllabusSem} syllabus PDF in new tab.`,
+                      "StudyMaterial",
+                      undefined,
+                      undefined,
+                      "info"
+                    );
+                    window.open(activeData.url, "_blank");
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  Open in New Tab
+                </Button>
+                <a
+                  href={activeData.url}
+                  download={activeData.filename}
+                  className="flex-1 md:flex-initial"
+                  onClick={() => {
+                    logActivity(
+                      "SYLLABUS_ACCESSED",
+                      `Downloaded Semester ${activeSyllabusSem} syllabus PDF file.`,
+                      "StudyMaterial",
+                      undefined,
+                      undefined,
+                      "info"
+                    );
+                  }}
+                >
+                  <Button
+                    size="sm"
+                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md shadow-blue-500/20"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </Button>
+                </a>
+              </div>
+            </Card>
+
+            {/* Embedded PDF Viewer */}
+            <Card className="border border-border bg-card overflow-hidden rounded-2xl shadow-md">
+              <div className="bg-muted/40 border-b border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground font-semibold">
+                <div className="flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-blue-500" />
+                  <span>Document Preview: {activeData.filename}</span>
+                </div>
+                <span>Official IPU CSE / IT Syllabus</span>
+              </div>
+              <iframe
+                src={`${activeData.url}#toolbar=1`}
+                className="w-full h-[680px] bg-white dark:bg-gray-900 border-0"
+                title={activeData.title}
+              />
+            </Card>
+          </div>
+        ) : (
+          <Card className="p-10 border border-dashed border-border bg-card flex flex-col items-center gap-5 text-center">
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <Sparkles className="w-10 h-10 text-amber-500" />
+            </div>
+            <div className="max-w-md">
+              <h3 className="text-lg font-bold text-foreground mb-1">
+                Semester {activeSyllabusSem} Syllabus Coming Soon
+              </h3>
+              <p className="text-muted-foreground text-sm">
+                The official PDF for Semester {activeSyllabusSem} has not been uploaded yet. Semester 3 syllabus is currently available for viewing and download.
+              </p>
+            </div>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+              onClick={() => setActiveSyllabusSem("3")}
+            >
+              <Eye className="w-4 h-4" />
+              View Semester 3 Syllabus
+            </Button>
+          </Card>
+        )}
+      </motion.div>
+    );
+  };
 
   /* ══════════════════════════════════════════════════════════
      VIEW: SUBJECT GRID (shared for Important Topics, PYQ, Study Reference)

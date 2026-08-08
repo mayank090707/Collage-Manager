@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Progress } from "../ui/progress";
-import { CheckCircle, XCircle, TrendingUp, AlertTriangle, Ban, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, TrendingUp, AlertTriangle, Ban, Calendar, ChevronDown, ChevronUp, Filter, User } from "lucide-react";
 import { motion } from "motion/react";
 import { format } from "date-fns";
 import { computeAttendanceStats } from "../../../lib/academicUtils";
@@ -39,6 +39,8 @@ export function AttendanceTab() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [cancelledClasses, setCancelledClasses] = useState<CancelledEntry[]>([]);
+  const [selectedCancelledSubject, setSelectedCancelledSubject] = useState<string>("all");
+  const [isCancelledExpanded, setIsCancelledExpanded] = useState<boolean>(false);
   const [semesterDuration, setSemesterDuration] = useState<string>("");
   const [overallAttendance, setOverallAttendance] = useState<number>(0);
   const [totalAttended, setTotalAttended] = useState<number>(0);
@@ -101,6 +103,21 @@ export function AttendanceTab() {
     setTotalConducted(attResult.totalConducted);
     setSubjectStats(attResult.subjectStats);
   };
+
+  // Group cancelled classes by subject for summary and filters
+  const cancelledBySubject = cancelledClasses.reduce((acc, entry) => {
+    acc[entry.subject] = (acc[entry.subject] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const filteredCancelled =
+    selectedCancelledSubject === "all"
+      ? cancelledClasses
+      : cancelledClasses.filter((c) => c.subject === selectedCancelledSubject);
+
+  const displayedCancelled = isCancelledExpanded
+    ? filteredCancelled
+    : filteredCancelled.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -254,47 +271,145 @@ export function AttendanceTab() {
 
       {/* Classes Which Did Not Happen */}
       {cancelledClasses.length > 0 && (
-        <div>
-          <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-            <Ban className="w-5 h-5 text-gray-400" />
-            Classes Which Did Not Happen
-          </h3>
-          <div className="grid gap-3">
-            {cancelledClasses.map((entry, idx) => (
+        <Card className="bg-card border border-border/80 p-6 space-y-4 shadow-sm">
+          {/* Header & Filter Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <Ban className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-foreground">Classes Which Did Not Happen</h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                    {cancelledClasses.length} {cancelledClasses.length === 1 ? "Class" : "Classes"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">Summary of cancelled/unconducted class slots</p>
+              </div>
+            </div>
+
+            {/* Subject Filter Chips */}
+            {Object.keys(cancelledBySubject).length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                <button
+                  onClick={() => setSelectedCancelledSubject("all")}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCancelledSubject === "all"
+                      ? "bg-foreground text-background"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  All ({cancelledClasses.length})
+                </button>
+                {Object.entries(cancelledBySubject).map(([sub, count]) => (
+                  <button
+                    key={sub}
+                    onClick={() => setSelectedCancelledSubject(sub)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                      selectedCancelledSubject === sub
+                        ? "bg-[var(--brand-start)] text-white"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className="truncate max-w-[120px]">{sub}</span>
+                    <span className="px-1.5 py-0.2 rounded-full bg-black/20 text-[10px]">{count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Subject Summary Chips (when viewing all) */}
+          {selectedCancelledSubject === "all" && Object.keys(cancelledBySubject).length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap text-xs bg-muted/40 p-3 rounded-xl border border-border/50">
+              <span className="font-bold text-muted-foreground flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground" /> Cancelled Breakdown:
+              </span>
+              {Object.entries(cancelledBySubject).map(([sub, count]) => (
+                <span
+                  key={sub}
+                  className="px-2.5 py-1 rounded-md bg-card border border-border text-foreground font-semibold flex items-center gap-1.5 shadow-2xs"
+                >
+                  <span>{sub}</span>
+                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 text-[11px] font-black">
+                    {count}
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Compact Structured Table / Rows */}
+          <div className="space-y-2">
+            {displayedCancelled.map((entry, idx) => (
               <motion.div
-                key={`${entry.date}-${entry.key}`}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.04 }}
+                key={`${entry.date}-${entry.key}-${idx}`}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.03 }}
+                className="group flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/60 border border-border/50 transition-all gap-2 text-xs"
               >
-                <Card className="bg-card border border-border/60 p-4">
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="w-10 h-10 rounded-lg bg-gray-500/10 border border-gray-500/30 flex items-center justify-center flex-shrink-0">
-                      <Ban className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-foreground font-bold text-sm">{entry.subject}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-500/15 border border-gray-500/30 text-gray-400">
-                          Period {entry.period}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
-                        <span>{entry.date} ({entry.day})</span>
-                        {entry.faculty && (
-                          <span className="text-[var(--brand-start)] font-medium">
-                            Faculty: {entry.faculty}
-                          </span>
-                        )}
-                        {entry.notes && <span className="italic">{entry.notes}</span>}
-                      </div>
-                    </div>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0">
+                    <Ban className="w-4 h-4 text-amber-500" />
                   </div>
-                </Card>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-foreground text-sm">{entry.subject}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border font-semibold text-[11px]">
+                        Period {entry.period}
+                      </span>
+                    </div>
+                    {entry.faculty && (
+                      <p className="text-muted-foreground text-[11px] flex items-center gap-1 mt-0.5">
+                        <User className="w-3 h-3 text-muted-foreground" />
+                        <span>Faculty: <strong className="text-foreground">{entry.faculty}</strong></span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end gap-3 text-right flex-shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-border/30">
+                  <div className="text-left sm:text-right">
+                    <span className="font-semibold text-foreground">{entry.date}</span>
+                    <span className="text-muted-foreground ml-1">({entry.day})</span>
+                  </div>
+                  {entry.notes && (
+                    <span
+                      className="italic text-muted-foreground max-w-[180px] truncate bg-card px-2 py-1 rounded border border-border/60"
+                      title={entry.notes}
+                    >
+                      "{entry.notes}"
+                    </span>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>
-        </div>
+
+          {/* Expand / Collapse Control */}
+          {filteredCancelled.length > 3 && (
+            <div className="pt-2 text-center border-t border-border/40">
+              <button
+                onClick={() => setIsCancelledExpanded(!isCancelledExpanded)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10 transition-colors"
+              >
+                {isCancelledExpanded ? (
+                  <>
+                    <span>Show Less</span>
+                    <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Show All {filteredCancelled.length} Cancelled Classes</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );
