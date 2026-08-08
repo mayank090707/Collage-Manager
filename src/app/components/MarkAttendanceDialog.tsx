@@ -3,10 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { CalendarIcon, CheckCircle, XCircle, Ban, BookOpen } from "lucide-react";
-import { format } from "date-fns";
+import { CheckCircle, XCircle, Ban, BookOpen, Plus, Trash2, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { format, subDays } from "date-fns";
 import { toast } from "sonner";
 import { logActivity } from "../../lib/activityTracker";
 
@@ -17,15 +15,16 @@ interface TimetableSlot {
   faculty?: string;
 }
 
-// Status for each class period in the dialog
 type SlotStatus = "attended" | "absent" | "cancelled";
 
 interface SlotState {
+  id: string; // unique ID for React rendering
   subject: string;
   period: number;
   status: SlotStatus;
   faculty: string;
   notes: string;
+  isManual?: boolean;
 }
 
 interface MarkAttendanceDialogProps {
@@ -34,82 +33,154 @@ interface MarkAttendanceDialogProps {
 }
 
 export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDateStr, setSelectedDateStr] = useState<string>(
+    format(new Date(), "yyyy-MM-dd")
+  );
   const [slots, setSlots] = useState<SlotState[]>([]);
   const [semesterDuration, setSemesterDuration] = useState<string>("");
+  const [allSubjects, setAllSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [showAddSubjectDropdown, setShowAddSubjectDropdown] = useState<boolean>(false);
+  const [newSlotSubject, setNewSlotSubject] = useState<string>("");
 
   useEffect(() => {
     if (open) {
       loadSemesterInfo();
-      loadSubjectsForDate(selectedDate);
+      loadAllSubjects();
+      loadSubjectsForDateStr(selectedDateStr);
     }
   }, [open]);
 
   useEffect(() => {
-    if (selectedDate) {
-      loadSubjectsForDate(selectedDate);
+    if (selectedDateStr) {
+      loadSubjectsForDateStr(selectedDateStr);
     }
-  }, [selectedDate]);
+  }, [selectedDateStr]);
 
   const loadSemesterInfo = () => {
     const profile = JSON.parse(localStorage.getItem("student_profile") || "null");
     if (profile?.semesterStartDate && profile?.semesterEndDate) {
-      const start = new Date(profile.semesterStartDate);
-      const end = new Date(profile.semesterEndDate);
-      const startStr = format(start, "MMM d, yyyy");
-      const endStr = format(end, "MMM d, yyyy");
-      setSemesterDuration(`${startStr} → ${endStr}`);
+      try {
+        const start = new Date(profile.semesterStartDate);
+        const end = new Date(profile.semesterEndDate);
+        const startStr = format(start, "MMM d, yyyy");
+        const endStr = format(end, "MMM d, yyyy");
+        setSemesterDuration(`${startStr} → ${endStr}`);
+      } catch {
+        setSemesterDuration("");
+      }
     } else {
       setSemesterDuration("");
     }
   };
 
-  const loadSubjectsForDate = (date: Date) => {
-    const dayName = format(date, "EEEE");
-    const timetableStr = localStorage.getItem("timetable");
-    if (timetableStr) {
-      const timetable: TimetableSlot[] = JSON.parse(timetableStr);
-      const daySlots = timetable
-        .filter((slot) => slot.day === dayName)
-        .sort((a, b) => a.period - b.period);
-
-      // Load existing record for this date if any
-      const existingRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
-      const existingRecord = existingRecords.find(
-        (r: any) => r.date === format(date, "yyyy-MM-dd")
-      );
-
-      const initialSlots: SlotState[] = daySlots.map((slot) => {
-        // Check if there's existing status for this slot
-        const key = `${slot.subject}-${slot.period}`;
-        let existingStatus: SlotStatus = "absent";
-        let existingFaculty = slot.faculty || "";
-        let existingNotes = "";
-
-        if (existingRecord) {
-          if (existingRecord.subjects?.includes(key)) {
-            existingStatus = "attended";
-          } else if (existingRecord.cancelled?.some((c: any) => c.key === key)) {
-            existingStatus = "cancelled";
-            const cancelledEntry = existingRecord.cancelled.find((c: any) => c.key === key);
-            existingFaculty = cancelledEntry?.faculty || existingFaculty;
-            existingNotes = cancelledEntry?.notes || "";
-          }
-        }
-
-        return {
-          subject: slot.subject,
-          period: slot.period,
-          status: existingStatus,
-          faculty: existingFaculty,
-          notes: existingNotes,
-        };
-      });
-
-      setSlots(initialSlots);
-    } else {
-      setSlots([]);
+  const loadAllSubjects = () => {
+    const subjectsStr = localStorage.getItem("subjects");
+    if (subjectsStr) {
+      try {
+        const subs = JSON.parse(subjectsStr);
+        setAllSubjects(subs);
+        if (subs.length > 0) setNewSlotSubject(subs[0].name);
+      } catch {}
     }
+  };
+
+  const loadSubjectsForDateStr = (dateStr: string) => {
+    if (!dateStr) return;
+    const parts = dateStr.split("-").map(Number);
+    if (parts.length !== 3) return;
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    const dayName = format(dateObj, "EEEE");
+
+    const timetableStr = localStorage.getItem("timetable");
+    const timetable: TimetableSlot[] = timetableStr ? JSON.parse(timetableStr) : [];
+    const daySlots = timetable
+      .filter((slot) => slot.day === dayName)
+      .sort((a, b) => a.period - b.period);
+
+    // Existing attendance records for this date
+    const existingRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
+    const existingRecord = existingRecords.find((r: any) => r.date === dateStr);
+
+    const initialSlots: SlotState[] = [];
+    const processedKeys = new Set<string>();
+
+    // 1. Process Timetable slots
+    daySlots.forEach((slot) => {
+      const key = `${slot.subject}-${slot.period}`;
+      processedKeys.add(key);
+
+      let existingStatus: SlotStatus = "absent";
+      let existingFaculty = slot.faculty || "";
+      let existingNotes = "";
+
+      if (existingRecord) {
+        if (existingRecord.subjects?.includes(key)) {
+          existingStatus = "attended";
+        } else if (existingRecord.cancelled?.some((c: any) => c.key === key)) {
+          existingStatus = "cancelled";
+          const cancelledEntry = existingRecord.cancelled.find((c: any) => c.key === key);
+          existingFaculty = cancelledEntry?.faculty || existingFaculty;
+          existingNotes = cancelledEntry?.notes || "";
+        }
+      }
+
+      initialSlots.push({
+        id: key,
+        subject: slot.subject,
+        period: slot.period,
+        status: existingStatus,
+        faculty: existingFaculty,
+        notes: existingNotes,
+        isManual: false,
+      });
+    });
+
+    // 2. Load any extra manual slots previously recorded for this date
+    if (existingRecord) {
+      if (existingRecord.subjects) {
+        existingRecord.subjects.forEach((key: string) => {
+          if (!processedKeys.has(key)) {
+            const lastDashIndex = key.lastIndexOf("-");
+            const subName = lastDashIndex > 0 ? key.substring(0, lastDashIndex) : key;
+            const periodNum = lastDashIndex > 0 ? parseInt(key.substring(lastDashIndex + 1)) || 1 : 1;
+            
+            initialSlots.push({
+              id: key,
+              subject: subName,
+              period: periodNum,
+              status: "attended",
+              faculty: "",
+              notes: "",
+              isManual: true,
+            });
+            processedKeys.add(key);
+          }
+        });
+      }
+
+      if (existingRecord.cancelled) {
+        existingRecord.cancelled.forEach((c: any) => {
+          if (c.key && !processedKeys.has(c.key)) {
+            const lastDashIndex = c.key.lastIndexOf("-");
+            const subName = c.subject || (lastDashIndex > 0 ? c.key.substring(0, lastDashIndex) : c.key);
+            const periodNum = c.period || (lastDashIndex > 0 ? parseInt(c.key.substring(lastDashIndex + 1)) || 1 : 1);
+
+            initialSlots.push({
+              id: c.key,
+              subject: subName,
+              period: periodNum,
+              status: "cancelled",
+              faculty: c.faculty || "",
+              notes: c.notes || "",
+              isManual: true,
+            });
+            processedKeys.add(c.key);
+          }
+        });
+      }
+    }
+
+    setSlots(initialSlots);
   };
 
   const updateSlot = (idx: number, field: keyof SlotState, value: string) => {
@@ -120,11 +191,47 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     setSlots((prev) => prev.map((s, i) => (i === idx ? { ...s, status } : s)));
   };
 
+  const handleAddManualSlot = () => {
+    if (!newSlotSubject) {
+      toast.error("Please select a subject to add");
+      return;
+    }
+
+    // Find next available period number for this subject
+    const subjectSlots = slots.filter((s) => s.subject === newSlotSubject);
+    const maxPeriod = subjectSlots.length > 0 ? Math.max(...subjectSlots.map((s) => s.period)) : 0;
+    const nextPeriod = maxPeriod + 1;
+    const key = `${newSlotSubject}-${nextPeriod}`;
+
+    const newSlot: SlotState = {
+      id: `${key}-${Date.now()}`,
+      subject: newSlotSubject,
+      period: nextPeriod,
+      status: "attended",
+      faculty: "",
+      notes: "",
+      isManual: true,
+    };
+
+    setSlots((prev) => [...prev, newSlot]);
+    setShowAddSubjectDropdown(false);
+    toast.success(`Added ${newSlotSubject} (Period ${nextPeriod})`);
+  };
+
+  const handleRemoveSlot = (idx: number) => {
+    setSlots((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleQuickDateSelect = (daysAgo: number) => {
+    const targetDate = subDays(new Date(), daysAgo);
+    setSelectedDateStr(format(targetDate, "yyyy-MM-dd"));
+  };
+
   const handleSave = () => {
     const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    const parts = selectedDateStr.split("-").map(Number);
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    // Build subjects (attended) and cancelled arrays
     const attendedSubjects = slots
       .filter((s) => s.status === "attended")
       .map((s) => `${s.subject}-${s.period}`);
@@ -137,18 +244,18 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
         period: s.period,
         faculty: s.faculty,
         notes: s.notes,
-        date: dateStr,
-        day: format(selectedDate, "EEEE"),
+        date: selectedDateStr,
+        day: format(dateObj, "EEEE"),
       }));
 
     const newRecord = {
-      date: dateStr,
+      date: selectedDateStr,
       subjects: attendedSubjects,
       cancelled: cancelledEntries,
     };
 
     const existingIndex = attendanceRecords.findIndex(
-      (r: { date: string }) => r.date === dateStr
+      (r: { date: string }) => r.date === selectedDateStr
     );
 
     if (existingIndex >= 0) {
@@ -158,17 +265,18 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     }
 
     localStorage.setItem("attendance_records", JSON.stringify(attendanceRecords));
+    window.dispatchEvent(new Event("storage"));
 
     logActivity(
       "ATTENDANCE_RECORDED",
-      `Recorded attendance for ${format(selectedDate, "MMM dd, yyyy")} — ${attendedSubjects.length} attended, ${cancelledEntries.length} cancelled.`,
+      `Recorded attendance for ${format(dateObj, "MMM dd, yyyy")} — ${attendedSubjects.length} attended, ${cancelledEntries.length} cancelled.`,
       "Attendance",
       undefined,
       undefined,
       "success"
     );
 
-    toast.success("Attendance saved!");
+    toast.success(`Attendance saved for ${format(dateObj, "MMM d, yyyy")}!`);
     onClose();
   };
 
@@ -193,6 +301,12 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     },
   };
 
+  // Helper date parsing for headers
+  const dateParts = selectedDateStr.split("-").map(Number);
+  const selectedDateObj = dateParts.length === 3 ? new Date(dateParts[0], dateParts[1] - 1, dateParts[2]) : new Date();
+  const formattedDayName = format(selectedDateObj, "EEEE");
+  const formattedDateTitle = format(selectedDateObj, "EEEE, MMMM d, yyyy");
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-xl max-h-[90vh] overflow-y-auto">
@@ -214,56 +328,166 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
             </div>
           )}
 
-          {/* Date Selector */}
+          {/* Date Selector & Quick Shortcuts */}
           <div className="space-y-2">
-            <Label className="text-gray-300 font-semibold">Select Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-[#0a0a0f]/50 border-gray-700 hover:border-[var(--brand-start)] text-white"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "EEEE, PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-[#111118] border-gray-700">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && setSelectedDate(date)}
-                  initialFocus
-                  className="text-white"
-                />
-              </PopoverContent>
-            </Popover>
+            <div className="flex items-center justify-between">
+              <Label className="text-gray-300 font-semibold flex items-center gap-1.5">
+                <CalendarIcon className="w-4 h-4 text-[var(--brand-start)]" />
+                Select Date (Any Day)
+              </Label>
+              <span className="text-xs text-[var(--brand-start)] font-bold">{formattedDateTitle}</span>
+            </div>
+
+            {/* Native Date Input */}
+            <Input
+              type="date"
+              value={selectedDateStr}
+              onChange={(e) => e.target.value && setSelectedDateStr(e.target.value)}
+              className="bg-[#0a0a0f] border-gray-700 text-white focus:border-[var(--brand-start)] h-11 text-base font-semibold cursor-pointer"
+            />
+
+            {/* Quick Date Presets */}
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                <Clock className="w-3 h-3" /> Quick:
+              </span>
+              <button
+                type="button"
+                onClick={() => handleQuickDateSelect(0)}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
+                  selectedDateStr === format(new Date(), "yyyy-MM-dd")
+                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] shadow-[0_0_10px_rgba(var(--brand-start-rgb),0.3)]"
+                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
+                }`}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDateSelect(1)}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
+                  selectedDateStr === format(subDays(new Date(), 1), "yyyy-MM-dd")
+                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
+                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
+                }`}
+              >
+                Yesterday
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDateSelect(2)}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
+                  selectedDateStr === format(subDays(new Date(), 2), "yyyy-MM-dd")
+                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
+                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
+                }`}
+              >
+                2 Days Ago
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDateSelect(3)}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
+                  selectedDateStr === format(subDays(new Date(), 3), "yyyy-MM-dd")
+                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
+                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
+                }`}
+              >
+                3 Days Ago
+              </button>
+            </div>
           </div>
 
-          {/* Class Slots */}
-          <div className="space-y-3">
-            <Label className="text-gray-300 font-semibold">
-              Classes on {format(selectedDate, "EEEE")}
-            </Label>
+          {/* Class Slots Header & Add Class Action */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-gray-300 font-semibold">
+                Classes on {formattedDayName} ({format(selectedDateObj, "MMM d")})
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddSubjectDropdown(!showAddSubjectDropdown)}
+                className="border-[var(--brand-start)]/50 text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10 text-xs h-8 gap-1 font-bold"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Extra Class
+              </Button>
+            </div>
+
+            {/* Add Extra Class Dropdown */}
+            {showAddSubjectDropdown && (
+              <div className="p-3.5 rounded-xl bg-gray-900/90 border border-[var(--brand-start)]/40 space-y-3 animate-in fade-in duration-150">
+                <p className="text-xs font-bold text-[var(--brand-start)]">Add Extra or Rescheduled Class</p>
+                {allSubjects.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={newSlotSubject}
+                      onChange={(e) => setNewSlotSubject(e.target.value)}
+                      className="flex-1 bg-[#0a0a0f] border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:border-[var(--brand-start)] outline-none"
+                    >
+                      {allSubjects.map((sub) => (
+                        <option key={sub.id} value={sub.name}>
+                          {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      onClick={handleAddManualSlot}
+                      className="bg-[var(--brand-start)] hover:bg-amber-600 text-white text-xs px-4"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No subjects found in profile. Please add subjects first.</p>
+                )}
+              </div>
+            )}
 
             {slots.length === 0 ? (
-              <div className="rounded-lg bg-gray-800/40 border border-gray-700 p-6 text-center">
-                <p className="text-gray-400 text-sm">No classes scheduled for this day in your timetable.</p>
+              <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6 text-center space-y-2">
+                <p className="text-gray-400 text-sm">
+                  No classes scheduled in your timetable for <strong>{formattedDayName}</strong>.
+                </p>
+                <p className="text-xs text-gray-500">
+                  Did you have an extra or rescheduled class? Click <strong>&quot;Add Extra Class&quot;</strong> above to mark attendance.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
                 {slots.map((slot, idx) => {
-                  const key = `${slot.subject}-${slot.period}`;
                   return (
                     <div
-                      key={key}
-                      className="rounded-xl bg-[#0a0a0f]/60 border border-gray-800 p-4 space-y-3"
+                      key={slot.id}
+                      className="rounded-xl bg-[#0a0a0f]/60 border border-gray-800 p-4 space-y-3 relative group"
                     >
                       {/* Slot header */}
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-full bg-[var(--brand-start)]/20 border border-[var(--brand-start)]/40 flex items-center justify-center text-[var(--brand-start)] text-xs font-bold flex-shrink-0">
-                          P{slot.period}
-                        </span>
-                        <span className="text-white font-semibold">{slot.subject}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-full bg-[var(--brand-start)]/20 border border-[var(--brand-start)]/40 flex items-center justify-center text-[var(--brand-start)] text-xs font-bold flex-shrink-0">
+                            P{slot.period}
+                          </span>
+                          <span className="text-white font-semibold">{slot.subject}</span>
+                          {slot.isManual && (
+                            <span className="text-[10px] bg-amber-500/20 border border-amber-500/40 text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                              Extra Class
+                            </span>
+                          )}
+                        </div>
+
+                        {slot.isManual && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSlot(idx)}
+                            className="text-gray-500 hover:text-red-400 transition-colors p-1"
+                            title="Remove class slot"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
 
                       {/* 3-option status buttons */}
@@ -315,7 +539,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-2">
+          <div className="flex justify-end space-x-3 pt-2 border-t border-gray-800/80">
             <Button
               variant="outline"
               onClick={onClose}
@@ -326,7 +550,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
             <Button
               onClick={handleSave}
               disabled={slots.length === 0}
-              className="bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb),0.3)]"
+              className="bg-[var(--brand-start)] hover:bg-amber-600 text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb),0.3)] font-bold px-6"
             >
               Save Attendance
             </Button>

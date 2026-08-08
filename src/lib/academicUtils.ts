@@ -118,7 +118,7 @@ export function computeAttendanceStats(): OverallAttendanceResult {
   }
 
   let subjects: { id: string; name: string; code: string; credits: number }[] = [];
-  let records: { date: string; subjects: string[]; cancelled?: { key: string }[] }[] = [];
+  let records: { date: string; subjects: string[]; cancelled?: { key: string; subject?: string; period?: number }[] }[] = [];
   let timetable: { day: string; subject: string; period: number }[] = [];
 
   try {
@@ -164,8 +164,37 @@ export function computeAttendanceStats(): OverallAttendanceResult {
       const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(dateObj);
 
       const slots = timetable.filter((t) => t.day === dayName && t.subject === subject.name);
+      const processedKeys = new Set<string>();
+
+      // A) Process timetable slots for this subject
       slots.forEach((slot) => {
         const key = `${slot.subject}-${slot.period}`;
+        processedKeys.add(key);
+        const isCancelled = record.cancelled?.some((c) => c.key === key);
+        if (!isCancelled) {
+          conducted++;
+          if (record.subjects?.includes(key)) {
+            attended++;
+          }
+        }
+      });
+
+      // B) Process extra/manual slots recorded for this subject on this date
+      const manualAttendedKeys = record.subjects?.filter(
+        (k) => k.startsWith(`${subject.name}-`) && !processedKeys.has(k)
+      ) || [];
+      
+      const manualCancelledEntries = record.cancelled?.filter(
+        (c) => (c.subject === subject.name || c.key?.startsWith(`${subject.name}-`)) && !processedKeys.has(c.key)
+      ) || [];
+
+      // Combine unique extra keys
+      const extraKeys = new Set<string>([
+        ...manualAttendedKeys,
+        ...manualCancelledEntries.map((c) => c.key)
+      ]);
+
+      extraKeys.forEach((key) => {
         const isCancelled = record.cancelled?.some((c) => c.key === key);
         if (!isCancelled) {
           conducted++;
