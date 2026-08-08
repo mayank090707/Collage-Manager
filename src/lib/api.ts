@@ -43,7 +43,7 @@ localStorage.setItem = function(key, value) {
 
 /**
  * Generic API client to handle database operations.
- * It also maintains a local sync to keep the app feeling fast.
+ * Server-side database (db.json) is the Source of Truth.
  */
 export const api = {
   async signup(credentials: any) {
@@ -103,7 +103,8 @@ export const api = {
   },
 
   /**
-   * Fetches the entire state from the server and populates localStorage
+   * Fetches state from server (Source of Truth) and safely updates localStorage cache.
+   * If server data is empty while localStorage has data, logs conflict and syncs local data up.
    */
   async syncFromDB() {
     const userId = getUserId();
@@ -114,18 +115,38 @@ export const api = {
       if (!response.ok) return null;
       
       const data = await response.json();
+      const localProfileStr = localStorage.getItem('student_profile');
+
+      // CONFLICT DETECTION: Server has no profile, but local storage has cached profile
+      if (!data.profile && localProfileStr) {
+        console.warn('[SYNC CONFLICT] Server returned unpopulated profile while localStorage holds valid user profile. Triggering safe migration to server...');
+        await this.migrateLocalStorageToDB();
+        return data;
+      }
       
-      // Update localStorage with fresh DB data
+      // Update localStorage with fresh DB data safely
       isSyncing = true; // Start bypassing interceptor
       if (data.profile) {
         localStorage.setItem('student_profile', JSON.stringify(data.profile));
       }
-      localStorage.setItem('subjects', JSON.stringify(data.subjects || []));
-      localStorage.setItem('timetable', JSON.stringify(data.timetable || []));
-      localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords || []));
-      localStorage.setItem('semester_data', JSON.stringify(data.semesterData || []));
-      localStorage.setItem('semester_marks', JSON.stringify(data.semesterMarks || []));
-      localStorage.setItem('backlogs', JSON.stringify(data.backlogs || []));
+      if (Array.isArray(data.subjects) && (data.subjects.length > 0 || !localStorage.getItem('subjects'))) {
+        localStorage.setItem('subjects', JSON.stringify(data.subjects));
+      }
+      if (Array.isArray(data.timetable) && (data.timetable.length > 0 || !localStorage.getItem('timetable'))) {
+        localStorage.setItem('timetable', JSON.stringify(data.timetable));
+      }
+      if (Array.isArray(data.attendanceRecords) && (data.attendanceRecords.length > 0 || !localStorage.getItem('attendance_records'))) {
+        localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords));
+      }
+      if (Array.isArray(data.semesterData) && (data.semesterData.length > 0 || !localStorage.getItem('semester_data'))) {
+        localStorage.setItem('semester_data', JSON.stringify(data.semesterData));
+      }
+      if (Array.isArray(data.semesterMarks) && (data.semesterMarks.length > 0 || !localStorage.getItem('semester_marks'))) {
+        localStorage.setItem('semester_marks', JSON.stringify(data.semesterMarks));
+      }
+      if (Array.isArray(data.backlogs) && (data.backlogs.length > 0 || !localStorage.getItem('backlogs'))) {
+        localStorage.setItem('backlogs', JSON.stringify(data.backlogs));
+      }
       if (data.examCalendar) {
         localStorage.setItem('exam_calendar_v2', JSON.stringify(data.examCalendar));
       }
@@ -140,7 +161,7 @@ export const api = {
       return data;
     } catch (error) {
       isSyncing = false;
-      console.warn('Backend sync failed, using local storage.', error);
+      console.warn('Backend sync failed, using cached local storage.', error);
       return null;
     }
   },

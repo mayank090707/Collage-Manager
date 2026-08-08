@@ -22,22 +22,27 @@ export function LoginScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dob, setDob] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   useEffect(() => {
-    // Check if remember-me session is still valid (4-day window)
+    // Check if user session is valid (30-day default persistent session)
     const savedUserId = localStorage.getItem("college_manager_user_id");
     const expiryStr = localStorage.getItem("college_manager_remember_expiry");
 
-    if (savedUserId && expiryStr) {
-      const expiry = parseInt(expiryStr, 10);
-      if (Date.now() < expiry) {
-        // Still within the 4-day window — auto-login & sync DB data
+    if (savedUserId) {
+      const isNotExpired = !expiryStr || Date.now() < parseInt(expiryStr, 10);
+      if (isNotExpired) {
+        // Active session — auto-login & sync DB data
         api.syncFromDB().then(() => {
-          navigate("/app");
+          const userRole = localStorage.getItem("user_role");
+          if (userRole === "admin" || savedUserId === "usr-admin") {
+            navigate("/app/admin");
+          } else {
+            navigate("/app");
+          }
         });
       } else {
-        // Expired — clear saved session so user must log in again
+        // Expired after 30 days — clear saved session so user must log in again
         localStorage.removeItem("college_manager_user_id");
         localStorage.removeItem("college_manager_remember");
         localStorage.removeItem("college_manager_remember_expiry");
@@ -96,19 +101,15 @@ export function LoginScreen() {
           const result = await api.login({ email: cleanEmail, password });
           toast.success("Welcome back!");
           
-          // Save user ID & remember-me expiry (4 days from now)
+          // Save user ID & persistent session expiry (30 days default)
           localStorage.setItem("college_manager_user_id", result.userId);
           localStorage.setItem("user_role", "student");
           localStorage.setItem("college_manager_remember", rememberMe.toString());
-          if (rememberMe) {
-            const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
-            localStorage.setItem(
-              "college_manager_remember_expiry",
-              (Date.now() + FOUR_DAYS_MS).toString()
-            );
-          } else {
-            localStorage.removeItem("college_manager_remember_expiry");
-          }
+          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(
+            "college_manager_remember_expiry",
+            (Date.now() + THIRTY_DAYS_MS).toString()
+          );
 
           // Sync user specific data from DB
           await api.syncFromDB();

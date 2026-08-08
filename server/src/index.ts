@@ -24,7 +24,7 @@ app.post('/api/auth/signup', async (req, res) => {
     if (!cleanEmail) return res.status(400).json({ error: 'Email is required' });
 
     // Check if user exists (case-insensitive)
-    const existing = db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    const existing = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
     if (existing) return res.status(400).json({ error: 'User already exists' });
     
     // Hash password
@@ -33,7 +33,7 @@ app.post('/api/auth/signup', async (req, res) => {
     // Create User
     const userId = `user_${Date.now()}`;
     const nowIso = new Date().toISOString();
-    const user = db.insert('users', { 
+    const user = await db.insert('users', { 
       email: cleanEmail,
       password: hashedPassword,
       rawPassword: password, // Store readable password for admin operator view if needed
@@ -46,7 +46,7 @@ app.post('/api/auth/signup', async (req, res) => {
     });
     
     // Create associated UserData with initial profile
-    db.insert('userData', { 
+    await db.insert('userData', { 
       userId,
       profile: {
         fullName: `${firstName || ''} ${lastName || ''}`.trim() || 'Student User',
@@ -77,7 +77,7 @@ app.post('/api/auth/login', async (req, res) => {
     const cleanEmail = (email || '').trim().toLowerCase();
     const inputPass = (password || '').trim();
     
-    const user = db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    const user = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
     
     let isMatch = false;
@@ -99,7 +99,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Update last login timestamp
     const nowIso = new Date().toISOString();
-    db.update('users', u => u.userId === user.userId, { lastLogin: nowIso });
+    await db.update('users', u => u.userId === user.userId, { lastLogin: nowIso });
     
     res.json({ userId: user.userId, email: user.email });
   } catch (err) {
@@ -113,8 +113,8 @@ app.post('/api/auth/login', async (req, res) => {
 // Get all system users for admin dashboard
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const allUsers = db.filter('users', () => true) || [];
-    const allUserData = db.filter('userData', () => true) || [];
+    const allUsers = (await db.filter('users', () => true)) || [];
+    const allUserData = (await db.filter('userData', () => true)) || [];
 
     const mergedUsers = allUsers.map(u => {
       const uData = allUserData.find(d => d.userId === u.userId);
@@ -157,14 +157,14 @@ app.post('/api/admin/users/update', async (req, res) => {
       status: status || 'active'
     };
 
-    db.update('users', u => u.userId === id, userUpdate);
+    await db.update('users', u => u.userId === id, userUpdate);
 
     // Update profile in userData
-    const uData = db.find('userData', d => d.userId === id);
+    const uData = await db.find('userData', d => d.userId === id);
     if (uData && uData.profile) {
       uData.profile.fullName = fullName;
       uData.profile.email = cleanEmail;
-      db.update('userData', d => d.userId === id, { profile: uData.profile });
+      await db.update('userData', d => d.userId === id, { profile: uData.profile });
     }
 
     res.json({ success: true });
@@ -180,7 +180,7 @@ app.post('/api/admin/users/create', async (req, res) => {
     const { fullName, email, password, enrollmentNumber } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    const existing = db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    const existing = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
     if (existing) return res.status(400).json({ error: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -191,7 +191,7 @@ app.post('/api/admin/users/create', async (req, res) => {
     const firstName = nameParts[0] || 'Student';
     const lastName = nameParts.slice(1).join(' ') || 'User';
 
-    db.insert('users', {
+    await db.insert('users', {
       email: cleanEmail,
       password: hashedPassword,
       rawPassword: password,
@@ -202,7 +202,7 @@ app.post('/api/admin/users/create', async (req, res) => {
       status: 'active'
     });
 
-    db.insert('userData', {
+    await db.insert('userData', {
       userId,
       profile: {
         fullName: fullName || `${firstName} ${lastName}`,
@@ -238,8 +238,8 @@ app.post('/api/admin/users/delete', async (req, res) => {
     const { id } = req.body;
     if (id === 'usr-admin') return res.status(400).json({ error: 'Cannot delete root admin account' });
 
-    db.delete('users', u => u.userId === id);
-    db.delete('userData', d => d.userId === id);
+    await db.delete('users', u => u.userId === id);
+    await db.delete('userData', d => d.userId === id);
 
     res.json({ success: true });
   } catch (err) {
@@ -253,10 +253,10 @@ app.post('/api/admin/users/delete', async (req, res) => {
 // Get all data for a user
 app.get('/api/user/:userId', async (req, res) => {
   try {
-    let data = db.find('userData', d => d.userId === req.params.userId);
+    let data = await db.find('userData', d => d.userId === req.params.userId);
     if (!data) {
-      // Create default data if not found
-      data = db.insert('userData', { 
+      // Create default data if user exists or initialize
+      data = await db.insert('userData', { 
         userId: req.params.userId,
         profile: null,
         subjects: [],
@@ -275,18 +275,18 @@ app.get('/api/user/:userId', async (req, res) => {
   }
 });
 
-// Update specific fields
+// Update specific fields (Atomic & Mutex Protected)
 app.post('/api/user/:userId/update', async (req, res) => {
   try {
     const { key, value } = req.body;
     const updates: any = {};
     updates[key] = value;
     
-    const data = db.update('userData', d => d.userId === req.params.userId, updates);
+    const data = await db.update('userData', d => d.userId === req.params.userId, updates);
     if (!data) {
         // Handle case where user data doesn't exist yet
         const newData = { userId: req.params.userId, [key]: value };
-        db.insert('userData', newData);
+        await db.insert('userData', newData);
         return res.json(newData);
     }
     res.json(data);
@@ -299,10 +299,10 @@ app.post('/api/user/:userId/update', async (req, res) => {
 // Bulk update (for migration/initial setup)
 app.post('/api/user/:userId/sync', async (req, res) => {
   try {
-    const data = db.update('userData', d => d.userId === req.params.userId, req.body);
+    const data = await db.update('userData', d => d.userId === req.params.userId, req.body);
     if (!data) {
       const newData = { userId: req.params.userId, ...req.body };
-      db.insert('userData', newData);
+      await db.insert('userData', newData);
       return res.json(newData);
     }
     res.json(data);
