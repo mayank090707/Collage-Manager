@@ -52,7 +52,7 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
 // ════════════════════════════════════════════════════════════════
 
 // ── Signup ───────────────────────────────────────────────────────────────────
-app.post('/api/auth/signup', async (req, res) => {
+const handleSignup: express.RequestHandler = async (req, res) => {
   try {
     const { email, password, firstName, lastName, dob } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -98,10 +98,15 @@ app.post('/api/auth/signup', async (req, res) => {
     console.error('Signup error:', err);
     res.status(500).json({ error: `Signup failed: ${err.message}` });
   }
-});
+};
+
+app.post('/api/auth/signup', handleSignup);
+app.post('/api/auth/register', handleSignup);
+app.post('/api/register', handleSignup);
+app.post('/api/signup', handleSignup);
 
 // ── Login ─────────────────────────────────────────────────────────────────────
-app.post('/api/auth/login', async (req, res) => {
+const handleLogin: express.RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
     const cleanEmail  = (email || '').trim().toLowerCase();
@@ -171,9 +176,11 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ userId: user.userId, email: user.email, role: 'student' });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ error: 'Login failed' });
   }
-});
+};
+
+app.post('/api/auth/login', handleLogin);
+app.post('/api/login', handleLogin);
 
 // ════════════════════════════════════════════════════════════════
 // ADMIN ROUTES  (protected — require X-Admin-Key header)
@@ -400,6 +407,12 @@ app.post('/api/user/:userId/sync', async (req, res) => {
     console.error('Sync error:', err);
     res.status(500).json({ error: 'Failed to sync user data' });
   }
+});
+
+// ─── API 404 Fallback ─────────────────────────────────────────────────────────
+// Guarantees that no /api/* route EVER returns HTML (e.g. index.html or Express HTML error pages)
+app.all('/api/*', (req, res) => {
+  res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.path}` });
 });
 
 // ─── Serve frontend static build ──────────────────────────────────────────────

@@ -1,7 +1,25 @@
-const API_BASE_URL = '/api';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '') || '/api';
 
 // Helper — get current user ID
 const getUserId = () => localStorage.getItem('college_manager_user_id');
+
+// Helper — safely parse response body (JSON or text/HTML error fallback)
+async function parseResponse(response: Response): Promise<any> {
+  const text = await response.text();
+  let json: any = null;
+  try {
+    json = JSON.parse(text);
+  } catch (_) {
+    // Response was HTML or plain text (e.g. 404/500 page from proxy)
+  }
+
+  if (!response.ok) {
+    const errorMsg = json?.error || (text.includes('<!DOCTYPE') ? `Server error (${response.status}): Endpoint not found or backend unreachable.` : text) || `Request failed with status ${response.status}`;
+    throw new Error(errorMsg);
+  }
+
+  return json || {};
+}
 
 // Admin key for protected admin API calls
 const ADMIN_KEY = 'AdminPassword123';
@@ -51,8 +69,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(credentials),
     });
-    if (!response.ok) throw new Error((await response.json()).error || 'Signup failed');
-    return response.json();
+    return parseResponse(response);
   },
 
   async login(credentials: any) {
@@ -61,8 +78,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(credentials),
     });
-    if (!response.ok) throw new Error((await response.json()).error || 'Login failed');
-    return response.json();
+    return parseResponse(response);
   },
 
   // ── Admin ────────────────────────────────────────────────────────────────
@@ -70,16 +86,14 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/admin/users`, {
       headers: { 'x-admin-key': ADMIN_KEY },
     });
-    if (!response.ok) throw new Error('Failed to fetch admin users');
-    return response.json();
+    return parseResponse(response);
   },
 
   async getAdminStats() {
     const response = await fetch(`${API_BASE_URL}/admin/stats`, {
       headers: { 'x-admin-key': ADMIN_KEY },
     });
-    if (!response.ok) throw new Error('Failed to fetch admin stats');
-    return response.json();
+    return parseResponse(response);
   },
 
   async updateAdminUser(userData: any) {
@@ -88,8 +102,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify(userData),
     });
-    if (!response.ok) throw new Error('Failed to update user');
-    return response.json();
+    return parseResponse(response);
   },
 
   async createAdminUser(userData: any) {
@@ -98,8 +111,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify(userData),
     });
-    if (!response.ok) throw new Error((await response.json()).error || 'Failed to create user');
-    return response.json();
+    return parseResponse(response);
   },
 
   async deleteAdminUser(id: string) {
@@ -108,8 +120,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify({ id }),
     });
-    if (!response.ok) throw new Error('Failed to delete user');
-    return response.json();
+    return parseResponse(response);
   },
 
   // ── syncFromDB ───────────────────────────────────────────────────────────
