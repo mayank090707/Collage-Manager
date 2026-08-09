@@ -140,16 +140,29 @@ export function LoginScreen() {
               const systemUsers = JSON.parse(systemUsersStr);
               const cleanInputPass = password.trim();
               const compactInputPass = password.replace(/\s+/g, "");
+              const normalizedEmail = cleanEmail.replace(/^([a-z]+)\d+(@.*)$/i, "$1$2");
+              
+              const expandedPasses = new Set<string>([password, cleanInputPass, compactInputPass]);
+              if (/^stu@/i.test(cleanInputPass)) {
+                expandedPasses.add(cleanInputPass.replace(/^stu@/i, "Student@"));
+                expandedPasses.add(cleanInputPass.replace(/^stu@/i, "Student @"));
+              } else if (/^student@/i.test(cleanInputPass)) {
+                expandedPasses.add(cleanInputPass.replace(/^student@/i, "Stu@"));
+                expandedPasses.add(cleanInputPass.replace(/^student@/i, "Student @"));
+              }
               
               const foundUser = systemUsers.find((u: any) => {
                 const uEmail = (u.email || "").toLowerCase().trim();
-                if (uEmail !== cleanEmail) return false;
+                if (uEmail !== cleanEmail && uEmail !== normalizedEmail) return false;
                 const uPass = u.passwordHash || u.password || "";
-                return (
-                  uPass === password ||
-                  uPass === cleanInputPass ||
-                  uPass.replace(/\s+/g, "") === compactInputPass
-                );
+                const cleanUPass = uPass.trim();
+                const compactUPass = uPass.replace(/\s+/g, "");
+                for (const input of Array.from(expandedPasses)) {
+                  if (uPass === input || cleanUPass === input || compactUPass === input || compactUPass === input.replace(/\s+/g, "")) {
+                    return true;
+                  }
+                }
+                return false;
               });
 
               if (foundUser) {

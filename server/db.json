@@ -11,6 +11,16 @@
       "status": "active"
     },
     {
+      "email": "mayank1sharma@gmail.com",
+      "password": "$2b$10$pd9YUulXaUOR2lPGwg.xKuSCYmIBgZ2GBO.tQldPd55czCxj7uMXa",
+      "rawPassword": "Stu@123",
+      "userId": "user_mayanksharma",
+      "firstName": "Mayank",
+      "lastName": "Sharma",
+      "dob": "2006-08-15",
+      "status": "active"
+    },
+    {
       "email": "xyz@gmail.com",
       "password": "$2b$10$c/WlAZB6IAm5.DOaZEbtou31lzeCY0UfQAmmJXoiY.SE8fWl9ANXW",
       "userId": "user_1781938581496",

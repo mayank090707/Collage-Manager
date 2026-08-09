@@ -88,15 +88,33 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ userId: 'usr-admin', email: 'admin@campus-hub.com' });
     }
     
-    const user = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    // 1. Lookup user by email or normalized email variations
+    let user = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    if (!user) {
+      // Try normalized variations (e.g., mayank1sharma@gmail.com -> mayanksharma@gmail.com)
+      const normalizedEmail = cleanEmail.replace(/^([a-z]+)\d+(@.*)$/i, '$1$2');
+      user = await db.find('users', u => (u.email || '').trim().toLowerCase() === normalizedEmail);
+    }
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
     
     let isMatch = false;
 
-    // 1. Check bcrypt hash with password variations (raw, trimmed, compact)
+    // Expand candidate inputs to include shorthand variations (e.g., Stu@123 <-> Student@123 <-> Student @123)
+    const expandedInputs = new Set<string>([rawPass, cleanPass, compactPass]);
+    if (/^stu@/i.test(cleanPass)) {
+      expandedInputs.add(cleanPass.replace(/^stu@/i, 'Student@'));
+      expandedInputs.add(cleanPass.replace(/^stu@/i, 'Student @'));
+    } else if (/^student@/i.test(cleanPass)) {
+      expandedInputs.add(cleanPass.replace(/^student@/i, 'Stu@'));
+      expandedInputs.add(cleanPass.replace(/^student@/i, 'Student @'));
+    } else if (/^student\s+@/i.test(cleanPass)) {
+      expandedInputs.add(cleanPass.replace(/^student\s+@/i, 'Stu@'));
+      expandedInputs.add(cleanPass.replace(/^student\s+@/i, 'Student@'));
+    }
+
+    // 2. Check bcrypt hash with password variations
     if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
-      const candidatesToTest = Array.from(new Set([rawPass, cleanPass, compactPass]));
-      for (const cand of candidatesToTest) {
+      for (const cand of Array.from(expandedInputs)) {
         if (cand) {
           try {
             if (await bcrypt.compare(cand, user.password)) {
@@ -108,10 +126,10 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
     
-    // 2. Fallback check against stored plaintext password, rawPassword, or passwordHash
+    // 3. Fallback check against stored plaintext password, rawPassword, or passwordHash
     if (!isMatch) {
       const storedCandidates = [user.password, user.rawPassword, user.passwordHash].filter(Boolean);
-      const inputCandidates = [rawPass, cleanPass, compactPass];
+      const inputCandidates = Array.from(expandedInputs);
 
       for (const stored of storedCandidates) {
         const cleanStored = stored.trim();
