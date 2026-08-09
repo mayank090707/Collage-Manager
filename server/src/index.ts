@@ -411,7 +411,7 @@ app.post('/api/user/:userId/sync', async (req, res) => {
 
 // ─── API 404 Fallback ─────────────────────────────────────────────────────────
 // Guarantees that no /api/* route EVER returns HTML (e.g. index.html or Express HTML error pages)
-app.all('/api/*', (req, res) => {
+app.use('/api', (req, res) => {
   res.status(404).json({ error: `API endpoint not found: ${req.method} ${req.path}` });
 });
 
