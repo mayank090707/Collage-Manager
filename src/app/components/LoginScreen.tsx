@@ -138,9 +138,20 @@ export function LoginScreen() {
           if (systemUsersStr) {
             try {
               const systemUsers = JSON.parse(systemUsersStr);
-              const foundUser = systemUsers.find(
-                (u: any) => u.email.toLowerCase() === cleanEmail && (u.passwordHash === password.trim() || u.passwordHash === password)
-              );
+              const cleanInputPass = password.trim();
+              const compactInputPass = password.replace(/\s+/g, "");
+              
+              const foundUser = systemUsers.find((u: any) => {
+                const uEmail = (u.email || "").toLowerCase().trim();
+                if (uEmail !== cleanEmail) return false;
+                const uPass = u.passwordHash || u.password || "";
+                return (
+                  uPass === password ||
+                  uPass === cleanInputPass ||
+                  uPass.replace(/\s+/g, "") === compactInputPass
+                );
+              });
+
               if (foundUser) {
                 toast.success(`Welcome back, ${foundUser.fullName}!`);
                 localStorage.setItem("college_manager_user_id", foundUser.id);
