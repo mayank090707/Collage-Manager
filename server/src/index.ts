@@ -2,341 +2,383 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
-import { db } from './DB';
+import mongoose from 'mongoose';
 import path from 'path';
+import { db } from './DB';
 
 dotenv.config();
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 
-// --- AUTH ROUTES ---
+// ─── MongoDB Connection ───────────────────────────────────────────────────────
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
-// Signup
+if (!MONGODB_URI) {
+  console.error('================================================================');
+  console.error('FATAL: MONGODB_URI environment variable is not set.');
+  console.error('Please set MONGODB_URI in your Render environment variables.');
+  console.error('See setup instructions in the project README.');
+  console.error('================================================================');
+  process.exit(1);
+}
+
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('[DB] Connected to MongoDB Atlas — data is permanently persisted.'))
+  .catch((err) => {
+    console.error('[DB] MongoDB connection failed:', err.message);
+    process.exit(1);
+  });
+
+// ─── Simple admin check helper ────────────────────────────────────────────────
+// The client sends X-Admin-Key header for admin API calls.
+// This is a lightweight protection — the admin key is the admin password itself.
+const ADMIN_KEY = process.env.ADMIN_KEY || 'AdminPassword123';
+
+function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const key = req.headers['x-admin-key'] as string | undefined;
+  if (!key || key !== ADMIN_KEY) {
+    return res.status(403).json({ error: 'Admin access denied' });
+  }
+  return next();
+}
+
+// ════════════════════════════════════════════════════════════════
+// AUTH ROUTES
+// ════════════════════════════════════════════════════════════════
+
+// ── Signup ───────────────────────────────────────────────────────────────────
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { email, password, firstName, lastName, dob } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
     if (!cleanEmail) return res.status(400).json({ error: 'Email is required' });
+    if (!password)   return res.status(400).json({ error: 'Password is required' });
 
-    // Check if user exists (case-insensitive)
-    const existing = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    const existing = await db.find('users', u => u.email === cleanEmail);
     if (existing) return res.status(400).json({ error: 'User already exists' });
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password || '', 10);
-    
-    // Create User
-    const userId = `user_${Date.now()}`;
-    const nowIso = new Date().toISOString();
-    const user = await db.insert('users', { 
-      email: cleanEmail,
-      password: hashedPassword,
-      rawPassword: password, // Store readable password for admin operator view if needed
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId  = `user_${Date.now()}`;
+    const nowIso  = new Date().toISOString();
+
+    await db.insert('users', {
+      email:       cleanEmail,
+      password:    hashedPassword,
+      rawPassword: password,
       userId,
-      firstName,
-      lastName,
-      dob,
-      lastLogin: nowIso,
-      status: 'active'
+      firstName:   firstName || '',
+      lastName:    lastName || '',
+      dob:         dob || '',
+      lastLogin:   nowIso,
+      status:      'active',
     });
-    
-    // Create associated UserData with initial profile
-    await db.insert('userData', { 
+
+    // Create empty userData record — isOnboarded starts as false
+    await db.insert('userData', {
       userId,
-      profile: {
-        fullName: `${firstName || ''} ${lastName || ''}`.trim() || 'Student User',
-        email: cleanEmail,
-        dob: dob || ''
-      },
-      subjects: [],
-      timetable: [],
+      profile:           { fullName: `${firstName || ''} ${lastName || ''}`.trim(), email: cleanEmail, dob: dob || '' },
+      subjects:          [],
+      timetable:         [],
       attendanceRecords: [],
-      semesterData: [],
-      semesterMarks: [],
-      backlogs: [],
-      examCalendar: null,
-      targetCgpa: 0
+      semesterData:      [],
+      semesterMarks:     [],
+      backlogs:          [],
+      examCalendar:      null,
+      targetCgpa:        0,
+      isOnboarded:       false,
     });
-    
-    res.json({ userId, email: user.email });
+
+    res.json({ userId, email: cleanEmail });
   } catch (err: any) {
     console.error('Signup error:', err);
     res.status(500).json({ error: `Signup failed: ${err.message}` });
   }
 });
 
-// Login
+// ── Login ─────────────────────────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const rawPass = (password || '');
-    const cleanPass = rawPass.trim();
+    const cleanEmail  = (email || '').trim().toLowerCase();
+    const rawPass     = (password || '');
+    const cleanPass   = rawPass.trim();
     const compactPass = rawPass.replace(/\s+/g, '');
 
     if (!cleanEmail || !rawPass) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Direct Built-in Super Admin Authentication
-    if (cleanEmail === 'admin@campus-hub.com' && (cleanPass === 'AdminPassword123' || compactPass === 'AdminPassword123')) {
-      return res.json({ userId: 'usr-admin', email: 'admin@campus-hub.com' });
+    // Built-in Super Admin — not stored in DB
+    if (
+      cleanEmail === 'admin@campus-hub.com' &&
+      (cleanPass === ADMIN_KEY || compactPass === ADMIN_KEY)
+    ) {
+      return res.json({ userId: 'usr-admin', email: 'admin@campus-hub.com', role: 'admin' });
     }
-    
-    // 1. Lookup user by email or normalized email variations
-    let user = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+
+    // Find user
+    let user = await db.find('users', u => u.email === cleanEmail);
     if (!user) {
-      // Try normalized variations (e.g., mayank1sharma@gmail.com -> mayanksharma@gmail.com)
-      const normalizedEmail = cleanEmail.replace(/^([a-z]+)\d+(@.*)$/i, '$1$2');
-      user = await db.find('users', u => (u.email || '').trim().toLowerCase() === normalizedEmail);
+      // Try stripping trailing digits from username part (e.g. mayank1sharma@gmail.com)
+      const normalized = cleanEmail.replace(/^([a-z]+)\d+(@.*)$/i, '$1$2');
+      user = await db.find('users', u => u.email === normalized);
     }
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
-    
+
+    // Build list of password candidates to try
+    const candidates = new Set<string>([rawPass, cleanPass, compactPass]);
+    if (/^stu@/i.test(cleanPass)) {
+      candidates.add(cleanPass.replace(/^stu@/i, 'Student@'));
+      candidates.add(cleanPass.replace(/^stu@/i, 'Student @'));
+    } else if (/^student@/i.test(cleanPass)) {
+      candidates.add(cleanPass.replace(/^student@/i, 'Stu@'));
+      candidates.add(cleanPass.replace(/^student@/i, 'Student @'));
+    }
+
     let isMatch = false;
 
-    // Expand candidate inputs to include shorthand variations (e.g., Stu@123 <-> Student@123 <-> Student @123)
-    const expandedInputs = new Set<string>([rawPass, cleanPass, compactPass]);
-    if (/^stu@/i.test(cleanPass)) {
-      expandedInputs.add(cleanPass.replace(/^stu@/i, 'Student@'));
-      expandedInputs.add(cleanPass.replace(/^stu@/i, 'Student @'));
-    } else if (/^student@/i.test(cleanPass)) {
-      expandedInputs.add(cleanPass.replace(/^student@/i, 'Stu@'));
-      expandedInputs.add(cleanPass.replace(/^student@/i, 'Student @'));
-    } else if (/^student\s+@/i.test(cleanPass)) {
-      expandedInputs.add(cleanPass.replace(/^student\s+@/i, 'Stu@'));
-      expandedInputs.add(cleanPass.replace(/^student\s+@/i, 'Student@'));
-    }
-
-    // 2. Check bcrypt hash with password variations
+    // 1. Try bcrypt
     if (user.password && (user.password.startsWith('$2a$') || user.password.startsWith('$2b$'))) {
-      for (const cand of Array.from(expandedInputs)) {
-        if (cand) {
-          try {
-            if (await bcrypt.compare(cand, user.password)) {
-              isMatch = true;
-              break;
-            }
-          } catch (e) {}
-        }
+      for (const cand of Array.from(candidates)) {
+        try {
+          if (cand && await bcrypt.compare(cand, user.password)) { isMatch = true; break; }
+        } catch (_) {}
       }
     }
-    
-    // 3. Fallback check against stored plaintext password, rawPassword, or passwordHash
-    if (!isMatch) {
-      const storedCandidates = [user.password, user.rawPassword, user.passwordHash].filter(Boolean);
-      const inputCandidates = Array.from(expandedInputs);
 
-      for (const stored of storedCandidates) {
-        const cleanStored = stored.trim();
-        const compactStored = stored.replace(/\s+/g, '');
-        for (const input of inputCandidates) {
-          if (input && (stored === input || cleanStored === input || compactStored === input || compactStored === input.replace(/\s+/g, ''))) {
-            isMatch = true;
-            break;
-          }
+    // 2. Plaintext fallback (rawPassword stored during signup)
+    if (!isMatch && user.rawPassword) {
+      const stored  = user.rawPassword;
+      const cStored = stored.trim();
+      const xStored = stored.replace(/\s+/g, '');
+      for (const cand of Array.from(candidates)) {
+        if (cand && (stored === cand || cStored === cand || xStored === cand.replace(/\s+/g, ''))) {
+          isMatch = true; break;
         }
-        if (isMatch) break;
       }
     }
 
     if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    // Update last login timestamp
-    const nowIso = new Date().toISOString();
-    await db.update('users', u => u.userId === user.userId, { lastLogin: nowIso });
-    
-    res.json({ userId: user.userId, email: user.email });
+    // Update last login
+    await db.update('users', u => u.userId === user.userId, { lastLogin: new Date().toISOString() });
+
+    res.json({ userId: user.userId, email: user.email, role: 'student' });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// --- ADMIN MANAGEMENT ROUTES ---
+// ════════════════════════════════════════════════════════════════
+// ADMIN ROUTES  (protected — require X-Admin-Key header)
+// ════════════════════════════════════════════════════════════════
 
-// Get all system users for admin dashboard
-app.get('/api/admin/users', async (req, res) => {
+// GET /api/admin/users — all registered users
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
   try {
-    const allUsers = (await db.filter('users', () => true)) || [];
-    const allUserData = (await db.filter('userData', () => true)) || [];
+    const allUsers    = await db.filter('users', () => true);
+    const allUserData = await db.filter('userData', () => true);
 
-    const mergedUsers = allUsers.map(u => {
-      const uData = allUserData.find(d => d.userId === u.userId);
-      const profile = uData?.profile || {};
-      const fullName = profile.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email;
+    // System Admin entry always at the top
+    const adminEntry = {
+      id:              'usr-admin',
+      fullName:        'System Admin',
+      email:           'admin@campus-hub.com',
+      passwordHash:    '(protected)',
+      enrollmentNumber:'0000000000',
+      collegeName:     'GGSIPU Main Campus',
+      branch:          'Administration',
+      admissionYear:   2023,
+      graduationYear:  2027,
+      lastLogin:       new Date().toLocaleString(),
+      status:          'active',
+      isOnboarded:     true,
+      registeredAt:    'System Account',
+    };
 
-      return {
-        id: u.userId,
-        fullName: fullName,
-        email: u.email,
-        passwordHash: u.rawPassword || u.password || '••••••••',
-        enrollmentNumber: profile.enrollmentNumber || u.enrollmentNumber || 'N/A',
-        collegeName: profile.collegeName || u.collegeName || 'GGSIPU Affiliate',
-        branch: profile.branch || u.branch || 'CSE',
-        admissionYear: parseInt(profile.admissionYear) || 2025,
-        graduationYear: parseInt(profile.graduationYear) || 2029,
-        lastLogin: u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Recent',
-        status: u.status || 'active'
-      };
-    });
+    const studentEntries = allUsers
+      .filter(u => u.userId !== 'usr-admin')
+      .map(u => {
+        const uData   = allUserData.find(d => d.userId === u.userId);
+        const profile = uData?.profile || {};
+        return {
+          id:               u.userId,
+          fullName:         profile.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+          email:            u.email,
+          passwordHash:     u.rawPassword || '(hashed)',
+          enrollmentNumber: profile.enrollmentNumber || 'N/A',
+          collegeName:      profile.collegeName || 'N/A',
+          branch:           profile.branch || 'N/A',
+          admissionYear:    parseInt(profile.admissionYear) || 0,
+          graduationYear:   parseInt(profile.graduationYear) || 0,
+          lastLogin:        u.lastLogin ? new Date(u.lastLogin).toLocaleString() : 'Never',
+          status:           u.status || 'active',
+          isOnboarded:      uData?.isOnboarded ?? false,
+          registeredAt:     u.createdAt ? new Date(u.createdAt).toLocaleString() : 'Unknown',
+        };
+      });
 
-    res.json(mergedUsers);
+    res.json([adminEntry, ...studentEntries]);
   } catch (err) {
-    console.error('Fetch admin users error:', err);
-    res.status(500).json({ error: 'Failed to fetch admin users' });
+    console.error('Admin users error:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
 
-// Admin Update User
-app.post('/api/admin/users/update', async (req, res) => {
+// GET /api/admin/stats — real counts
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  try {
+    const allUsers     = await db.filter('users', () => true);
+    const allUserData  = await db.filter('userData', () => true);
+    const totalUsers   = allUsers.length;
+    const activeUsers  = allUsers.filter(u => u.status === 'active').length;
+    const onboarded    = allUserData.filter(d => d.isOnboarded === true).length;
+    res.json({ totalUsers, activeUsers, onboarded });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// GET /api/admin/users/:id — single user detail
+app.get('/api/admin/users/:id', requireAdmin, async (req, res) => {
+  try {
+    const user   = await db.find('users', u => u.userId === req.params.id);
+    const uData  = await db.find('userData', d => d.userId === req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ user, userData: uData });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// POST /api/admin/users/update — update credentials
+app.post('/api/admin/users/update', requireAdmin, async (req, res) => {
   try {
     const { id, fullName, email, passwordHash, status } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
-    
+
     const hashedPassword = await bcrypt.hash(passwordHash, 10);
-    const userUpdate = {
-      email: cleanEmail,
-      password: hashedPassword,
+    await db.update('users', u => u.userId === id, {
+      email:       cleanEmail,
+      password:    hashedPassword,
       rawPassword: passwordHash,
-      status: status || 'active'
-    };
+      status:      status || 'active',
+    });
 
-    await db.update('users', u => u.userId === id, userUpdate);
-
-    // Update profile in userData
     const uData = await db.find('userData', d => d.userId === id);
-    if (uData && uData.profile) {
-      uData.profile.fullName = fullName;
-      uData.profile.email = cleanEmail;
-      await db.update('userData', d => d.userId === id, { profile: uData.profile });
+    if (uData?.profile) {
+      await db.update('userData', d => d.userId === id, {
+        profile: { ...uData.profile, fullName, email: cleanEmail },
+      });
     }
 
     res.json({ success: true });
   } catch (err) {
-    console.error('Update admin user error:', err);
+    console.error('Update user error:', err);
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
-// Admin Create User
-app.post('/api/admin/users/create', async (req, res) => {
+// POST /api/admin/users/create — create a user from admin panel
+app.post('/api/admin/users/create', requireAdmin, async (req, res) => {
   try {
     const { fullName, email, password, enrollmentNumber } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
 
-    const existing = await db.find('users', u => (u.email || '').trim().toLowerCase() === cleanEmail);
+    const existing = await db.find('users', u => u.email === cleanEmail);
     if (existing) return res.status(400).json({ error: 'User already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const userId = `user_${Date.now()}`;
-    const nowIso = new Date().toISOString();
 
     const nameParts = (fullName || '').split(' ');
-    const firstName = nameParts[0] || 'Student';
-    const lastName = nameParts.slice(1).join(' ') || 'User';
-
     await db.insert('users', {
-      email: cleanEmail,
-      password: hashedPassword,
+      email:       cleanEmail,
+      password:    hashedPassword,
       rawPassword: password,
       userId,
-      firstName,
-      lastName,
-      lastLogin: nowIso,
-      status: 'active'
+      firstName:   nameParts[0] || 'Student',
+      lastName:    nameParts.slice(1).join(' ') || 'User',
+      lastLogin:   new Date().toISOString(),
+      status:      'active',
     });
 
     await db.insert('userData', {
       userId,
       profile: {
-        fullName: fullName || `${firstName} ${lastName}`,
-        email: cleanEmail,
-        enrollmentNumber: enrollmentNumber || '02820802725',
+        fullName: fullName || 'Student User',
+        email:    cleanEmail,
+        enrollmentNumber: enrollmentNumber || '',
         collegeName: 'Bhagwan Parshuram Institute of Technology (BPIT)',
         branch: 'CSE - Computer Science & Engineering',
         currentSemester: '3',
         admissionYear: '2025',
-        graduationYear: '2029'
+        graduationYear: '2029',
       },
-      subjects: [],
-      timetable: [],
+      subjects:          [],
+      timetable:         [],
       attendanceRecords: [],
-      semesterData: [],
-      semesterMarks: [],
-      backlogs: [],
-      examCalendar: null,
-      targetCgpa: 0,
-      isOnboarded: true
+      semesterData:      [],
+      semesterMarks:     [],
+      backlogs:          [],
+      examCalendar:      null,
+      targetCgpa:        0,
+      isOnboarded:       true,
     });
 
     res.json({ success: true, userId });
   } catch (err) {
-    console.error('Create admin user error:', err);
+    console.error('Create user error:', err);
     res.status(500).json({ error: 'Failed to create user' });
   }
 });
 
-// Admin Delete User
-app.post('/api/admin/users/delete', async (req, res) => {
+// POST /api/admin/users/delete
+app.post('/api/admin/users/delete', requireAdmin, async (req, res) => {
   try {
     const { id } = req.body;
     if (id === 'usr-admin') return res.status(400).json({ error: 'Cannot delete root admin account' });
-
-    await db.delete('users', u => u.userId === id);
+    await db.delete('users',    u => u.userId === id);
     await db.delete('userData', d => d.userId === id);
-
     res.json({ success: true });
   } catch (err) {
-    console.error('Delete admin user error:', err);
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 
-// --- DATA ROUTES ---
+// ════════════════════════════════════════════════════════════════
+// USER DATA ROUTES
+// ════════════════════════════════════════════════════════════════
 
-// Get all data for a user
+// GET /api/user/:userId — fetch all stored data for a user
+// IMPORTANT: Does NOT auto-create a blank record on first hit.
+// A 404 means the user has no data yet → frontend shows onboarding.
 app.get('/api/user/:userId', async (req, res) => {
   try {
-    let data = await db.find('userData', d => d.userId === req.params.userId);
-    if (!data) {
-      // Create default data if user exists or initialize
-      data = await db.insert('userData', { 
-        userId: req.params.userId,
-        profile: null,
-        subjects: [],
-        timetable: [],
-        attendanceRecords: [],
-        semesterData: [],
-        semesterMarks: [],
-        backlogs: [],
-        examCalendar: null,
-        targetCgpa: 0
-      });
-    }
+    const data = await db.find('userData', d => d.userId === req.params.userId);
+    if (!data) return res.status(404).json({ error: 'No user data found' });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch user data' });
   }
 });
 
-// Update specific fields (Atomic & Mutex Protected)
+// POST /api/user/:userId/update — atomic field update
 app.post('/api/user/:userId/update', async (req, res) => {
   try {
     const { key, value } = req.body;
-    const updates: any = {};
-    updates[key] = value;
-    
-    const data = await db.update('userData', d => d.userId === req.params.userId, updates);
+    const updates: any = { [key]: value };
+
+    let data = await db.update('userData', d => d.userId === req.params.userId, updates);
     if (!data) {
-        // Handle case where user data doesn't exist yet
-        const newData = { userId: req.params.userId, [key]: value };
-        await db.insert('userData', newData);
-        return res.json(newData);
+      // First save — user just completed onboarding on a fresh install or new account
+      data = await db.insert('userData', { userId: req.params.userId, [key]: value });
     }
     res.json(data);
   } catch (err) {
@@ -345,14 +387,13 @@ app.post('/api/user/:userId/update', async (req, res) => {
   }
 });
 
-// Bulk update (for migration/initial setup)
+// POST /api/user/:userId/sync — bulk save (after onboarding)
 app.post('/api/user/:userId/sync', async (req, res) => {
   try {
-    const data = await db.update('userData', d => d.userId === req.params.userId, req.body);
+    const userId = req.params.userId;
+    let data = await db.update('userData', d => d.userId === userId, req.body);
     if (!data) {
-      const newData = { userId: req.params.userId, ...req.body };
-      await db.insert('userData', newData);
-      return res.json(newData);
+      data = await db.insert('userData', { userId, ...req.body });
     }
     res.json(data);
   } catch (err) {
@@ -361,19 +402,16 @@ app.post('/api/user/:userId/sync', async (req, res) => {
   }
 });
 
-// Serve frontend static build files in production
+// ─── Serve frontend static build ──────────────────────────────────────────────
 const frontendDistPath = path.join(__dirname, '..', '..', 'dist');
 app.use(express.static(frontendDistPath));
 
-// Catch-all route to serve the Single Page App (index.html)
 app.get('/*splat', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    return next();
-  }
+  if (req.path.startsWith('/api')) return next();
   res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
+// ─── Start ────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Using Local File Database: db.json`);
+  console.log(`[Server] Listening on port ${PORT}`);
 });

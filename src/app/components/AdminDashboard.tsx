@@ -64,6 +64,7 @@ export function AdminDashboard() {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [activePartition, setActivePartition] = useState<"telemetry" | "users" | "explorer">("telemetry");
+  const [realStats, setRealStats] = useState({ totalUsers: 0, activeUsers: 0, onboarded: 0 });
   
   // Telemetry Filter States
   const [telemetrySearch, setTelemetrySearch] = useState("");
@@ -107,34 +108,37 @@ export function AdminDashboard() {
   const loadRealDatabaseData = async () => {
     let loadedUsers: UserAccount[] = [];
 
-    // 1. Try fetching live users from API
+    // 1. Fetch live users from backend API (MongoDB — always real data)
     try {
       const apiUsers = await api.getAdminUsers();
       if (Array.isArray(apiUsers) && apiUsers.length > 0) {
         loadedUsers = apiUsers;
       }
     } catch (e) {
-      console.warn("API admin users fetch failed, reading local storage.");
+      console.warn("API admin users fetch failed.", e);
     }
 
-    // 2. Read local fallback if API returns empty
-    if (loadedUsers.length === 0) {
-      const storedUsersStr = localStorage.getItem("system_users");
-      if (storedUsersStr) {
-        try { loadedUsers = JSON.parse(storedUsersStr); } catch (e) {}
-      }
+    // 2. Fetch real stats from the server
+    try {
+      const stats = await api.getAdminStats();
+      setRealStats(stats);
+    } catch (e) {
+      // Fall back to inferring from user list
+      setRealStats({
+        totalUsers: loadedUsers.filter(u => u.id !== 'usr-admin').length,
+        activeUsers: loadedUsers.filter(u => u.status === 'active' && u.id !== 'usr-admin').length,
+        onboarded: loadedUsers.filter(u => (u as any).isOnboarded === true).length,
+      });
     }
 
-    // Read active student profile from localStorage
-    const currentProfile = JSON.parse(localStorage.getItem("student_profile") || "{}");
-
+    // 3. Minimal fallback if API completely fails
     if (loadedUsers.length === 0) {
       loadedUsers = [
         {
           id: "usr-admin",
           fullName: "System Admin",
           email: "admin@campus-hub.com",
-          passwordHash: "AdminPassword123",
+          passwordHash: "(protected)",
           enrollmentNumber: "0000000000",
           collegeName: "GGSIPU Main Campus",
           branch: "Administration",
@@ -142,33 +146,7 @@ export function AdminDashboard() {
           graduationYear: 2027,
           lastLogin: new Date().toLocaleString(),
           status: "active",
-        },
-        {
-          id: "user_mayanksharma",
-          fullName: "Mayank Sharma",
-          email: "mayanksharma@gmail.com",
-          passwordHash: "Student @123",
-          enrollmentNumber: "02920802725",
-          collegeName: "Bhagwan Parshuram Institute of Technology (BPIT)",
-          branch: "CSE - Computer Science & Engineering",
-          admissionYear: 2025,
-          graduationYear: 2029,
-          lastLogin: "Active Now",
-          status: "active",
-        },
-        {
-          id: "usr-student-1",
-          fullName: currentProfile.fullName || "Mayank Verma",
-          email: currentProfile.email || "demo@gmail.com",
-          passwordHash: "Student123!",
-          enrollmentNumber: currentProfile.enrollmentNumber || "02820802725",
-          collegeName: currentProfile.collegeName || "Bhagwan Parshuram Institute of Technology (BPIT)",
-          branch: currentProfile.branch || "CSE - Computer Science & Engineering",
-          admissionYear: parseInt(currentProfile.admissionYear) || 2025,
-          graduationYear: parseInt(currentProfile.graduationYear) || 2029,
-          lastLogin: "Active Now",
-          status: "active",
-        },
+        }
       ];
     }
 
@@ -181,6 +159,7 @@ export function AdminDashboard() {
 
     // 4. Read dynamic student database tables
     try {
+      const currentProfile = JSON.parse(localStorage.getItem("student_profile") || "{}");
       setProfileData(currentProfile);
       setMarksData(JSON.parse(localStorage.getItem("semester_marks") || "[]"));
       setAttendanceData(JSON.parse(localStorage.getItem("attendance_records") || "[]"));
@@ -488,29 +467,29 @@ export function AdminDashboard() {
 
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">System Users</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Registered Students</span>
             <Users className="w-5 h-5 text-emerald-500" />
           </div>
-          <p className="text-3xl font-black text-foreground">{users.length}</p>
-          <p className="text-xs text-muted-foreground font-semibold">Registered user profiles</p>
+          <p className="text-3xl font-black text-foreground">{realStats.totalUsers}</p>
+          <p className="text-xs text-muted-foreground font-semibold">Live count from MongoDB</p>
         </Card>
 
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Academic Marks</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Active Users</span>
             <Award className="w-5 h-5 text-blue-500" />
           </div>
-          <p className="text-3xl font-black text-foreground">{marksData.length}</p>
-          <p className="text-xs text-muted-foreground font-semibold">Semesters in database</p>
+          <p className="text-3xl font-black text-foreground">{realStats.activeUsers}</p>
+          <p className="text-xs text-muted-foreground font-semibold">Status: active in DB</p>
         </Card>
 
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Database Storage</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Onboarded</span>
             <Database className="w-5 h-5 text-amber-500" />
           </div>
-          <p className="text-3xl font-black text-foreground">{storageKb} KB</p>
-          <p className="text-xs text-muted-foreground font-semibold">Active LocalStorage size</p>
+          <p className="text-3xl font-black text-foreground">{realStats.onboarded}</p>
+          <p className="text-xs text-muted-foreground font-semibold">Completed setup</p>
         </Card>
       </div>
 

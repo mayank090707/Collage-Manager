@@ -31,9 +31,14 @@ export function Profile() {
   const [editData, setEditData] = useState<StudentProfile | null>(null);
 
   const handleLogout = () => {
+    // Only clear session identity and local academic cache.
+    // All user data is persisted on the server (db.json) and will be
+    // restored automatically via syncFromDB() on the next successful login.
     localStorage.removeItem("college_manager_user_id");
     localStorage.removeItem("college_manager_remember");
     localStorage.removeItem("college_manager_remember_expiry");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("system_users"); // Clear admin cache
     localStorage.removeItem("student_profile");
     localStorage.removeItem("subjects");
     localStorage.removeItem("timetable");
@@ -43,6 +48,7 @@ export function Profile() {
     localStorage.removeItem("backlogs");
     localStorage.removeItem("exam_calendar_v2");
     localStorage.removeItem("target_cgpa");
+    localStorage.removeItem("onboarding_complete");
     navigate("/");
   };
   const [stats, setStats] = useState({

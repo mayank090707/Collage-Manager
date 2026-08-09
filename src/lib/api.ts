@@ -1,56 +1,55 @@
 const API_BASE_URL = '/api';
 
-// Helper to get current user ID
+// Helper — get current user ID
 const getUserId = () => localStorage.getItem('college_manager_user_id');
 
-// Storage key to API field mapping
+// Admin key for protected admin API calls
+const ADMIN_KEY = 'AdminPassword123';
+
+// Storage key → API field mapping
 const DB_MAP: Record<string, string> = {
-  'student_profile': 'profile',
-  'subjects': 'subjects',
-  'timetable': 'timetable',
+  'student_profile':  'profile',
+  'subjects':         'subjects',
+  'timetable':        'timetable',
   'attendance_records': 'attendanceRecords',
-  'semester_data': 'semesterData',
-  'semester_marks': 'semesterMarks',
-  'backlogs': 'backlogs',
+  'semester_data':    'semesterData',
+  'semester_marks':   'semesterMarks',
+  'backlogs':         'backlogs',
   'exam_calendar_v2': 'examCalendar',
-  'target_cgpa': 'targetCgpa',
-  'onboarding_complete': 'isOnboarded'
+  'target_cgpa':      'targetCgpa',
+  'onboarding_complete': 'isOnboarded',
 };
 
-// GLOBAL INTERCEPTOR:
-// This ensures that any component calling localStorage.setItem 
-// automatically triggers a sync to the backend database.
+// GLOBAL INTERCEPTOR: any localStorage.setItem() for known keys auto-syncs to the backend
 let isSyncing = false;
-const originalSetItem = localStorage.setItem;
-localStorage.setItem = function(key, value) {
-  originalSetItem.apply(this, arguments as any);
-  
-  if (isSyncing) return; // Prevent loop during DB sync
+const originalSetItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function(key: string, value: string) {
+  originalSetItem(key, value);
+  if (isSyncing) return;
 
   const userId = getUserId();
-  const dbKey = DB_MAP[key];
+  const dbKey  = DB_MAP[key];
   if (dbKey && userId) {
-    let parsedValue = value;
-    try { parsedValue = JSON.parse(value); } catch(e) {}
-    
+    let parsedValue: any = value;
+    try { parsedValue = JSON.parse(value); } catch (_) {}
+    // Convert string "true"/"false" for isOnboarded
+    if (dbKey === 'isOnboarded') parsedValue = (value === 'true');
+
     fetch(`${API_BASE_URL}/user/${userId}/update`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: dbKey, value: parsedValue }),
-    }).catch(err => console.error('Auto-sync failed:', err));
+      body:    JSON.stringify({ key: dbKey, value: parsedValue }),
+    }).catch(err => console.warn('Auto-sync failed (will retry on next save):', err));
   }
 };
 
-/**
- * Generic API client to handle database operations.
- * Server-side database (db.json) is the Source of Truth.
- */
 export const api = {
+  // ── Auth ────────────────────────────────────────────────────────────────
   async signup(credentials: any) {
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
+      body:    JSON.stringify(credentials),
     });
     if (!response.ok) throw new Error((await response.json()).error || 'Signup failed');
     return response.json();
@@ -58,25 +57,36 @@ export const api = {
 
   async login(credentials: any) {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
+      body:    JSON.stringify(credentials),
     });
     if (!response.ok) throw new Error((await response.json()).error || 'Login failed');
     return response.json();
   },
 
+  // ── Admin ────────────────────────────────────────────────────────────────
   async getAdminUsers() {
-    const response = await fetch(`${API_BASE_URL}/admin/users`);
+    const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      headers: { 'x-admin-key': ADMIN_KEY },
+    });
     if (!response.ok) throw new Error('Failed to fetch admin users');
+    return response.json();
+  },
+
+  async getAdminStats() {
+    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+      headers: { 'x-admin-key': ADMIN_KEY },
+    });
+    if (!response.ok) throw new Error('Failed to fetch admin stats');
     return response.json();
   },
 
   async updateAdminUser(userData: any) {
     const response = await fetch(`${API_BASE_URL}/admin/users/update`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body:    JSON.stringify(userData),
     });
     if (!response.ok) throw new Error('Failed to update user');
     return response.json();
@@ -84,9 +94,9 @@ export const api = {
 
   async createAdminUser(userData: any) {
     const response = await fetch(`${API_BASE_URL}/admin/users/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData),
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body:    JSON.stringify(userData),
     });
     if (!response.ok) throw new Error((await response.json()).error || 'Failed to create user');
     return response.json();
@@ -94,141 +104,126 @@ export const api = {
 
   async deleteAdminUser(id: string) {
     const response = await fetch(`${API_BASE_URL}/admin/users/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
+      body:    JSON.stringify({ id }),
     });
     if (!response.ok) throw new Error('Failed to delete user');
     return response.json();
   },
 
+  // ── syncFromDB ───────────────────────────────────────────────────────────
   /**
-   * Fetches state from server (Source of Truth) and safely updates localStorage cache.
-   * If server data is empty while localStorage has data, logs conflict and syncs local data up.
+   * Fetches the current user's data from MongoDB and restores it to localStorage.
+   *
+   * Returns:
+   *   { data, isNewUser: true }  — no data found on server (brand new account)
+   *   { data, isNewUser: false } — data found and restored
+   *   null                       — network/server error (use cached localStorage)
    */
-  async syncFromDB() {
+  async syncFromDB(): Promise<any> {
     const userId = getUserId();
     if (!userId) return null;
 
     try {
       const response = await fetch(`${API_BASE_URL}/user/${userId}`);
-      if (!response.ok) return null;
-      
-      const data = await response.json();
-      const localProfileStr = localStorage.getItem('student_profile');
 
-      // CONFLICT DETECTION: Server has no profile, but local storage has cached profile
-      if (!data.profile && localProfileStr) {
-        console.warn('[SYNC CONFLICT] Server returned unpopulated profile while localStorage holds valid user profile. Triggering safe migration to server...');
-        await this.migrateLocalStorageToDB();
-        return data;
+      // 404 = brand new user who has never onboarded
+      if (response.status === 404) {
+        console.log('[SYNC] No server data found for user — first-time user, showing onboarding.');
+        return { isNewUser: true };
       }
-      
-      // Update localStorage with fresh DB data safely
-      isSyncing = true; // Start bypassing interceptor
-      if (data.profile) {
-        localStorage.setItem('student_profile', JSON.stringify(data.profile));
-      }
-      if (Array.isArray(data.subjects) && (data.subjects.length > 0 || !localStorage.getItem('subjects'))) {
-        localStorage.setItem('subjects', JSON.stringify(data.subjects));
-      }
-      if (Array.isArray(data.timetable) && (data.timetable.length > 0 || !localStorage.getItem('timetable'))) {
-        localStorage.setItem('timetable', JSON.stringify(data.timetable));
-      }
-      if (Array.isArray(data.attendanceRecords) && (data.attendanceRecords.length > 0 || !localStorage.getItem('attendance_records'))) {
-        localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords));
-      }
-      if (Array.isArray(data.semesterData) && (data.semesterData.length > 0 || !localStorage.getItem('semester_data'))) {
-        localStorage.setItem('semester_data', JSON.stringify(data.semesterData));
-      }
-      if (Array.isArray(data.semesterMarks) && (data.semesterMarks.length > 0 || !localStorage.getItem('semester_marks'))) {
-        localStorage.setItem('semester_marks', JSON.stringify(data.semesterMarks));
-      }
-      if (Array.isArray(data.backlogs) && (data.backlogs.length > 0 || !localStorage.getItem('backlogs'))) {
-        localStorage.setItem('backlogs', JSON.stringify(data.backlogs));
-      }
-      if (data.examCalendar) {
-        localStorage.setItem('exam_calendar_v2', JSON.stringify(data.examCalendar));
-      }
-      if (data.targetCgpa !== undefined && data.targetCgpa !== null) {
-        localStorage.setItem('target_cgpa', data.targetCgpa.toString());
-      }
-      if (data.isOnboarded !== undefined && data.isOnboarded !== null) {
-        localStorage.setItem('onboarding_complete', data.isOnboarded.toString());
-      }
-      isSyncing = false; // End bypassing interceptor
-      
-      return data;
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+
+      isSyncing = true; // Pause the auto-sync interceptor while restoring
+
+      if (data.profile)           localStorage.setItem('student_profile',    JSON.stringify(data.profile));
+      if (Array.isArray(data.subjects))          localStorage.setItem('subjects',           JSON.stringify(data.subjects));
+      if (Array.isArray(data.timetable))         localStorage.setItem('timetable',          JSON.stringify(data.timetable));
+      if (Array.isArray(data.attendanceRecords)) localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords));
+      if (Array.isArray(data.semesterData))      localStorage.setItem('semester_data',      JSON.stringify(data.semesterData));
+      if (Array.isArray(data.semesterMarks))     localStorage.setItem('semester_marks',     JSON.stringify(data.semesterMarks));
+      if (Array.isArray(data.backlogs))          localStorage.setItem('backlogs',           JSON.stringify(data.backlogs));
+      if (data.examCalendar != null)             localStorage.setItem('exam_calendar_v2',   JSON.stringify(data.examCalendar));
+      if (data.targetCgpa   != null)             localStorage.setItem('target_cgpa',        data.targetCgpa.toString());
+      if (data.isOnboarded  != null)             localStorage.setItem('onboarding_complete', data.isOnboarded.toString());
+
+      isSyncing = false;
+
+      return { ...data, isNewUser: false };
     } catch (error) {
       isSyncing = false;
-      console.warn('Backend sync failed, using cached local storage.', error);
+      console.warn('[SYNC] Backend unreachable — using cached localStorage data.');
       return null;
     }
   },
 
-  /**
-   * Updates a specific data field in the DB
-   */
+  // ── updateField ──────────────────────────────────────────────────────────
   async updateField(key: string, value: any) {
     const userId = getUserId();
     if (!userId) return;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/user/${userId}/update`, {
-        method: 'POST',
+      await fetch(`${API_BASE_URL}/user/${userId}/update`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value }),
+        body:    JSON.stringify({ key, value }),
       });
-      return response.json();
     } catch (error) {
-      console.error('Update failed:', error);
+      console.error('updateField failed:', error);
     }
   },
 
+  // ── migrateLocalStorageToDB ──────────────────────────────────────────────
   /**
-   * Migrates all current local storage data to the DB
+   * Pushes all current localStorage data to MongoDB.
+   * Called at the end of onboarding to persist initial data.
    */
   async migrateLocalStorageToDB() {
     const userId = getUserId();
     if (!userId) return;
 
+    const isOnboarded = localStorage.getItem('onboarding_complete') === 'true';
+
     const data = {
-      profile: JSON.parse(localStorage.getItem('student_profile') || 'null'),
-      subjects: JSON.parse(localStorage.getItem('subjects') || '[]'),
-      timetable: JSON.parse(localStorage.getItem('timetable') || '[]'),
+      profile:           JSON.parse(localStorage.getItem('student_profile') || 'null'),
+      subjects:          JSON.parse(localStorage.getItem('subjects') || '[]'),
+      timetable:         JSON.parse(localStorage.getItem('timetable') || '[]'),
       attendanceRecords: JSON.parse(localStorage.getItem('attendance_records') || '[]'),
-      semesterData: JSON.parse(localStorage.getItem('semester_data') || '[]'),
-      semesterMarks: JSON.parse(localStorage.getItem('semester_marks') || '[]'),
-      backlogs: JSON.parse(localStorage.getItem('backlogs') || '[]'),
-      examCalendar: JSON.parse(localStorage.getItem('exam_calendar_v2') || 'null'),
-      targetCgpa: parseFloat(localStorage.getItem('target_cgpa') || '0'),
-      isOnboarded: localStorage.getItem('onboarding_complete') === 'true'
+      semesterData:      JSON.parse(localStorage.getItem('semester_data') || '[]'),
+      semesterMarks:     JSON.parse(localStorage.getItem('semester_marks') || '[]'),
+      backlogs:          JSON.parse(localStorage.getItem('backlogs') || '[]'),
+      examCalendar:      JSON.parse(localStorage.getItem('exam_calendar_v2') || 'null'),
+      targetCgpa:        parseFloat(localStorage.getItem('target_cgpa') || '0'),
+      isOnboarded,
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/user/${userId}/sync`, {
-        method: 'POST',
+      await fetch(`${API_BASE_URL}/user/${userId}/sync`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body:    JSON.stringify(data),
       });
-      return response.json();
+      console.log('[SYNC] Onboarding data migrated to MongoDB.');
     } catch (error) {
-      console.error('Migration failed:', error);
+      console.error('[SYNC] Migration failed:', error);
     }
   },
 
   mapToStorageKey(key: string): string {
     const maps: Record<string, string> = {
-      profile: 'student_profile',
-      subjects: 'subjects',
-      timetable: 'timetable',
+      profile:           'student_profile',
+      subjects:          'subjects',
+      timetable:         'timetable',
       attendanceRecords: 'attendance_records',
-      semesterData: 'semester_data',
-      semesterMarks: 'semester_marks',
-      backlogs: 'backlogs',
-      examCalendar: 'exam_calendar_v2',
-      targetCgpa: 'target_cgpa'
+      semesterData:      'semester_data',
+      semesterMarks:     'semester_marks',
+      backlogs:          'backlogs',
+      examCalendar:      'exam_calendar_v2',
+      targetCgpa:        'target_cgpa',
     };
     return maps[key] || key;
-  }
+  },
 };

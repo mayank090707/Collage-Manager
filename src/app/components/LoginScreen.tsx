@@ -76,123 +76,60 @@ export function LoginScreen() {
       const cleanEmail = email.trim().toLowerCase();
 
       if (isLogin) {
-        // 1. Direct Admin Credential Check
+        // 1. Direct Admin Credential Check (handled by server too, but fast-path here)
         if (cleanEmail === "admin@campus-hub.com" && password.trim() === "AdminPassword123") {
-          toast.success("Welcome Super Admin! Accessing Admin Dashboard...");
+          toast.success("Welcome Super Admin!");
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
           localStorage.setItem("onboarding_complete", "true");
-          
-          logActivity(
-            "ADMIN_LOGIN_SUCCESS",
-            "Super Admin authenticated via master credentials (admin@campus-hub.com). Accessing Admin Control Center.",
-            "System",
-            "admin@campus-hub.com",
-            "System Admin",
-            "warning"
-          );
-
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated.", "System", "admin@campus-hub.com", "System Admin", "warning");
           navigate("/app/admin");
           return;
         }
 
-        // 2. Try Standard Backend API Login First
-        try {
-          const result = await api.login({ email: cleanEmail, password });
-          toast.success("Welcome back!");
-          
-          // Save user ID & persistent session expiry (30 days default)
-          localStorage.setItem("college_manager_user_id", result.userId);
-          localStorage.setItem("user_role", "student");
-          localStorage.setItem("college_manager_remember", rememberMe.toString());
-          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-          localStorage.setItem(
-            "college_manager_remember_expiry",
-            (Date.now() + THIRTY_DAYS_MS).toString()
-          );
+        // 2. Standard backend API login
+        const result = await api.login({ email: cleanEmail, password });
 
-          // Sync user specific data from DB
-          await api.syncFromDB();
-
-          logActivity(
-            "LOGIN_SUCCESS",
-            `Student logged in via standard authentication (${cleanEmail}).`,
-            "Login",
-            cleanEmail,
-            "Student User",
-            "success"
-          );
-
-          const isOnboarded = localStorage.getItem("onboarding_complete") === "true";
-          const subjects = JSON.parse(localStorage.getItem("subjects") || "[]");
-          
-          if (isOnboarded && subjects.length > 0) {
-            navigate("/app");
-          } else {
-            navigate("/onboarding");
-          }
+        // Handle admin returning from server
+        if (result.role === "admin" || result.userId === "usr-admin") {
+          toast.success("Welcome Super Admin!");
+          localStorage.setItem("user_role", "admin");
+          localStorage.setItem("college_manager_user_id", "usr-admin");
+          localStorage.setItem("onboarding_complete", "true");
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated via server.", "System", "admin@campus-hub.com", "System Admin", "warning");
+          navigate("/app/admin");
           return;
-        } catch (apiErr) {
-          // If API backend login failed, check local system_users fallback
-          const systemUsersStr = localStorage.getItem("system_users");
-          if (systemUsersStr) {
-            try {
-              const systemUsers = JSON.parse(systemUsersStr);
-              const cleanInputPass = password.trim();
-              const compactInputPass = password.replace(/\s+/g, "");
-              const normalizedEmail = cleanEmail.replace(/^([a-z]+)\d+(@.*)$/i, "$1$2");
-              
-              const expandedPasses = new Set<string>([password, cleanInputPass, compactInputPass]);
-              if (/^stu@/i.test(cleanInputPass)) {
-                expandedPasses.add(cleanInputPass.replace(/^stu@/i, "Student@"));
-                expandedPasses.add(cleanInputPass.replace(/^stu@/i, "Student @"));
-              } else if (/^student@/i.test(cleanInputPass)) {
-                expandedPasses.add(cleanInputPass.replace(/^student@/i, "Stu@"));
-                expandedPasses.add(cleanInputPass.replace(/^student@/i, "Student @"));
-              }
-              
-              const foundUser = systemUsers.find((u: any) => {
-                const uEmail = (u.email || "").toLowerCase().trim();
-                if (uEmail !== cleanEmail && uEmail !== normalizedEmail) return false;
-                const uPass = u.passwordHash || u.password || "";
-                const cleanUPass = uPass.trim();
-                const compactUPass = uPass.replace(/\s+/g, "");
-                for (const input of Array.from(expandedPasses)) {
-                  if (uPass === input || cleanUPass === input || compactUPass === input || compactUPass === input.replace(/\s+/g, "")) {
-                    return true;
-                  }
-                }
-                return false;
-              });
-
-              if (foundUser) {
-                toast.success(`Welcome back, ${foundUser.fullName}!`);
-                localStorage.setItem("college_manager_user_id", foundUser.id);
-                const isAdmin = foundUser.id === "usr-admin";
-                localStorage.setItem("user_role", isAdmin ? "admin" : "student");
-                
-                logActivity(
-                  isAdmin ? "ADMIN_LOGIN_SUCCESS" : "LOGIN_SUCCESS",
-                  `${foundUser.fullName} logged in successfully using registered credentials (${foundUser.email}).`,
-                  isAdmin ? "System" : "Login",
-                  foundUser.email,
-                  foundUser.fullName,
-                  "success"
-                );
-
-                if (isAdmin) {
-                  navigate("/app/admin");
-                } else {
-                  navigate("/app");
-                }
-                return;
-              }
-            } catch (e) {
-              console.error("System user parse error:", e);
-            }
-          }
-          throw apiErr;
         }
+
+        // Set session
+        localStorage.setItem("college_manager_user_id", result.userId);
+        localStorage.setItem("user_role", "student");
+        localStorage.setItem("college_manager_remember", rememberMe.toString());
+        localStorage.setItem("college_manager_remember_expiry", (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
+
+        // Sync ALL user data from MongoDB
+        const syncResult = await api.syncFromDB();
+
+        logActivity("LOGIN_SUCCESS", `Student logged in (${cleanEmail}).`, "Login", cleanEmail, "Student User", "success");
+
+        // Route decision — server is the single source of truth
+        // syncResult.isNewUser = true  → never completed onboarding → show onboarding
+        // syncResult.isOnboarded = true → completed onboarding → go to dashboard
+        // syncResult = null (offline) → fall back to localStorage
+        const isNewUser      = syncResult?.isNewUser === true;
+        const serverOnboarded = syncResult?.isOnboarded === true;
+        const localOnboarded  = localStorage.getItem("onboarding_complete") === "true";
+
+        if (isNewUser) {
+          toast.success("Account verified! Let's set up your profile.");
+          navigate("/onboarding");
+        } else if (serverOnboarded || localOnboarded) {
+          toast.success("Welcome back!");
+          navigate("/app");
+        } else {
+          navigate("/onboarding");
+        }
+        return;
       } else {
         await api.signup({ 
           email: cleanEmail, 
