@@ -341,22 +341,6 @@ export function StudyMaterial() {
                 </a>
               </div>
             </Card>
-
-            {/* Embedded PDF Viewer */}
-            <Card className="border border-border bg-card overflow-hidden rounded-2xl shadow-md">
-              <div className="bg-muted/40 border-b border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground font-semibold">
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-blue-500" />
-                  <span>Document Preview: {activeData.filename}</span>
-                </div>
-                <span>Official IPU CSE / IT Syllabus</span>
-              </div>
-              <iframe
-                src={`${activeData.url}#toolbar=1`}
-                className="w-full h-[680px] bg-white dark:bg-gray-900 border-0"
-                title={activeData.title}
-              />
-            </Card>
           </div>
         ) : (
           <Card className="p-10 border border-dashed border-border bg-card flex flex-col items-center gap-5 text-center">
