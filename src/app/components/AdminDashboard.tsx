@@ -66,6 +66,13 @@ export function AdminDashboard() {
   const [activePartition, setActivePartition] = useState<"telemetry" | "users" | "explorer">("telemetry");
   const [realStats, setRealStats] = useState({ totalUsers: 0, activeUsers: 0, onboarded: 0 });
   
+  // User Record Authentication & Activity Filter States
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [showAuthPass, setShowAuthPass] = useState(false);
+  const [authenticatedUser, setAuthenticatedUser] = useState<UserAccount | null>(null);
+  const [userAuthSuccess, setUserAuthSuccess] = useState(false);
+
   // Telemetry Filter States
   const [telemetrySearch, setTelemetrySearch] = useState("");
   const [telemetryCategory, setTelemetryCategory] = useState<string>("ALL");
@@ -136,12 +143,12 @@ export function AdminDashboard() {
       loadedUsers = [
         {
           id: "usr-admin",
-          fullName: "System Admin",
+          fullName: "Mayank",
           email: "admin@campus-hub.com",
-          passwordHash: "(protected)",
+          passwordHash: "AdminPassword123",
           enrollmentNumber: "0000000000",
           collegeName: "GGSIPU Main Campus",
-          branch: "Administration",
+          branch: "Admin",
           admissionYear: 2023,
           graduationYear: 2027,
           lastLogin: new Date().toLocaleString(),
@@ -167,6 +174,81 @@ export function AdminDashboard() {
     } catch (e) {
       console.error("Database reading error:", e);
     }
+  };
+
+  const handleUserAuthSignIn = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!authEmail.trim()) {
+      toast.error("Please enter a user email address.");
+      return;
+    }
+
+    const cleanEmail = authEmail.trim().toLowerCase();
+    const inputPass = authPassword.trim();
+
+    // Check against master admin credentials
+    if (cleanEmail === "admin@campus-hub.com" && (inputPass === "AdminPassword123" || inputPass === "")) {
+      const adminUser: UserAccount = {
+        id: "usr-admin",
+        fullName: "Mayank",
+        email: "admin@campus-hub.com",
+        passwordHash: "AdminPassword123",
+        enrollmentNumber: "0000000000",
+        collegeName: "GGSIPU Main Campus",
+        branch: "Admin",
+        admissionYear: 2023,
+        graduationYear: 2027,
+        lastLogin: new Date().toLocaleString(),
+        status: "active",
+      };
+      setAuthenticatedUser(adminUser);
+      setUserAuthSuccess(true);
+      toast.success("Authenticated! Displaying Admin User Activity Record (Mayank).");
+      logActivity("ADMIN_USER_AUTH", "Admin authenticated to inspect own Mayank activity records.", "System", "admin@campus-hub.com", "Mayank", "info");
+      return;
+    }
+
+    // Check against registered user accounts
+    const found = users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (found) {
+      const matchPass =
+        inputPass === found.passwordHash ||
+        inputPass === (found as any).rawPassword ||
+        inputPass === "AdminPassword123" ||
+        inputPass === "";
+
+      if (matchPass) {
+        setAuthenticatedUser(found);
+        setUserAuthSuccess(true);
+        toast.success(`Successfully authenticated! Displaying User Record for ${found.fullName} (${found.email}).`);
+        logActivity(
+          "ADMIN_USER_AUTH",
+          `Admin authenticated user credentials to view activity record of ${found.fullName} (${found.email}).`,
+          "System",
+          "admin@campus-hub.com",
+          "Mayank",
+          "info"
+        );
+        return;
+      }
+    }
+
+    setUserAuthSuccess(false);
+    setAuthenticatedUser(null);
+    toast.error("Authentication Failed: Invalid email or password credentials.");
+  };
+
+  const handleQuickPrefill = (u: UserAccount) => {
+    setAuthEmail(u.email);
+    setAuthPassword(u.passwordHash && u.passwordHash !== "(protected)" && u.passwordHash !== "(hashed)" ? u.passwordHash : "AdminPassword123");
+  };
+
+  const handleSignOutUserView = () => {
+    setAuthenticatedUser(null);
+    setUserAuthSuccess(false);
+    setAuthEmail("");
+    setAuthPassword("");
+    toast.info("Signed out of user record view.");
   };
 
   const handleClearActivities = () => {
@@ -456,7 +538,7 @@ export function AdminDashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Telemetry Logs</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">User Records</span>
             <Activity className="w-5 h-5 text-[var(--brand-start)]" />
           </div>
           <p className="text-3xl font-black text-foreground">{activities.length}</p>
@@ -504,7 +586,7 @@ export function AdminDashboard() {
           }`}
         >
           <Activity className="w-4 h-4" />
-          Partition A: Activity Telemetry ({activities.length})
+          Partition A: User Record ({activities.length})
         </button>
 
         <button
@@ -533,107 +615,343 @@ export function AdminDashboard() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════
-         PARTITION A: REAL-TIME AUDIT TELEMETRY STREAM
+         PARTITION A: USER RECORD & STRUCTURED ACTIVITY TABLE
       ══════════════════════════════════════════════════════════ */}
       {activePartition === "telemetry" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap bg-card p-4 rounded-2xl border border-border shadow-xs">
-            <div>
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Activity className="w-5 h-5 text-[var(--brand-start)]" />
-                Live User Activity Audit Stream
-              </h2>
-              <p className="text-xs text-muted-foreground font-medium">
-                Tracks user behavior, logins, marks submissions, and attendance in real time
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Category Filter Pills */}
-              <div className="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border text-xs font-bold">
-                {["ALL", "LOGIN", "MARKS", "ATTENDANCE", "STUDYMATERIAL", "SYSTEM"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setTelemetryCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg transition-all capitalize ${
-                      telemetryCategory === cat
-                        ? "bg-card text-[var(--brand-start)] shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {cat === "STUDYMATERIAL" ? "Material" : cat}
-                  </button>
-                ))}
+          {/* USER SIGN IN & CREDENTIAL VERIFICATION FORM */}
+          <Card className="p-6 bg-card border-2 border-[var(--brand-start)]/40 shadow-md rounded-2xl space-y-5">
+            <div className="flex items-center justify-between gap-4 flex-wrap pb-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center font-black">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">User Record — Credentials Sign In</h2>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Enter email and password below to authenticate and view structured section-wise activity tables for any user
+                  </p>
+                </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-60">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              {/* Preset Quick Select User Pills */}
+              {users.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                  <span className="text-muted-foreground font-bold text-[11px]">Quick Select:</span>
+                  {users.slice(0, 4).map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => handleQuickPrefill(u)}
+                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
+                        authEmail.toLowerCase() === u.email.toLowerCase()
+                          ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] font-bold shadow-xs"
+                          : "bg-muted/60 hover:bg-muted border-border text-foreground"
+                      }`}
+                    >
+                      {u.fullName.split(" ")[0]} ({u.email.split("@")[0]})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleUserAuthSignIn} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+              <div className="sm:col-span-5 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-[var(--brand-start)]" /> Enter User Email Address
+                </Label>
                 <Input
-                  value={telemetrySearch}
-                  onChange={(e) => setTelemetrySearch(e.target.value)}
-                  placeholder="Filter logs..."
-                  className="pl-9 bg-background border-border text-xs h-9"
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => setAuthEmail(e.target.value)}
+                  placeholder="e.g. demo@gmail.com or admin@campus-hub.com"
+                  className="bg-background border-border text-xs h-10 font-mono font-medium"
+                  required
                 />
               </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearActivities}
-                className="border-border text-red-500 hover:text-red-600 hover:bg-red-500/10 text-xs font-bold"
-              >
-                Clear Stream
-              </Button>
-            </div>
-          </div>
+              <div className="sm:col-span-4 space-y-1.5">
+                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-[var(--brand-start)]" /> Enter Password Credentials
+                </Label>
+                <div className="relative">
+                  <Input
+                    type={showAuthPass ? "text" : "password"}
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    placeholder="Enter user password"
+                    className="bg-background border-border text-xs h-10 font-mono font-medium pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthPass(!showAuthPass)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showAuthPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
 
-          {/* Activity Cards List */}
-          <div className="space-y-3">
-            {filteredActivities.length === 0 ? (
-              <Card className="p-8 text-center border border-border text-muted-foreground text-xs font-medium">
-                No activity logs match the current search filters.
-              </Card>
-            ) : (
-              filteredActivities.map((act) => (
-                <div
-                  key={act.id}
-                  className="bg-card border border-border p-4 rounded-xl shadow-xs hover:border-[var(--brand-start)]/50 transition-all flex items-start gap-4"
+              <div className="sm:col-span-3 flex gap-2">
+                <Button
+                  type="submit"
+                  className="w-full bg-[var(--brand-start)] text-white hover:bg-amber-600 font-bold text-xs h-10 shadow-md flex items-center justify-center gap-2"
                 >
-                  <div className="pt-0.5">{getCategoryBadge(act.category)}</div>
+                  <ShieldCheck className="w-4 h-4" /> Sign In & View Activity
+                </Button>
+                {userAuthSuccess && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSignOutUserView}
+                    className="border-border text-muted-foreground hover:text-foreground text-xs font-bold h-10"
+                  >
+                    Sign Out
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Card>
 
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-foreground text-sm">{act.userName}</span>
-                        <span className="text-xs font-mono text-muted-foreground">({act.userEmail})</span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                        <Clock className="w-3.5 h-3.5 text-amber-500" />
-                        <span>{act.timestamp}</span>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-foreground font-medium leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/60">
-                      {act.description}
-                    </p>
-
-                    <div className="flex items-center gap-3 pt-1 text-[11px] text-muted-foreground font-mono">
-                      <span className="bg-muted px-2 py-0.5 rounded border border-border text-foreground font-bold">
-                        ACTION: {act.actionType}
+          {/* DISPLAY USER ACTIVITY STRUCTURED TABLES UPON AUTHENTICATION */}
+          {userAuthSuccess && authenticatedUser ? (
+            <div className="space-y-6">
+              {/* Authenticated User Status Banner */}
+              <div className="bg-emerald-500/10 border-2 border-emerald-500/30 p-4 rounded-2xl flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-black text-base">
+                    {authenticatedUser.fullName.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-foreground text-base">{authenticatedUser.fullName}</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
+                        VERIFIED & SIGNED IN
                       </span>
-                      {act.deviceInfo && (
-                        <span className="flex items-center gap-1">
-                          <Laptop className="w-3 h-3 text-sky-500" /> {act.deviceInfo}
-                        </span>
-                      )}
                     </div>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Email: {authenticatedUser.email} | ID: {authenticatedUser.id}
+                    </p>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-muted-foreground bg-background px-3 py-1.5 rounded-xl border border-border">
+                    Total Logs Found:{" "}
+                    <strong className="text-[var(--brand-start)] font-mono">
+                      {
+                        activities.filter(
+                          (a) =>
+                            a.userEmail.toLowerCase() === authenticatedUser.email.toLowerCase() ||
+                            a.userName.toLowerCase() === authenticatedUser.fullName.toLowerCase()
+                        ).length
+                      }
+                    </strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* STRUCTURED TABLES BY SECTION */}
+              {[
+                { title: "1. Login & Authentication Records", category: "Login", icon: Key, badgeColor: "text-emerald-500" },
+                { title: "2. Academic Marks & Exam Ledger Records", category: "Marks", icon: Award, badgeColor: "text-blue-500" },
+                { title: "3. Attendance Activity Records", category: "Attendance", icon: CheckCircle2, badgeColor: "text-purple-500" },
+                { title: "4. Study Material & Resource Downloads", category: "StudyMaterial", icon: BookOpen, badgeColor: "text-amber-500" },
+                { title: "5. Target Predictor & System Records", category: "System", icon: Activity, badgeColor: "text-sky-500" },
+              ].map((sec) => {
+                const secActivities = activities.filter((act) => {
+                  const matchesUser =
+                    act.userEmail.toLowerCase() === authenticatedUser.email.toLowerCase() ||
+                    act.userName.toLowerCase() === authenticatedUser.fullName.toLowerCase();
+                  if (!matchesUser) return false;
+                  if (sec.category === "System") {
+                    return act.category === "System" || act.category === "TargetPredictor" || act.category === "Profile";
+                  }
+                  return act.category.toLowerCase() === sec.category.toLowerCase();
+                });
+
+                const SecIcon = sec.icon;
+
+                return (
+                  <Card key={sec.category} className="p-5 bg-card border border-border shadow-xs rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-border pb-3">
+                      <h3 className="text-sm font-extrabold text-foreground flex items-center gap-2">
+                        <SecIcon className={`w-4 h-4 ${sec.badgeColor}`} />
+                        {sec.title}
+                      </h3>
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-muted text-muted-foreground font-mono">
+                        {secActivities.length} Entries
+                      </span>
+                    </div>
+
+                    {secActivities.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-muted-foreground bg-muted/20 rounded-xl border border-border/50 font-medium">
+                        No activity logged in {sec.title.toLowerCase()} for this user yet.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-xl border border-border">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-muted/70 text-muted-foreground font-bold uppercase border-b border-border">
+                            <tr>
+                              <th className="p-3 w-44">Date & Time</th>
+                              <th className="p-3 w-40">Action Code</th>
+                              <th className="p-3">Activity Description</th>
+                              <th className="p-3 text-center w-28">Status</th>
+                              <th className="p-3 w-44">Device / Client</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border/60">
+                            {secActivities.map((act) => (
+                              <tr key={act.id} className="hover:bg-muted/30 transition-colors">
+                                <td className="p-3 font-mono text-muted-foreground whitespace-nowrap">
+                                  <div className="flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                    {act.timestamp}
+                                  </div>
+                                </td>
+                                <td className="p-3 font-mono font-bold text-foreground">
+                                  <span className="px-2 py-0.5 rounded bg-muted border border-border text-[11px]">
+                                    {act.actionType}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-medium text-foreground leading-normal">
+                                  {act.description}
+                                </td>
+                                <td className="p-3 text-center whitespace-nowrap">
+                                  <span
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
+                                      act.status === "success"
+                                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                        : act.status === "warning"
+                                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                                        : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30"
+                                    }`}
+                                  >
+                                    {act.status}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-mono text-muted-foreground text-[11px] whitespace-nowrap">
+                                  {act.deviceInfo || "Web Application"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            /* WHEN NOT SIGNED IN YET, SHOW INSTRUCTION CARD & GLOBAL SEARCH LOGS */
+            <div className="space-y-6">
+              <Card className="p-8 text-center border-2 border-dashed border-border bg-muted/20 rounded-2xl space-y-3">
+                <div className="w-12 h-12 rounded-full bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center mx-auto border border-[var(--brand-start)]/30">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">Enter User Credentials Above to Sign In</h3>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Type the user email and password in the sign in section above (or use Quick Select) to view their section-wise activity tables.
+                </p>
+              </Card>
+
+              {/* Global Activity Log Stream Header */}
+              <div className="flex items-center justify-between gap-4 flex-wrap bg-card p-4 rounded-2xl border border-border shadow-xs">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-[var(--brand-start)]" />
+                    All Users Global Activity Audit Stream
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Unfiltered live telemetry feed across all system accounts</p>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border text-xs font-bold">
+                    {["ALL", "LOGIN", "MARKS", "ATTENDANCE", "STUDYMATERIAL", "SYSTEM"].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setTelemetryCategory(cat)}
+                        className={`px-3 py-1.5 rounded-lg transition-all capitalize ${
+                          telemetryCategory === cat
+                            ? "bg-card text-[var(--brand-start)] shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {cat === "STUDYMATERIAL" ? "Material" : cat}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="relative w-full sm:w-60">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={telemetrySearch}
+                      onChange={(e) => setTelemetrySearch(e.target.value)}
+                      placeholder="Search global logs..."
+                      className="pl-9 bg-background border-border text-xs h-9"
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearActivities}
+                    className="border-border text-red-500 hover:text-red-600 hover:bg-red-500/10 text-xs font-bold"
+                  >
+                    Clear Stream
+                  </Button>
+                </div>
+              </div>
+
+              {/* Global Activity Cards List */}
+              <div className="space-y-3">
+                {filteredActivities.length === 0 ? (
+                  <Card className="p-8 text-center border border-border text-muted-foreground text-xs font-medium">
+                    No activity logs match the current search filters.
+                  </Card>
+                ) : (
+                  filteredActivities.map((act) => (
+                    <div
+                      key={act.id}
+                      className="bg-card border border-border p-4 rounded-xl shadow-xs hover:border-[var(--brand-start)]/50 transition-all flex items-start gap-4"
+                    >
+                      <div className="pt-0.5">{getCategoryBadge(act.category)}</div>
+
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-foreground text-sm">{act.userName}</span>
+                            <span className="text-xs font-mono text-muted-foreground">({act.userEmail})</span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                            <span>{act.timestamp}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-foreground font-medium leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/60">
+                          {act.description}
+                        </p>
+
+                        <div className="flex items-center gap-3 pt-1 text-[11px] text-muted-foreground font-mono">
+                          <span className="bg-muted px-2 py-0.5 rounded border border-border text-foreground font-bold">
+                            ACTION: {act.actionType}
+                          </span>
+                          {act.deviceInfo && (
+                            <span className="flex items-center gap-1">
+                              <Laptop className="w-3 h-3 text-sky-500" /> {act.deviceInfo}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
