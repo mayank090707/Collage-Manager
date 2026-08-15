@@ -82,7 +82,22 @@ export function LoginScreen() {
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
           localStorage.setItem("onboarding_complete", "true");
-          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated.", "System", "admin@campus-hub.com", "System Admin", "warning");
+          localStorage.setItem(
+            "student_profile",
+            JSON.stringify({
+              fullName: "Mayank",
+              enrollmentNumber: "0000000000",
+              email: "admin@campus-hub.com",
+              collegeName: "GGSIPU Main Campus",
+              course: "Administration",
+              branch: "Admin",
+              designation: "Admin",
+              currentSemester: "N/A",
+              admissionYear: "2023",
+              graduationYear: "2027",
+            })
+          );
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated.", "System", "admin@campus-hub.com", "Mayank", "warning");
           navigate("/app/admin");
           return;
         }
@@ -96,7 +111,22 @@ export function LoginScreen() {
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
           localStorage.setItem("onboarding_complete", "true");
-          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated via server.", "System", "admin@campus-hub.com", "System Admin", "warning");
+          localStorage.setItem(
+            "student_profile",
+            JSON.stringify({
+              fullName: "Mayank",
+              enrollmentNumber: "0000000000",
+              email: "admin@campus-hub.com",
+              collegeName: "GGSIPU Main Campus",
+              course: "Administration",
+              branch: "Admin",
+              designation: "Admin",
+              currentSemester: "N/A",
+              admissionYear: "2023",
+              graduationYear: "2027",
+            })
+          );
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated via server.", "System", "admin@campus-hub.com", "Mayank", "warning");
           navigate("/app/admin");
           return;
         }

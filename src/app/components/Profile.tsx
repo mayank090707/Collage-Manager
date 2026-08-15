@@ -19,6 +19,7 @@ interface StudentProfile {
   collegeName: string;
   course: string;
   branch: string;
+  designation?: string;
   currentSemester: string;
   admissionYear: string;
   graduationYear: string;
@@ -65,7 +66,29 @@ export function Profile() {
 
   const loadProfile = () => {
     const saved = localStorage.getItem("student_profile");
-    if (saved) {
+    const userRole = localStorage.getItem("user_role");
+    const userId = localStorage.getItem("college_manager_user_id");
+
+    if (userRole === "admin" || userId === "usr-admin") {
+      const adminProfile: StudentProfile = {
+        fullName: "Mayank",
+        enrollmentNumber: "0000000000",
+        email: "admin@campus-hub.com",
+        collegeName: "GGSIPU Main Campus",
+        course: "Administration",
+        branch: "Admin",
+        designation: "Admin",
+        currentSemester: "N/A",
+        admissionYear: "2023",
+        graduationYear: "2027",
+        ...(saved ? JSON.parse(saved) : {}),
+      };
+      adminProfile.fullName = "Mayank";
+      adminProfile.designation = "Admin";
+      setProfile(adminProfile);
+      setEditData(adminProfile);
+      localStorage.setItem("student_profile", JSON.stringify(adminProfile));
+    } else if (saved) {
       const data = JSON.parse(saved);
       setProfile(data);
       setEditData(data);
@@ -141,7 +164,14 @@ export function Profile() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h2 className="text-xl md:text-3xl font-bold text-foreground mb-1">{profile.fullName}</h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl md:text-3xl font-bold text-foreground mb-1">{profile.fullName}</h2>
+                    {profile.designation && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40">
+                        {profile.designation}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-muted-foreground text-sm md:text-base">{profile.enrollmentNumber}</p>
                   <p className="text-muted-foreground text-sm">{profile.email}</p>
                 </div>
