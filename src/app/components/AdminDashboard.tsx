@@ -63,7 +63,7 @@ export function AdminDashboard() {
 
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [activePartition, setActivePartition] = useState<"telemetry" | "users" | "explorer">("telemetry");
+  const [activePartition, setActivePartition] = useState<"telemetry" | "users">("telemetry");
   const [realStats, setRealStats] = useState({ totalUsers: 0, activeUsers: 0, onboarded: 0 });
   
   // User Record Authentication & Activity Filter States
@@ -95,16 +95,6 @@ export function AdminDashboard() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newEnrollment, setNewEnrollment] = useState("");
-
-  // Explorer Partition States (Dynamic data from database)
-  const [explorerTopic, setExplorerTopic] = useState<"profile" | "marks" | "attendance" | "timetable">("profile");
-  const [showRawJson, setShowRawJson] = useState(false);
-
-  // Dynamic Database Stores State
-  const [profileData, setProfileData] = useState<any>({});
-  const [marksData, setMarksData] = useState<any[]>([]);
-  const [attendanceData, setAttendanceData] = useState<any[]>([]);
-  const [timetableData, setTimetableData] = useState<any[]>([]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -163,17 +153,6 @@ export function AdminDashboard() {
     // 3. Read real Telemetry Logs from activityTracker
     const loadedActivities = getActivities();
     setActivities(loadedActivities);
-
-    // 4. Read dynamic student database tables
-    try {
-      const currentProfile = JSON.parse(localStorage.getItem("student_profile") || "{}");
-      setProfileData(currentProfile);
-      setMarksData(JSON.parse(localStorage.getItem("semester_marks") || "[]"));
-      setAttendanceData(JSON.parse(localStorage.getItem("attendance_records") || "[]"));
-      setTimetableData(JSON.parse(localStorage.getItem("timetable") || "[]"));
-    } catch (e) {
-      console.error("Database reading error:", e);
-    }
   };
 
   const handleUserAuthSignIn = (e?: React.FormEvent) => {
@@ -236,11 +215,6 @@ export function AdminDashboard() {
     setUserAuthSuccess(false);
     setAuthenticatedUser(null);
     toast.error("Authentication Failed: Invalid email or password credentials.");
-  };
-
-  const handleQuickPrefill = (u: UserAccount) => {
-    setAuthEmail(u.email);
-    setAuthPassword(u.passwordHash && u.passwordHash !== "(protected)" && u.passwordHash !== "(hashed)" ? u.passwordHash : "AdminPassword123");
   };
 
   const handleSignOutUserView = () => {
@@ -600,18 +574,6 @@ export function AdminDashboard() {
           <Users className="w-4 h-4" />
           Partition B: User Credential Manager ({users.length})
         </button>
-
-        <button
-          onClick={() => setActivePartition("explorer")}
-          className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border ${
-            activePartition === "explorer"
-              ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] shadow-md"
-              : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted/50"
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          Partition C: Live Database Inspector
-        </button>
       </div>
 
       {/* ══════════════════════════════════════════════════════════
@@ -633,26 +595,6 @@ export function AdminDashboard() {
                   </p>
                 </div>
               </div>
-
-              {/* Preset Quick Select User Pills */}
-              {users.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                  <span className="text-muted-foreground font-bold text-[11px]">Quick Select:</span>
-                  {users.slice(0, 4).map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => handleQuickPrefill(u)}
-                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-semibold transition-all ${
-                        authEmail.toLowerCase() === u.email.toLowerCase()
-                          ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] font-bold shadow-xs"
-                          : "bg-muted/60 hover:bg-muted border-border text-foreground"
-                      }`}
-                    >
-                      {u.fullName.split(" ")[0]} ({u.email.split("@")[0]})
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
 
             <form onSubmit={handleUserAuthSignIn} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
@@ -844,113 +786,16 @@ export function AdminDashboard() {
               })}
             </div>
           ) : (
-            /* WHEN NOT SIGNED IN YET, SHOW INSTRUCTION CARD & GLOBAL SEARCH LOGS */
-            <div className="space-y-6">
-              <Card className="p-8 text-center border-2 border-dashed border-border bg-muted/20 rounded-2xl space-y-3">
-                <div className="w-12 h-12 rounded-full bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center mx-auto border border-[var(--brand-start)]/30">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-foreground">Enter User Credentials Above to Sign In</h3>
-                <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Type the user email and password in the sign in section above (or use Quick Select) to view their section-wise activity tables.
-                </p>
-              </Card>
-
-              {/* Global Activity Log Stream Header */}
-              <div className="flex items-center justify-between gap-4 flex-wrap bg-card p-4 rounded-2xl border border-border shadow-xs">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-[var(--brand-start)]" />
-                    All Users Global Activity Audit Stream
-                  </h3>
-                  <p className="text-xs text-muted-foreground">Unfiltered live telemetry feed across all system accounts</p>
-                </div>
-
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border text-xs font-bold">
-                    {["ALL", "LOGIN", "MARKS", "ATTENDANCE", "STUDYMATERIAL", "SYSTEM"].map((cat) => (
-                      <button
-                        key={cat}
-                        onClick={() => setTelemetryCategory(cat)}
-                        className={`px-3 py-1.5 rounded-lg transition-all capitalize ${
-                          telemetryCategory === cat
-                            ? "bg-card text-[var(--brand-start)] shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {cat === "STUDYMATERIAL" ? "Material" : cat}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative w-full sm:w-60">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={telemetrySearch}
-                      onChange={(e) => setTelemetrySearch(e.target.value)}
-                      placeholder="Search global logs..."
-                      className="pl-9 bg-background border-border text-xs h-9"
-                    />
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearActivities}
-                    className="border-border text-red-500 hover:text-red-600 hover:bg-red-500/10 text-xs font-bold"
-                  >
-                    Clear Stream
-                  </Button>
-                </div>
+            /* WHEN NOT SIGNED IN YET, SHOW INSTRUCTION CARD */
+            <Card className="p-8 text-center border-2 border-dashed border-border bg-muted/20 rounded-2xl space-y-3">
+              <div className="w-12 h-12 rounded-full bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center mx-auto border border-[var(--brand-start)]/30">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-
-              {/* Global Activity Cards List */}
-              <div className="space-y-3">
-                {filteredActivities.length === 0 ? (
-                  <Card className="p-8 text-center border border-border text-muted-foreground text-xs font-medium">
-                    No activity logs match the current search filters.
-                  </Card>
-                ) : (
-                  filteredActivities.map((act) => (
-                    <div
-                      key={act.id}
-                      className="bg-card border border-border p-4 rounded-xl shadow-xs hover:border-[var(--brand-start)]/50 transition-all flex items-start gap-4"
-                    >
-                      <div className="pt-0.5">{getCategoryBadge(act.category)}</div>
-
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-foreground text-sm">{act.userName}</span>
-                            <span className="text-xs font-mono text-muted-foreground">({act.userEmail})</span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <Clock className="w-3.5 h-3.5 text-amber-500" />
-                            <span>{act.timestamp}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-foreground font-medium leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/60">
-                          {act.description}
-                        </p>
-
-                        <div className="flex items-center gap-3 pt-1 text-[11px] text-muted-foreground font-mono">
-                          <span className="bg-muted px-2 py-0.5 rounded border border-border text-foreground font-bold">
-                            ACTION: {act.actionType}
-                          </span>
-                          {act.deviceInfo && (
-                            <span className="flex items-center gap-1">
-                              <Laptop className="w-3 h-3 text-sky-500" /> {act.deviceInfo}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+              <h3 className="text-base font-bold text-foreground">Enter User Credentials Above to Sign In</h3>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                Type the user email and password in the sign in section above to view their section-wise activity tables.
+              </p>
+            </Card>
           )}
         </div>
       )}
@@ -1075,241 +920,7 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-         PARTITION C: LIVE DATABASE INSPECTOR (PARTITIONED TOPIC VIEW)
-      ══════════════════════════════════════════════════════════ */}
-      {activePartition === "explorer" && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4 bg-card p-4 rounded-2xl border border-border shadow-xs">
-            <div>
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Database className="w-5 h-5 text-[var(--brand-start)]" />
-                Live Student Database Topic Inspector
-              </h2>
-              <p className="text-xs text-muted-foreground font-medium">
-                Structured, partitioned view of real dynamic data loaded directly from browser storage
-              </p>
-            </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Partitioned Topic Selector */}
-              <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border text-xs font-bold">
-                {[
-                  { id: "profile", label: "1. Student Profile" },
-                  { id: "marks", label: "2. Marks & SGPA" },
-                  { id: "attendance", label: "3. Attendance" },
-                  { id: "timetable", label: "4. Timetable" },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setExplorerTopic(t.id as any)}
-                    className={`px-3 py-1.5 rounded-lg transition-all ${
-                      explorerTopic === t.id
-                        ? "bg-card text-[var(--brand-start)] shadow-xs font-bold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowRawJson(!showRawJson)}
-                className="border-border text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                {showRawJson ? "Hide Raw Code" : "View Raw JSON Code"}
-              </Button>
-            </div>
-          </div>
-
-          {/* TOPIC 1: PROFILE INFORMATION */}
-          {explorerTopic === "profile" && (
-            <Card className="p-6 bg-card border border-border shadow-xs rounded-xl space-y-6">
-              <div className="flex items-center gap-4 pb-4 border-b border-border">
-                <div className="w-12 h-12 rounded-xl bg-[var(--brand-start)]/15 text-[var(--brand-start)] border border-[var(--brand-start)]/30 flex items-center justify-center font-black text-lg">
-                  {(profileData.fullName || "M")[0]}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">{profileData.fullName || "Student Profile"}</h3>
-                  <p className="text-xs text-muted-foreground font-mono">{profileData.email || "demo@gmail.com"}</p>
-                </div>
-                <span className="ml-auto px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-600 border border-emerald-500/30">
-                  Active Student Record
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">Enrollment Number</span>
-                  <strong className="text-foreground text-sm font-mono">{profileData.enrollmentNumber || "02820802725"}</strong>
-                </div>
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">College Campus</span>
-                  <strong className="text-foreground text-sm">{profileData.collegeName || "Bhagwan Parshuram Institute of Technology"}</strong>
-                </div>
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">Branch</span>
-                  <strong className="text-foreground text-sm">{profileData.branch || "Computer Science & Engineering"}</strong>
-                </div>
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">Current Semester</span>
-                  <strong className="text-foreground text-sm">Semester {profileData.currentSemester || 1}</strong>
-                </div>
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">Admission / Graduation</span>
-                  <strong className="text-foreground text-sm">{profileData.admissionYear || 2025} - {profileData.graduationYear || 2029}</strong>
-                </div>
-                <div className="p-3 bg-muted/40 rounded-lg border border-border">
-                  <span className="text-muted-foreground block font-semibold">Date of Birth</span>
-                  <strong className="text-foreground text-sm">{profileData.dob || "2005-07-09"}</strong>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* TOPIC 2: ACADEMIC MARKS & SGPA */}
-          {explorerTopic === "marks" && (
-            <Card className="p-6 bg-card border border-border shadow-xs rounded-xl space-y-4">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Award className="w-5 h-5 text-blue-500" />
-                Semester Marks & Academic Standing Ledger
-              </h3>
-
-              {marksData.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground">
-                  No semester marks logged in database yet. Student can enter marks from Academics section.
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {marksData.map((semData: any) => (
-                    <div key={semData.semester} className="border border-border rounded-xl p-4 space-y-3 bg-muted/20">
-                      <div className="flex items-center justify-between border-b border-border pb-2">
-                        <div className="font-bold text-sm text-foreground">
-                          Semester {semData.semester} Results
-                        </div>
-                        <div className="text-xs font-bold text-[var(--brand-start)] bg-[var(--brand-start)]/10 px-2.5 py-1 rounded-lg border border-[var(--brand-start)]/30">
-                          SGPA: {semData.sgpa > 0 ? semData.sgpa.toFixed(2) : "Pending"}
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="text-muted-foreground font-bold uppercase bg-muted/50 border-b border-border">
-                            <tr>
-                              <th className="p-2.5">Subject</th>
-                              <th className="p-2.5 text-center">Credits</th>
-                              <th className="p-2.5 text-center">Internal (/40)</th>
-                              <th className="p-2.5 text-center">External (/60)</th>
-                              <th className="p-2.5 text-center">Total (/100)</th>
-                              <th className="p-2.5 text-center">Grade</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border/60">
-                            {(semData.results || semData.subjects || []).map((res: any, idx: number) => (
-                              <tr key={idx}>
-                                <td className="p-2.5 font-semibold text-foreground">{res.subjectName || res.name}</td>
-                                <td className="p-2.5 text-center font-mono">{res.credits}</td>
-                                <td className="p-2.5 text-center font-mono">{res.internal ?? res.internalMarks}</td>
-                                <td className="p-2.5 text-center font-mono">{res.external ?? res.externalMarks}</td>
-                                <td className="p-2.5 text-center font-mono font-bold text-foreground">
-                                  {res.total ?? (res.internal + res.external)}
-                                </td>
-                                <td className="p-2.5 text-center">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-600 border border-emerald-500/30">
-                                    {res.grade || "A"}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* TOPIC 3: ATTENDANCE RECORDS */}
-          {explorerTopic === "attendance" && (
-            <Card className="p-6 bg-card border border-border shadow-xs rounded-xl space-y-4">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-purple-500" />
-                Real Attendance Database Logs
-              </h3>
-
-              {attendanceData.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground">
-                  No attendance records saved in local database yet.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {attendanceData.map((rec: any, idx: number) => (
-                    <div key={idx} className="p-4 bg-muted/30 rounded-xl border border-border space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold text-foreground">
-                        <span>Date: {rec.date}</span>
-                        <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 text-[10px]">
-                          {rec.subjects?.length || 0} Attended
-                        </span>
-                      </div>
-                      <div className="text-xs text-muted-foreground font-mono bg-background p-2 rounded border border-border">
-                        {rec.subjects && rec.subjects.length > 0
-                          ? rec.subjects.join(", ")
-                          : "No classes attended"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* TOPIC 4: WEEKLY TIMETABLE SCHEDULE */}
-          {explorerTopic === "timetable" && (
-            <Card className="p-6 bg-card border border-border shadow-xs rounded-xl space-y-4">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-amber-500" />
-                Saved Class Timetable Slots
-              </h3>
-
-              {timetableData.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground">
-                  No timetable schedule configured in database.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {timetableData.map((t: any, idx: number) => (
-                    <div key={idx} className="p-3.5 bg-muted/40 rounded-xl border border-border space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-[var(--brand-start)]">
-                        <span>{t.day}</span>
-                        <span>P{t.period}</span>
-                      </div>
-                      <div className="font-bold text-sm text-foreground">{t.subject}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* Developer Code View */}
-          {showRawJson && (
-            <Card className="p-4 bg-zinc-950 border border-zinc-800 text-zinc-100 font-mono text-xs overflow-x-auto rounded-xl space-y-2">
-              <div className="text-amber-400 font-bold">Raw JSON State ({explorerTopic}):</div>
-              <pre className="whitespace-pre-wrap leading-relaxed">
-                {explorerTopic === "profile" && JSON.stringify(profileData, null, 2)}
-                {explorerTopic === "marks" && JSON.stringify(marksData, null, 2)}
-                {explorerTopic === "attendance" && JSON.stringify(attendanceData, null, 2)}
-                {explorerTopic === "timetable" && JSON.stringify(timetableData, null, 2)}
-              </pre>
-            </Card>
-          )}
-        </div>
-      )}
 
       {/* EDIT USER CREDENTIALS MODAL */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
