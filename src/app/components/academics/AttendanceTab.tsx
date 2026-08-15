@@ -134,9 +134,9 @@ export function AttendanceTab() {
         </div>
       )}
 
-      {/* Overall Stats — 3 cards (no advisor callouts) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-card border border-border/80 p-6 shadow-sm">
+      {/* Overall Stats — 4 cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-card border border-border/80 p-5 shadow-sm col-span-2 md:col-span-1">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground font-semibold">Overall Attendance</span>
             <TrendingUp className="w-5 h-5 text-[var(--brand-start)]" />
@@ -145,18 +145,26 @@ export function AttendanceTab() {
           <Progress value={overallAttendance} className="h-2 bg-muted" />
         </Card>
 
-        <Card className="bg-card border border-border/80 p-6 shadow-sm">
+        <Card className="bg-card border border-border/80 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground font-semibold">Classes Attended</span>
             <CheckCircle className="w-5 h-5 text-emerald-500" />
           </div>
-          <div className="text-3xl font-black text-foreground">{totalAttended}</div>
+          <div className="text-3xl font-black text-emerald-500">{totalAttended}</div>
         </Card>
 
-        <Card className="bg-card border border-border/80 p-6 shadow-sm">
+        <Card className="bg-card border border-border/80 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-muted-foreground font-semibold">Classes Absent</span>
+            <XCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <div className="text-3xl font-black text-red-500">{totalConducted - totalAttended}</div>
+        </Card>
+
+        <Card className="bg-card border border-border/80 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground font-semibold">Classes Conducted</span>
-            <XCircle className="w-5 h-5 text-muted-foreground" />
+            <TrendingUp className="w-5 h-5 text-muted-foreground" />
           </div>
           <div className="text-3xl font-black text-foreground">{totalConducted}</div>
         </Card>
@@ -232,17 +240,21 @@ export function AttendanceTab() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
                       <p className="text-muted-foreground font-medium">Attended</p>
-                      <p className="text-foreground font-black text-sm">{stats.attended} Classes</p>
+                      <p className="text-emerald-600 dark:text-emerald-400 font-black text-sm">{stats.attended} Classes</p>
+                    </div>
+                    <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
+                      <p className="text-muted-foreground font-medium">Absent</p>
+                      <p className="text-red-600 dark:text-red-400 font-black text-sm">{stats.total - stats.attended} Classes</p>
                     </div>
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
                       <p className="text-muted-foreground font-medium">Total Conducted</p>
                       <p className="text-foreground font-black text-sm">{stats.total} Classes</p>
                     </div>
                     <div className="bg-muted/40 p-2.5 rounded-lg border border-border/50">
-                      <p className="text-muted-foreground font-medium">Classes Needed (75%)</p>
+                      <p className="text-muted-foreground font-medium">Needed (75%)</p>
                       <p className="text-amber-600 dark:text-amber-400 font-black text-sm">
                         {hasMarked ? stats.classesNeeded : "-"}
                       </p>

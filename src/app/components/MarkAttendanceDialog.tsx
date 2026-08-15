@@ -3,8 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { CheckCircle, XCircle, Ban, BookOpen, Plus, Trash2, Calendar as CalendarIcon, Clock } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { CheckCircle, XCircle, Ban, BookOpen, Plus, Trash2, Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { logActivity } from "../../lib/activityTracker";
 
@@ -222,10 +222,6 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     setSlots((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  const handleQuickDateSelect = (daysAgo: number) => {
-    const targetDate = subDays(new Date(), daysAgo);
-    setSelectedDateStr(format(targetDate, "yyyy-MM-dd"));
-  };
 
   const handleSave = () => {
     const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
@@ -346,56 +342,6 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
               className="bg-[#0a0a0f] border-gray-700 text-white focus:border-[var(--brand-start)] h-11 text-base font-semibold cursor-pointer"
             />
 
-            {/* Quick Date Presets */}
-            <div className="flex items-center gap-2 pt-1 flex-wrap">
-              <span className="text-xs text-gray-400 font-medium flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Quick:
-              </span>
-              <button
-                type="button"
-                onClick={() => handleQuickDateSelect(0)}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
-                  selectedDateStr === format(new Date(), "yyyy-MM-dd")
-                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] shadow-[0_0_10px_rgba(var(--brand-start-rgb),0.3)]"
-                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
-                }`}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDateSelect(1)}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
-                  selectedDateStr === format(subDays(new Date(), 1), "yyyy-MM-dd")
-                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
-                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
-                }`}
-              >
-                Yesterday
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDateSelect(2)}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
-                  selectedDateStr === format(subDays(new Date(), 2), "yyyy-MM-dd")
-                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
-                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
-                }`}
-              >
-                2 Days Ago
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDateSelect(3)}
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all border ${
-                  selectedDateStr === format(subDays(new Date(), 3), "yyyy-MM-dd")
-                    ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)]"
-                    : "bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500"
-                }`}
-              >
-                3 Days Ago
-              </button>
-            </div>
           </div>
 
           {/* Class Slots Header & Add Class Action */}

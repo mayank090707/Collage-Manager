@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: campus-hub
+    runtime: node
+    rootDir: .
+    buildCommand: npm install && npm run build && cd server && npm install && npm run build
+    startCommand: node server/dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false   # Set this manually in Render dashboard — do NOT commit secrets
+      - key: ADMIN_KEY
+        sync: false   # Set this manually in Render dashboard
