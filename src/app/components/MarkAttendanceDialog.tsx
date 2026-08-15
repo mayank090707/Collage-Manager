@@ -178,6 +178,24 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
           }
         });
       }
+
+      // Restore absent manual slots (extra classes that were added but marked absent)
+      if (existingRecord.absentManual) {
+        existingRecord.absentManual.forEach((a: any) => {
+          if (a.key && !processedKeys.has(a.key)) {
+            initialSlots.push({
+              id: a.key,
+              subject: a.subject,
+              period: a.period,
+              status: "absent",
+              faculty: "",
+              notes: "",
+              isManual: true,
+            });
+            processedKeys.add(a.key);
+          }
+        });
+      }
     }
 
     setSlots(initialSlots);
@@ -223,6 +241,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
   };
 
 
+
   const handleSave = () => {
     const attendanceRecords = JSON.parse(localStorage.getItem("attendance_records") || "[]");
     const parts = selectedDateStr.split("-").map(Number);
@@ -244,10 +263,23 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
         day: format(dateObj, "EEEE"),
       }));
 
+    // Persist absent extra/manual slots explicitly so they count as
+    // "conducted but not attended" in computeAttendanceStats.
+    // Regular timetable absent slots are already inferred by the stats engine,
+    // but manually added extra classes have no timetable entry to infer from.
+    const absentManualEntries = slots
+      .filter((s) => s.status === "absent" && s.isManual)
+      .map((s) => ({
+        key: `${s.subject}-${s.period}`,
+        subject: s.subject,
+        period: s.period,
+      }));
+
     const newRecord = {
       date: selectedDateStr,
       subjects: attendedSubjects,
       cancelled: cancelledEntries,
+      absentManual: absentManualEntries,
     };
 
     const existingIndex = attendanceRecords.findIndex(
@@ -265,7 +297,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
 
     logActivity(
       "ATTENDANCE_RECORDED",
-      `Recorded attendance for ${format(dateObj, "MMM dd, yyyy")} — ${attendedSubjects.length} attended, ${cancelledEntries.length} cancelled.`,
+      `Recorded attendance for ${format(dateObj, "MMM dd, yyyy")} — ${attendedSubjects.length} attended, ${cancelledEntries.length} cancelled, ${absentManualEntries.length} absent (extra).`,
       "Attendance",
       undefined,
       undefined,
@@ -275,6 +307,7 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
     toast.success(`Attendance saved for ${format(dateObj, "MMM d, yyyy")}!`);
     onClose();
   };
+
 
   const statusConfig: Record<SlotStatus, { label: string; icon: any; color: string; ring: string }> = {
     attended: {

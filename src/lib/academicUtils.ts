@@ -118,7 +118,7 @@ export function computeAttendanceStats(): OverallAttendanceResult {
   }
 
   let subjects: { id: string; name: string; code: string; credits: number }[] = [];
-  let records: { date: string; subjects: string[]; cancelled?: { key: string; subject?: string; period?: number }[] }[] = [];
+  let records: { date: string; subjects: string[]; cancelled?: { key: string; subject?: string; period?: number }[]; absentManual?: { key: string; subject: string; period: number }[] }[] = [];
   let timetable: { day: string; subject: string; period: number }[] = [];
 
   try {
@@ -188,10 +188,16 @@ export function computeAttendanceStats(): OverallAttendanceResult {
         (c) => (c.subject === subject.name || c.key?.startsWith(`${subject.name}-`)) && !processedKeys.has(c.key)
       ) || [];
 
+      // Also include absent manual slots (extra classes the user added but was absent for)
+      const manualAbsentEntries = record.absentManual?.filter(
+        (a) => (a.subject === subject.name || a.key?.startsWith(`${subject.name}-`)) && !processedKeys.has(a.key)
+      ) || [];
+
       // Combine unique extra keys
       const extraKeys = new Set<string>([
         ...manualAttendedKeys,
-        ...manualCancelledEntries.map((c) => c.key)
+        ...manualCancelledEntries.map((c) => c.key),
+        ...manualAbsentEntries.map((a) => a.key),
       ]);
 
       extraKeys.forEach((key) => {
