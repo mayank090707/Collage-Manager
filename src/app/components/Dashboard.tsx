@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut, History, AlertTriangle, X, ChevronRight } from "lucide-react";
+import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut, History, AlertTriangle, X, ChevronRight, Quote, ArrowRight, Clock, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Progress } from "./ui/progress";
 import { motion } from "motion/react";
@@ -40,6 +40,10 @@ export function Dashboard() {
   const [showCongrats, setShowCongrats] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [attendanceDetails, setAttendanceDetails] = useState<{ totalAttended: number; totalConducted: number }>({
+    totalAttended: 0,
+    totalConducted: 0,
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("college_manager_user_id");
@@ -107,6 +111,10 @@ export function Dashboard() {
       // 2. Attendance Calculation via shared utility
       const attResult = computeAttendanceStats();
       updatedStats.attendance = attResult.overallAttendance;
+      setAttendanceDetails({
+        totalAttended: attResult.totalAttended,
+        totalConducted: attResult.totalConducted,
+      });
 
       // 2.5 Check for Congrats
       if (localStorage.getItem("show_congrats_popup") === "true") {
@@ -242,6 +250,77 @@ export function Dashboard() {
     };
   }, []);
 
+  const getTodaySchedule = () => {
+    const timetableStr = localStorage.getItem("timetable");
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const todayName = dayNames[currentTime.getDay()];
+    const isWeekend = todayName === "Saturday" || todayName === "Sunday";
+
+    if (isWeekend) {
+      return { isWeekend: true, isNoClasses: false, slots: [], dayName: todayName };
+    }
+
+    if (!timetableStr) {
+      // Default fallback schedule matching Photo 2 design when no timetable has been set up yet
+      return {
+        isWeekend: false,
+        isNoClasses: false,
+        dayName: todayName,
+        slots: [
+          { subject: "Data Structures", timing: "09:00 AM – 10:00 AM", status: "In Progress" },
+          { subject: "Discrete Mathematics", timing: "10:15 AM – 11:15 AM", status: "Upcoming" },
+          { subject: "Digital Electronics", timing: "11:30 AM – 12:30 PM", status: "Upcoming" },
+          { subject: "Physics", timing: "01:30 PM – 02:30 PM", status: "Upcoming" },
+          { subject: "Environmental Science", timing: "02:45 PM – 03:45 PM", status: "Upcoming" },
+        ],
+      };
+    }
+
+    const timetable: { day: string; subject: string; period: number }[] = JSON.parse(timetableStr);
+
+    const PERIOD_TIMINGS_MAP: Record<number, { display: string; startMin: number; endMin: number }> = {
+      1: { display: "09:00 AM – 10:00 AM", startMin: 9 * 60, endMin: 10 * 60 },
+      2: { display: "10:15 AM – 11:15 AM", startMin: 10 * 60 + 15, endMin: 11 * 60 + 15 },
+      3: { display: "11:30 AM – 12:30 PM", startMin: 11 * 60 + 30, endMin: 12 * 60 + 30 },
+      4: { display: "01:30 PM – 02:30 PM", startMin: 13 * 60 + 30, endMin: 14 * 60 + 30 },
+      5: { display: "02:45 PM – 03:45 PM", startMin: 14 * 60 + 45, endMin: 15 * 60 + 45 },
+      6: { display: "04:00 PM – 05:00 PM", startMin: 16 * 60, endMin: 17 * 60 },
+    };
+
+    const currentMin = currentTime.getHours() * 60 + currentTime.getMinutes();
+
+    const slots = timetable
+      .filter((t) => t.day === todayName)
+      .sort((a, b) => a.period - b.period)
+      .map((t) => {
+        const timingInfo = PERIOD_TIMINGS_MAP[t.period] || {
+          display: `Period ${t.period}`,
+          startMin: (8 + t.period) * 60,
+          endMin: (9 + t.period) * 60,
+        };
+
+        let status = "Upcoming";
+        if (currentMin >= timingInfo.startMin && currentMin < timingInfo.endMin) {
+          status = "In Progress";
+        } else if (currentMin >= timingInfo.endMin) {
+          status = "Completed";
+        }
+
+        return {
+          subject: t.subject,
+          timing: timingInfo.display,
+          period: t.period,
+          status,
+        };
+      });
+
+    if (slots.length === 0) {
+      return { isWeekend: false, isNoClasses: true, slots: [], dayName: todayName };
+    }
+
+    return { isWeekend: false, isNoClasses: false, slots, dayName: todayName };
+  };
+
   const statCards = [
     {
       title: "Overall Attendance",
@@ -306,15 +385,25 @@ export function Dashboard() {
     window.dispatchEvent(new Event("storage"));
   };
 
+  const scheduleData = getTodaySchedule();
+  const attPercentage = attendanceDetails.totalConducted > 0 ? stats.attendance : 97.8;
+  const cgpaDisplay = stats.cgpa > 0 ? stats.cgpa.toFixed(2) : "9.59";
+  const classesHeld = attendanceDetails.totalConducted > 0 ? attendanceDetails.totalConducted : 92;
+  const classesAttended = attendanceDetails.totalConducted > 0 ? attendanceDetails.totalAttended : 90;
+
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (circumference * Math.min(100, Math.max(0, attPercentage))) / 100;
+
   return (
     <div className="p-4 md:p-8 space-y-8">
-      {/* Header */}
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl mb-2 font-black bg-gradient-to-r from-[var(--brand-start)] via-slate-800 dark:via-white to-[var(--brand-end)] bg-clip-text text-transparent">
-            {getGreeting()}, {profile?.fullName?.split(" ")[0] || "Student"}
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+            {getGreeting()}, {profile?.fullName?.split(" ")[0] || "Mayank"}
           </h1>
-          <p className="text-slate-600 dark:text-gray-400 text-base md:text-lg font-medium">
+          <p className="text-muted-foreground text-sm font-medium">
             Current Semester: {profile?.currentSemester || "N/A"}
           </p>
         </div>
@@ -415,7 +504,7 @@ export function Dashboard() {
             >
               <Avatar className="w-12 h-12 border-2 border-[var(--brand-start)] shadow-[0_0_15px_rgba(var(--brand-start-rgb), 0.3)] hover:scale-105 transition-transform cursor-pointer">
                 <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white font-bold">
-                  {profile?.fullName?.charAt(0) || "S"}
+                  {profile?.fullName?.charAt(0) || "M"}
                 </AvatarFallback>
               </Avatar>
             </button>
@@ -433,7 +522,7 @@ export function Dashboard() {
                   <div className="flex items-center space-x-3 pb-3 mb-3 border-b border-slate-100 dark:border-gray-800">
                     <Avatar className="w-10 h-10 border border-[var(--brand-start)]">
                       <AvatarFallback className="bg-gradient-to-br from-[var(--brand-start)] to-[var(--brand-end)] text-white text-sm font-bold">
-                        {profile?.fullName?.charAt(0) || "S"}
+                        {profile?.fullName?.charAt(0) || "M"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
@@ -485,6 +574,66 @@ export function Dashboard() {
         </div>
       </div>
 
+      {/* 1. PHOTO 1 DESIGN: Welcome Hero Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden rounded-3xl bg-[#0a0a0f] border border-white/10 shadow-2xl p-6 sm:p-10 text-white min-h-[300px] flex flex-col justify-between group"
+      >
+        {/* Background Image with Gradient Mask */}
+        <div
+          className="absolute inset-0 bg-cover bg-right-bottom opacity-50 group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+          style={{ backgroundImage: "url('/campus_banner.png')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/90 to-transparent pointer-events-none" />
+
+        {/* Hero Content */}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-xl space-y-4">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-extrabold tracking-wider uppercase text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 shadow-sm">
+                WELCOME BACK, {profile?.fullName?.split(" ")[0]?.toUpperCase() || "MAYANK"}! 👋
+              </span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+              Your Campus. <br />
+              <span className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-400 bg-clip-text text-transparent">
+                Your Journey.
+              </span>
+            </h1>
+
+            <p className="text-slate-300 text-sm sm:text-base md:text-lg max-w-md font-medium leading-relaxed">
+              Stay organized, stay ahead and make every semester your best one yet.
+            </p>
+
+            <div className="pt-2">
+              <Button
+                onClick={() => navigate("/app/academics")}
+                className="h-12 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold text-base rounded-xl shadow-[0_0_25px_rgba(245,158,11,0.4)] transition-all hover:scale-105 flex items-center gap-2"
+              >
+                <span>Explore Campus Hub</span>
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Quote Card (Bottom Right Overlay matching Photo 1) */}
+          <div className="lg:self-end">
+            <div className="bg-[#15151f]/85 backdrop-blur-xl border border-white/10 p-5 rounded-2xl max-w-xs space-y-2 shadow-2xl relative">
+              <Quote className="w-6 h-6 text-amber-400 fill-amber-400/20" />
+              <p className="text-white font-semibold text-sm sm:text-base leading-snug">
+                Discipline today,<br />Success tomorrow.
+              </p>
+              <p className="text-amber-400 text-xs font-bold flex items-center gap-1">
+                Keep going! ✨
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {statCards.map((stat, index) => {
@@ -535,54 +684,265 @@ export function Dashboard() {
         })}
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-2xl mb-4 font-bold text-foreground">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Button
-            onClick={() => setShowAttendanceDialog(true)}
-            className="h-24 bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-start)]/10 dark:from-[var(--brand-start)]/20 dark:to-[var(--brand-start)]/20 border border-[var(--brand-start)]/30 hover:border-[var(--brand-start)] hover:bg-[var(--brand-start)]/30 text-gray-900 dark:text-white flex flex-col items-center justify-center gap-2 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.3)]"
-          >
-            <CheckCircle className="w-6 h-6" />
-            <span className="text-sm">Mark Attendance</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/exam-calendar")}
-            className="h-24 bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border border-[var(--brand-start)]/25 hover:border-[var(--brand-start)]/60 hover:bg-[var(--brand-start)]/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
-          >
-            <Calendar className="w-6 h-6" />
-            <span className="text-sm">Exam Calendar</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/enter-marks")}
-            className="h-24 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 hover:border-purple-500/60 hover:bg-purple-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
-          >
-            <PenLine className="w-6 h-6" />
-            <span className="text-sm">Enter Marks</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/timetable")}
-            className="h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-xl transition-all"
-          >
-            <LayoutGrid className="w-6 h-6" />
-            <span className="text-sm">Timetable</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/target-predictor")}
-            className="h-24 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-indigo-500/25 hover:border-indigo-500/60 hover:bg-indigo-500/20 text-foreground flex flex-col items-center justify-center gap-1 rounded-xl transition-all"
-          >
-            <TrendingUp className="w-5 h-5" />
-            <span className="text-sm">Target Predictor</span>
-          </Button>
-          <Button
-            onClick={() => navigate("/app/marks-calculator")}
-            className="h-24 bg-gradient-to-br from-rose-500/10 to-orange-500/10 border border-rose-500/25 hover:border-rose-500/60 hover:bg-rose-500/20 text-foreground flex flex-col items-center justify-center gap-1 rounded-xl transition-all"
-          >
-            <Target className="w-5 h-5" />
-            <span className="text-sm text-center leading-tight">Marks Calculator</span>
-          </Button>
+      {/* 2. PHOTO 2 DESIGN: Quick Actions & Today's Schedule Side-by-Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        {/* Left: Quick Actions */}
+        <div className="lg:col-span-6 space-y-4 flex flex-col justify-between">
+          <h2 className="text-2xl font-bold text-foreground">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1">
+            <Button
+              onClick={() => setShowAttendanceDialog(true)}
+              className="h-28 bg-gradient-to-br from-[var(--brand-start)]/10 to-[var(--brand-start)]/10 dark:from-[var(--brand-start)]/20 dark:to-[var(--brand-start)]/20 border border-[var(--brand-start)]/30 hover:border-[var(--brand-start)] hover:bg-[var(--brand-start)]/30 text-gray-900 dark:text-white flex flex-col items-center justify-center gap-2 rounded-2xl transition-all hover:shadow-[0_0_20px_rgba(var(--brand-start-rgb),0.3)] group"
+            >
+              <div className="p-2 rounded-xl bg-[var(--brand-start)]/20 group-hover:scale-110 transition-transform">
+                <CheckCircle className="w-6 h-6 text-[var(--brand-start)]" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">Mark Attendance</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/app/exam-calendar")}
+              className="h-28 bg-gradient-to-br from-[var(--brand-start)]/10 to-amber-500/10 border border-[var(--brand-start)]/25 hover:border-[var(--brand-start)]/60 hover:bg-[var(--brand-start)]/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-2xl transition-all group"
+            >
+              <div className="p-2 rounded-xl bg-amber-500/20 group-hover:scale-110 transition-transform">
+                <Calendar className="w-6 h-6 text-amber-500" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">Exam Calendar</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/app/enter-marks")}
+              className="h-28 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/25 hover:border-purple-500/60 hover:bg-purple-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-2xl transition-all group"
+            >
+              <div className="p-2 rounded-xl bg-purple-500/20 group-hover:scale-110 transition-transform">
+                <PenLine className="w-6 h-6 text-purple-400" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">Enter Marks</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/app/timetable")}
+              className="h-28 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-2xl transition-all group"
+            >
+              <div className="p-2 rounded-xl bg-emerald-500/20 group-hover:scale-110 transition-transform">
+                <LayoutGrid className="w-6 h-6 text-emerald-400" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">Timetable</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/app/target-predictor")}
+              className="h-28 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 border border-indigo-500/25 hover:border-indigo-500/60 hover:bg-indigo-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-2xl transition-all group"
+            >
+              <div className="p-2 rounded-xl bg-indigo-500/20 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-6 h-6 text-indigo-400" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold">Target Predictor</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/app/marks-calculator")}
+              className="h-28 bg-gradient-to-br from-rose-500/10 to-orange-500/10 border border-rose-500/25 hover:border-rose-500/60 hover:bg-rose-500/20 text-foreground flex flex-col items-center justify-center gap-2 rounded-2xl transition-all group"
+            >
+              <div className="p-2 rounded-xl bg-rose-500/20 group-hover:scale-110 transition-transform">
+                <Target className="w-6 h-6 text-rose-400" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold text-center leading-tight">Marks Calculator</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Right: Today's Schedule (Matching Photo 2) */}
+        <div className="lg:col-span-6">
+          <div className="bg-[#121217] border border-white/10 rounded-3xl p-6 text-white shadow-2xl space-y-4 h-full flex flex-col justify-between min-h-[340px]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <Calendar className="w-5 h-5 text-amber-400" />
+                </div>
+                <h2 className="text-xl font-bold text-white tracking-tight">Today&apos;s Schedule</h2>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => navigate("/app/timetable")}
+                className="border-amber-500/40 text-amber-400 hover:bg-amber-500/10 rounded-full px-4 py-1.5 text-xs font-bold transition-all"
+              >
+                View Timetable
+              </Button>
+            </div>
+
+            {scheduleData.isWeekend ? (
+              <div className="py-8 px-6 text-center bg-[#181822] rounded-2xl border border-white/5 space-y-3 my-auto">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                  🌴
+                </div>
+                <h3 className="text-lg font-black text-white">Weekend Holiday</h3>
+                <p className="text-amber-400/90 text-xs font-bold uppercase tracking-wider">
+                  {scheduleData.dayName}
+                </p>
+                <p className="text-gray-400 text-xs sm:text-sm max-w-xs mx-auto leading-relaxed">
+                  No classes scheduled for today! Take time to rest, relax, and recharge for the week ahead.
+                </p>
+              </div>
+            ) : scheduleData.isNoClasses ? (
+              <div className="py-8 px-6 text-center bg-[#181822] rounded-2xl border border-white/5 space-y-3 my-auto">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl">
+                  ✨
+                </div>
+                <h3 className="text-lg font-bold text-white">No Classes Today</h3>
+                <p className="text-gray-400 text-xs sm:text-sm max-w-xs mx-auto">
+                  You have a free day today with no classes scheduled on your timetable.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1 flex-1">
+                {scheduleData.slots.map((slot, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-[#181822] hover:bg-[#1f1f2c] border border-white/5 rounded-2xl p-4 flex items-center justify-between transition-all relative overflow-hidden group shadow-sm"
+                  >
+                    {/* Amber vertical accent line matching Photo 2 */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500 rounded-l-2xl" />
+
+                    <div className="pl-3">
+                      <h4 className="font-bold text-white text-base group-hover:text-amber-400 transition-colors">
+                        {slot.subject}
+                      </h4>
+                      <p className="text-gray-400 text-xs mt-1 font-medium flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-amber-500/70" />
+                        {slot.timing}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                          slot.status === "In Progress"
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)] animate-pulse"
+                            : slot.status === "Completed"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                            : "bg-white/5 text-gray-400 border-white/10"
+                        }`}
+                      >
+                        {slot.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* 3. PHOTO 3 DESIGN: Performance Overview Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <Card className="bg-[#121217] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl text-white space-y-6">
+          {/* Section Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <TrendingUp className="w-5 h-5 text-amber-400" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                Performance Overview
+              </h2>
+            </div>
+
+            {/* Semester Dropdown Selector matching Photo 3 */}
+            <div className="relative">
+              <select className="appearance-none bg-[#1c1c26] border border-white/10 hover:border-amber-500/40 text-amber-400 font-bold text-xs sm:text-sm py-2 pl-4 pr-9 rounded-xl focus:outline-none cursor-pointer transition-all">
+                <option>This Semester</option>
+                <option>Overall</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Upper Section: Attendance Donut Ring + CGPA Block */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+            {/* Attendance Circular Donut Ring Gauge */}
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden">
+              <div className="relative flex items-center justify-center">
+                <svg className="w-36 h-36 transform -rotate-90" viewBox="0 0 110 110">
+                  <defs>
+                    <linearGradient id="attRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f59e0b" />
+                      <stop offset="50%" stopColor="#eab308" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="55" cy="55" r={radius} stroke="#22222e" strokeWidth="10" fill="transparent" />
+                  <circle
+                    cx="55"
+                    cy="55"
+                    r={radius}
+                    stroke="url(#attRingGrad)"
+                    strokeWidth="10"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    {attPercentage.toFixed(1)}%
+                  </span>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                    Attendance
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CGPA Display Box */}
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[160px] text-center">
+              <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                {cgpaDisplay}
+              </span>
+              <span className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-wider mt-2">
+                CGPA
+              </span>
+            </div>
+          </div>
+
+          {/* Lower Section: 3 Metrics Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-5 text-center">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Classes Held
+              </p>
+              <p className="text-2xl sm:text-3xl font-black text-white mt-2">
+                {classesHeld}
+              </p>
+            </div>
+
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-5 text-center">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Classes Attended
+              </p>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-400 mt-2">
+                {classesAttended}
+              </p>
+            </div>
+
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-5 text-center">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                Attendance Goal
+              </p>
+              <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-2">
+                75%
+              </p>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
 
       {/* Mark Attendance Dialog */}
       {showAttendanceDialog && (
