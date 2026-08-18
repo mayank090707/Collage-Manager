@@ -932,12 +932,12 @@ export function Dashboard() {
               </p>
             </div>
 
-            <div className="bg-[#181822] border border-white/5 rounded-2xl p-5 text-center">
+            <div className="bg-[#181822] border border-white/5 rounded-2xl p-5 text-center cursor-pointer hover:border-amber-500/30 transition-all" onClick={() => { setNewTarget(stats.targetCgpa.toString()); setShowTargetDialog(true); }}>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Attendance Goal
+                Target CGPA
               </p>
               <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-2">
-                75%
+                {stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "Not Set"}
               </p>
             </div>
           </div>

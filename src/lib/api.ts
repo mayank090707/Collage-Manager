@@ -150,19 +150,31 @@ export const api = {
       const data = await response.json();
 
       isSyncing = true; // Pause the auto-sync interceptor while restoring
+      let hasChanged = false;
 
-      if (data.profile)           localStorage.setItem('student_profile',    JSON.stringify(data.profile));
-      if (Array.isArray(data.subjects))          localStorage.setItem('subjects',           JSON.stringify(data.subjects));
-      if (Array.isArray(data.timetable))         localStorage.setItem('timetable',          JSON.stringify(data.timetable));
-      if (Array.isArray(data.attendanceRecords)) localStorage.setItem('attendance_records', JSON.stringify(data.attendanceRecords));
-      if (Array.isArray(data.semesterData))      localStorage.setItem('semester_data',      JSON.stringify(data.semesterData));
-      if (Array.isArray(data.semesterMarks))     localStorage.setItem('semester_marks',     JSON.stringify(data.semesterMarks));
-      if (Array.isArray(data.backlogs))          localStorage.setItem('backlogs',           JSON.stringify(data.backlogs));
-      if (data.examCalendar != null)             localStorage.setItem('exam_calendar_v2',   JSON.stringify(data.examCalendar));
-      if (data.targetCgpa   != null)             localStorage.setItem('target_cgpa',        data.targetCgpa.toString());
-      if (data.isOnboarded  != null)             localStorage.setItem('onboarding_complete', data.isOnboarded.toString());
+      const setIfDifferent = (key: string, newValue: string) => {
+        if (localStorage.getItem(key) !== newValue) {
+          localStorage.setItem(key, newValue);
+          hasChanged = true;
+        }
+      };
+
+      if (data.profile)           setIfDifferent('student_profile',    JSON.stringify(data.profile));
+      if (Array.isArray(data.subjects))          setIfDifferent('subjects',           JSON.stringify(data.subjects));
+      if (Array.isArray(data.timetable))         setIfDifferent('timetable',          JSON.stringify(data.timetable));
+      if (Array.isArray(data.attendanceRecords)) setIfDifferent('attendance_records', JSON.stringify(data.attendanceRecords));
+      if (Array.isArray(data.semesterData))      setIfDifferent('semester_data',      JSON.stringify(data.semesterData));
+      if (Array.isArray(data.semesterMarks))     setIfDifferent('semester_marks',     JSON.stringify(data.semesterMarks));
+      if (Array.isArray(data.backlogs))          setIfDifferent('backlogs',           JSON.stringify(data.backlogs));
+      if (data.examCalendar != null)             setIfDifferent('exam_calendar_v2',   JSON.stringify(data.examCalendar));
+      if (data.targetCgpa   != null)             setIfDifferent('target_cgpa',        data.targetCgpa.toString());
+      if (data.isOnboarded  != null)             setIfDifferent('onboarding_complete', data.isOnboarded.toString());
 
       isSyncing = false;
+
+      if (hasChanged) {
+        window.dispatchEvent(new Event('storage'));
+      }
 
       return { ...data, isNewUser: false };
     } catch (error) {

@@ -18,6 +18,24 @@ export default function App() {
     };
 
     initApp();
+
+    // Background sync: periodic polling every 10s and on window focus/visibility change
+    const intervalId = setInterval(() => {
+      api.syncFromDB();
+    }, 10000);
+
+    const handleSync = () => {
+      api.syncFromDB();
+    };
+
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
+    };
   }, []);
 
   return (
