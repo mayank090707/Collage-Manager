@@ -136,7 +136,14 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-image: url('/app_bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #09090b;
+    color: var(--foreground);
+    min-height: 100vh;
   }
 
   html {

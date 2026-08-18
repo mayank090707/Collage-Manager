@@ -12,7 +12,7 @@ import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { computeCGPA, computeRequiredSGPA, computeAttendanceStats } from "../../lib/academicUtils";
+import { computeCGPA, computeRequiredSGPA, computeAttendanceStats, PERIOD_TIMINGS_MAP } from "../../lib/academicUtils";
 
 interface StudentProfile {
   fullName: string;
@@ -261,31 +261,22 @@ export function Dashboard() {
     }
 
     if (!timetableStr) {
-      // Default fallback schedule matching Photo 2 design when no timetable has been set up yet
+      // Default fallback schedule matching timetable timings when no timetable has been set up yet
       return {
         isWeekend: false,
         isNoClasses: false,
         dayName: todayName,
         slots: [
-          { subject: "Data Structures", timing: "09:00 AM – 10:00 AM", status: "In Progress" },
-          { subject: "Discrete Mathematics", timing: "10:15 AM – 11:15 AM", status: "Upcoming" },
-          { subject: "Digital Electronics", timing: "11:30 AM – 12:30 PM", status: "Upcoming" },
-          { subject: "Physics", timing: "01:30 PM – 02:30 PM", status: "Upcoming" },
-          { subject: "Environmental Science", timing: "02:45 PM – 03:45 PM", status: "Upcoming" },
+          { subject: "Data Structures", timing: "09:30 AM – 10:20 AM", status: "In Progress" },
+          { subject: "Discrete Mathematics", timing: "10:20 AM – 11:10 AM", status: "Upcoming" },
+          { subject: "Digital Electronics", timing: "11:10 AM – 12:00 PM", status: "Upcoming" },
+          { subject: "Physics", timing: "12:00 PM – 12:50 PM", status: "Upcoming" },
+          { subject: "Environmental Science", timing: "01:40 PM – 02:30 PM", status: "Upcoming" },
         ],
       };
     }
 
     const timetable: { day: string; subject: string; period: number }[] = JSON.parse(timetableStr);
-
-    const PERIOD_TIMINGS_MAP: Record<number, { display: string; startMin: number; endMin: number }> = {
-      1: { display: "09:00 AM – 10:00 AM", startMin: 9 * 60, endMin: 10 * 60 },
-      2: { display: "10:15 AM – 11:15 AM", startMin: 10 * 60 + 15, endMin: 11 * 60 + 15 },
-      3: { display: "11:30 AM – 12:30 PM", startMin: 11 * 60 + 30, endMin: 12 * 60 + 30 },
-      4: { display: "01:30 PM – 02:30 PM", startMin: 13 * 60 + 30, endMin: 14 * 60 + 30 },
-      5: { display: "02:45 PM – 03:45 PM", startMin: 14 * 60 + 45, endMin: 15 * 60 + 45 },
-      6: { display: "04:00 PM – 05:00 PM", startMin: 16 * 60, endMin: 17 * 60 },
-    };
 
     const currentMin = currentTime.getHours() * 60 + currentTime.getMinutes();
 

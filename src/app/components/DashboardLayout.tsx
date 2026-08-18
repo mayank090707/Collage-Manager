@@ -95,7 +95,7 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative flex flex-col">
+    <div className="min-h-screen bg-background/40 text-foreground relative flex flex-col">
       
       {/* Mobile/Tablet Backdrop overlay */}
       {isSidebarOpen && (

@@ -245,3 +245,29 @@ export function computeAttendanceStats(): OverallAttendanceResult {
   };
 }
 
+/**
+ * Standard period timing definitions used across Timetable and Dashboard.
+ */
+export const PERIOD_TIMINGS: Record<number, string> = {
+  1: "9:30 – 10:20 AM",
+  2: "10:20 – 11:10 AM",
+  3: "11:10 – 12:00 PM",
+  4: "12:00 – 12:50 PM",
+  5: "1:40 – 2:30 PM",
+  6: "2:30 – 3:20 PM",
+  7: "3:20 – 4:10 PM",
+  8: "4:10 – 5:00 PM",
+};
+
+export const PERIOD_TIMINGS_MAP: Record<number, { display: string; startMin: number; endMin: number }> = {
+  1: { display: "09:30 AM – 10:20 AM", startMin: 9 * 60 + 30, endMin: 10 * 60 + 20 },
+  2: { display: "10:20 AM – 11:10 AM", startMin: 10 * 60 + 20, endMin: 11 * 60 + 10 },
+  3: { display: "11:10 AM – 12:00 PM", startMin: 11 * 60 + 10, endMin: 12 * 60 },
+  4: { display: "12:00 PM – 12:50 PM", startMin: 12 * 60, endMin: 12 * 60 + 50 },
+  5: { display: "01:40 PM – 02:30 PM", startMin: 13 * 60 + 40, endMin: 14 * 60 + 30 },
+  6: { display: "02:30 PM – 03:20 PM", startMin: 14 * 60 + 30, endMin: 15 * 60 + 20 },
+  7: { display: "03:20 PM – 04:10 PM", startMin: 15 * 60 + 20, endMin: 16 * 60 + 10 },
+  8: { display: "04:10 PM – 05:00 PM", startMin: 16 * 60 + 10, endMin: 17 * 60 },
+};
+
+

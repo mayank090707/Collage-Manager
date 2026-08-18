@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { motion } from "motion/react";
 import { Clock, BookOpen, Edit2, Save, X, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { PERIOD_TIMINGS } from "../../lib/academicUtils";
 
 interface TimetableSlot {
   day: string;
@@ -14,16 +15,6 @@ interface TimetableSlot {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-
-// Period timing labels (50-min periods, lunch break after Period 4)
-const PERIOD_TIMINGS: Record<number, string> = {
-  1: "9:30 – 10:20 AM",
-  2: "10:20 – 11:10 AM",
-  3: "11:10 – 12:00 PM",
-  4: "12:00 – 12:50 PM",
-  5: "1:40 – 2:30 PM",
-  6: "2:30 – 3:20 PM",
-};
 
 const PERIOD_COLORS = [
   "from-[var(--brand-start)]/20 to-[var(--brand-start)]/20 border-[var(--brand-start)]/40 text-[var(--brand-start)]",

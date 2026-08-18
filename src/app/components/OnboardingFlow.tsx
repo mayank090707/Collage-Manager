@@ -184,7 +184,7 @@ export function OnboardingFlow() {
   ];
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+    <div className="min-h-screen bg-transparent relative overflow-hidden text-foreground">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
         <div className="absolute top-40 right-20 w-96 h-96 bg-[var(--brand-end)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob animation-delay-2000"></div>

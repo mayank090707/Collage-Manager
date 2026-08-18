@@ -194,7 +194,7 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="dark min-h-screen bg-[#0a0a0f] relative overflow-hidden flex items-center justify-center">
+    <div className="dark min-h-screen bg-transparent relative overflow-hidden flex items-center justify-center">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-[var(--brand-start)] rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-blob"></div>
