@@ -15,12 +15,32 @@ import {
   Download,
   Eye,
   Sparkles,
+  Bookmark,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Plus,
+  Trash2,
+  Calendar,
+  CheckSquare,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { logActivity } from "../../lib/activityTracker";
+import { toast } from "sonner";
 
 /* ─── Types ─────────────────────────────────────────────────── */
-type Section = "all" | "syllabus" | "important-topics" | "pyq" | "study-reference";
+export interface MySpaceTopic {
+  id: string;
+  subject: string;
+  unit: string;
+  title: string;
+  targetDate?: string;
+  targetTime?: string;
+  status: "none" | "completed" | "later" | "missed";
+  createdAt: number;
+}
+
+type Section = "all" | "syllabus" | "important-topics" | "pyq" | "study-reference" | "my-space";
 type Breadcrumb = { label: string; onClick: () => void };
 
 const YEARS = ["2023-24", "2024-25", "2025-26"] as const;
@@ -64,6 +84,15 @@ const SECTION_META = [
     border: "border-red-200 dark:border-red-500/30",
     desc: "YouTube reference links and video resources per unit",
   },
+  {
+    id: "my-space" as Section,
+    label: "My Space",
+    icon: Bookmark,
+    color: "text-amber-500 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-500/10",
+    border: "border-amber-200 dark:border-amber-500/30",
+    desc: "Personalized unit-wise study planner, target dates & checklist",
+  },
 ];
 
 /* ─── Default subjects per semester ─────────────────────────── */
@@ -102,6 +131,12 @@ export function StudyMaterial() {
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
 
+  // My Space topics & input state
+  const [mySpaceTopics, setMySpaceTopics] = useState<MySpaceTopic[]>([]);
+  const [newTopicTitle, setNewTopicTitle] = useState("");
+  const [newTopicDate, setNewTopicDate] = useState("");
+  const [newTopicTime, setNewTopicTime] = useState("");
+
   useEffect(() => {
     // Load current semester
     const profileSaved = localStorage.getItem("student_profile");
@@ -119,11 +154,63 @@ export function StudyMaterial() {
       const parsed = JSON.parse(subsSaved);
       if (parsed.length > 0) {
         setSubjects(parsed.map((s: any) => s.name));
-        return;
+      } else {
+        setSubjects(DEFAULT_SUBJECTS[sem] || DEFAULT_SUBJECTS["1"]);
+      }
+    } else {
+      setSubjects(DEFAULT_SUBJECTS[sem] || DEFAULT_SUBJECTS["1"]);
+    }
+
+    // Load My Space topics
+    const savedMySpace = localStorage.getItem("my_space_topics");
+    if (savedMySpace) {
+      try {
+        setMySpaceTopics(JSON.parse(savedMySpace));
+      } catch (e) {
+        console.error("Failed to parse my_space_topics", e);
       }
     }
-    setSubjects(DEFAULT_SUBJECTS[sem] || DEFAULT_SUBJECTS["1"]);
   }, []);
+
+  const saveMySpaceTopics = (updated: MySpaceTopic[]) => {
+    setMySpaceTopics(updated);
+    localStorage.setItem("my_space_topics", JSON.stringify(updated));
+    window.dispatchEvent(new Event("storage"));
+  };
+
+  const handleAddTopic = (subject: string, unit: string) => {
+    if (!newTopicTitle.trim()) {
+      toast.error("Please enter a topic title");
+      return;
+    }
+    const topic: MySpaceTopic = {
+      id: `topic-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      subject,
+      unit,
+      title: newTopicTitle.trim(),
+      targetDate: newTopicDate || undefined,
+      targetTime: newTopicTime || undefined,
+      status: "none",
+      createdAt: Date.now(),
+    };
+    const updated = [topic, ...mySpaceTopics];
+    saveMySpaceTopics(updated);
+    setNewTopicTitle("");
+    setNewTopicDate("");
+    setNewTopicTime("");
+    toast.success(`Topic added to ${unit}!`);
+  };
+
+  const handleToggleStatus = (id: string, status: "none" | "completed" | "later" | "missed") => {
+    const updated = mySpaceTopics.map((t) => (t.id === id ? { ...t, status } : t));
+    saveMySpaceTopics(updated);
+  };
+
+  const handleDeleteTopic = (id: string) => {
+    const updated = mySpaceTopics.filter((t) => t.id !== id);
+    saveMySpaceTopics(updated);
+    toast.success("Topic removed");
+  };
 
   // ── Reset drill-down when section changes ──────────────────
   const goToSection = (section: Section) => {
@@ -577,6 +664,425 @@ export function StudyMaterial() {
   );
 
   /* ══════════════════════════════════════════════════════════
+     VIEW: MY SPACE (Planner & Checklist)
+   ══════════════════════════════════════════════════════════ */
+  const renderMySpace = () => {
+    // 1. Subject Grid
+    if (!selectedSubject) {
+      return (
+        <motion.div
+          key="myspace-subjects"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground font-medium">Select a subject to view or manage your unit planner</p>
+            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 font-bold">
+              {mySpaceTopics.length} Total Topics Saved
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {subjects.map((sub, i) => {
+              const subTopicCount = mySpaceTopics.filter((t) => t.subject === sub).length;
+              const completedCount = mySpaceTopics.filter((t) => t.subject === sub && t.status === "completed").length;
+
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Card
+                    onClick={() => setSelectedSubject(sub)}
+                    className="cursor-pointer p-5 border border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/10 hover:shadow-md transition-all group flex items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2.5 rounded-xl border border-amber-300 dark:border-amber-500/30 bg-white/70 dark:bg-white/5 shadow-sm">
+                        <Bookmark className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-foreground text-sm truncate">{sub}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {subTopicCount > 0
+                            ? `${completedCount}/${subTopicCount} topics completed`
+                            : "No topics added yet"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {subTopicCount > 0 && (
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300">
+                          {subTopicCount}
+                        </span>
+                      )}
+                      <ChevronRight className="w-4 h-4 text-amber-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      );
+    }
+
+    // 2. Unit Grid
+    if (!selectedUnit) {
+      return (
+        <motion.div
+          key="myspace-units"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground font-medium">
+              Select a unit for <span className="font-bold text-foreground">{selectedSubject}</span>
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedUnit("All Units")}
+              className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10 text-xs font-bold gap-1.5"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              View All Units
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {UNITS.map((unit, i) => {
+              const unitTopics = mySpaceTopics.filter(
+                (t) => t.subject === selectedSubject && t.unit === unit
+              );
+              const doneTopics = unitTopics.filter((t) => t.status === "completed").length;
+
+              return (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
+                >
+                  <Card
+                    onClick={() => setSelectedUnit(unit)}
+                    className="cursor-pointer p-6 border-2 border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/10 hover:shadow-lg transition-all text-center group relative overflow-hidden"
+                  >
+                    <div className="text-3xl font-black mb-1 text-amber-500">{i + 1}</div>
+                    <div className="text-sm font-bold text-foreground mb-2">{unit}</div>
+
+                    <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground px-2 py-0.5 rounded-full bg-white/60 dark:bg-white/5 border border-border">
+                      {unitTopics.length === 0
+                        ? "0 topics"
+                        : `${doneTopics}/${unitTopics.length} done`}
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      );
+    }
+
+    // 3. Topic Editor & Checklist View
+    const isAllUnitsView = selectedUnit === "All Units";
+    const filteredTopics = mySpaceTopics.filter((t) => {
+      if (t.subject !== selectedSubject) return false;
+      if (isAllUnitsView) return true;
+      return t.unit === selectedUnit;
+    });
+
+    return (
+      <motion.div
+        key="myspace-editor"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="space-y-6"
+      >
+        {/* Header & Quick Unit Switcher */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                {selectedSubject}
+              </span>
+              <span className="text-xs text-muted-foreground">({filteredTopics.length} topics)</span>
+            </div>
+            <h3 className="text-xl font-bold text-foreground">
+              {isAllUnitsView ? "All Units Study Topics & Checklist" : `${selectedUnit} Study Topics & Checklist`}
+            </h3>
+          </div>
+
+          {/* Unit Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            {[...UNITS, "All Units"].map((u) => {
+              const active = selectedUnit === u;
+              return (
+                <button
+                  key={u}
+                  onClick={() => setSelectedUnit(u)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                    active
+                      ? "bg-amber-500 text-black shadow-md shadow-amber-500/20"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  {u}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Add Topic Input Form Card */}
+        <Card className="p-5 border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-background shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Add New Topic for {selectedSubject}</span>
+            </h4>
+            {!isAllUnitsView && (
+              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                Target Unit: {selectedUnit}
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            {/* Topic Title */}
+            <div className="sm:col-span-6">
+              <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                Topic Title *
+              </label>
+              <input
+                type="text"
+                value={newTopicTitle}
+                onChange={(e) => setNewTopicTitle(e.target.value)}
+                placeholder="e.g. Binary Search Trees & Rotations"
+                className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddTopic(selectedSubject, isAllUnitsView ? "Unit-1" : selectedUnit);
+                }}
+              />
+            </div>
+
+            {/* Target Unit (if All Units view) */}
+            {isAllUnitsView && (
+              <div className="sm:col-span-2">
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                  Select Unit *
+                </label>
+                <select
+                  id="target-unit-select"
+                  defaultValue="Unit-1"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  {UNITS.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Optional Target Date */}
+            <div className={isAllUnitsView ? "sm:col-span-2" : "sm:col-span-3"}>
+              <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                Date (Optional)
+              </label>
+              <input
+                type="date"
+                value={newTopicDate}
+                onChange={(e) => setNewTopicDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            {/* Optional Target Time */}
+            <div className={isAllUnitsView ? "sm:col-span-2" : "sm:col-span-3"}>
+              <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                Time (Optional)
+              </label>
+              <input
+                type="time"
+                value={newTopicTime}
+                onChange={(e) => setNewTopicTime(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button
+              onClick={() => {
+                let unitToAdd = isAllUnitsView ? "Unit-1" : selectedUnit;
+                if (isAllUnitsView) {
+                  const selectEl = document.getElementById("target-unit-select") as HTMLSelectElement;
+                  if (selectEl) unitToAdd = selectEl.value;
+                }
+                handleAddTopic(selectedSubject, unitToAdd);
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-md shadow-amber-500/20 text-xs px-5 py-2 rounded-xl flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Topic</span>
+            </Button>
+          </div>
+        </Card>
+
+        {/* Legend for Status Colors */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs p-3 rounded-xl bg-muted/40 border border-border">
+          <span className="font-bold text-foreground flex items-center gap-1.5">
+            <CheckSquare className="w-4 h-4 text-amber-500" />
+            Checklist Status Legend:
+          </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
+              <span className="w-3 h-3 rounded-full bg-emerald-500" /> Done (Green)
+            </span>
+            <span className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+              <span className="w-3 h-3 rounded-full bg-amber-500" /> Later / In-Progress (Yellow)
+            </span>
+            <span className="flex items-center gap-1.5 font-semibold text-red-600 dark:text-red-400">
+              <span className="w-3 h-3 rounded-full bg-red-500" /> Missed / Forgotten (Red)
+            </span>
+          </div>
+        </div>
+
+        {/* Display Final Screen: Topics List */}
+        {filteredTopics.length > 0 ? (
+          <div className="space-y-3">
+            {filteredTopics.map((topic) => {
+              // Determine card styling based on user status
+              let cardStyle = "bg-card border-border hover:border-amber-500/40";
+              let badgeStyle = "bg-muted text-muted-foreground border-border";
+              let statusLabel = "To Do";
+
+              if (topic.status === "completed") {
+                cardStyle = "bg-emerald-500/10 border-emerald-500/40 dark:bg-emerald-500/15";
+                badgeStyle = "bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border-emerald-500/40";
+                statusLabel = "Done";
+              } else if (topic.status === "later") {
+                cardStyle = "bg-amber-500/10 border-amber-500/40 dark:bg-amber-500/15";
+                badgeStyle = "bg-amber-500/20 text-amber-600 dark:text-amber-300 border-amber-500/40";
+                statusLabel = "Later";
+              } else if (topic.status === "missed") {
+                cardStyle = "bg-red-500/10 border-red-500/40 dark:bg-red-500/15";
+                badgeStyle = "bg-red-500/20 text-red-600 dark:text-red-300 border-red-500/40";
+                statusLabel = "Missed";
+              }
+
+              // Date/Time Display Logic
+              const hasDateOrTime = Boolean(topic.targetDate || topic.targetTime);
+              const dateTimeDisplay = hasDateOrTime
+                ? `${topic.targetDate || ""} ${topic.targetTime ? "at " + topic.targetTime : ""}`.trim()
+                : "-";
+
+              return (
+                <Card
+                  key={topic.id}
+                  className={`p-4 border transition-all duration-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 ${cardStyle}`}
+                >
+                  {/* Topic Title & Date Info */}
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${badgeStyle}`}>
+                        {statusLabel.toUpperCase()}
+                      </span>
+                      <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                        {topic.unit}
+                      </span>
+                    </div>
+
+                    <h4 className="text-base font-bold text-foreground leading-snug">
+                      {topic.title}
+                    </h4>
+
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Date & Time: <strong className="text-foreground">{dateTimeDisplay}</strong></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual Checklist Action Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap pt-2 md:pt-0 border-t md:border-t-0 border-border/50">
+                    <button
+                      onClick={() => handleToggleStatus(topic.id, topic.status === "completed" ? "none" : "completed")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
+                        topic.status === "completed"
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-500/20"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                      }`}
+                      title="Mark topic as Done (Green)"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Done</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleStatus(topic.id, topic.status === "later" ? "none" : "later")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
+                        topic.status === "later"
+                          ? "bg-amber-500 text-black border-amber-500 shadow-md shadow-amber-500/20"
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                      }`}
+                      title="Mark topic as Later / In-Progress (Yellow)"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Later</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleStatus(topic.id, topic.status === "missed" ? "none" : "missed")}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border ${
+                        topic.status === "missed"
+                          ? "bg-red-600 text-white border-red-600 shadow-md shadow-red-500/20"
+                          : "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30 hover:bg-red-500/20"
+                      }`}
+                      title="Mark topic as Forgotten / Missed (Red)"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>Missed</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteTopic(topic.id)}
+                      className="p-1.5 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors ml-1"
+                      title="Delete topic"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="p-10 border border-dashed border-border bg-card flex flex-col items-center justify-center gap-3 text-center">
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+              <Bookmark className="w-8 h-8 text-amber-500" />
+            </div>
+            <h4 className="text-base font-bold text-foreground">No Study Topics Added Yet</h4>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              Use the form above to add custom study topics, specify target dates and times, and track your progress with your custom checklist!
+            </p>
+          </Card>
+        )}
+      </motion.div>
+    );
+  };
+
+  /* ══════════════════════════════════════════════════════════
      SECTION TABS
    ══════════════════════════════════════════════════════════ */
   const renderSectionTabs = () => {
@@ -616,6 +1122,9 @@ export function StudyMaterial() {
 
     /* ── SYLLABUS ── */
     if (activeSection === "syllabus") return renderSyllabus();
+
+    /* ── MY SPACE ── */
+    if (activeSection === "my-space") return renderMySpace();
 
     /* ── IMPORTANT TOPICS ── */
     if (activeSection === "important-topics") {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
-import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut, History, AlertTriangle, X, ChevronRight, Quote, ArrowRight, Clock, ChevronDown } from "lucide-react";
+import { Bell, Calendar, TrendingUp, CheckCircle, LayoutGrid, PenLine, Target, AlertCircle, LogOut, History, AlertTriangle, X, ChevronRight, Quote, ArrowRight, Clock, ChevronDown, Bookmark } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Progress } from "./ui/progress";
 import { motion } from "motion/react";
@@ -22,11 +22,11 @@ interface StudentProfile {
 
 interface NotificationItem {
   id: string;
-  type: "attendance" | "exam";
+  type: "attendance" | "exam" | "my-space";
   title: string;
   message: string;
   link: string;
-  level: "warning" | "urgent";
+  level: "warning" | "urgent" | "info";
 }
 
 export function Dashboard() {
@@ -200,6 +200,35 @@ export function Dashboard() {
             }
           }
         });
+      }
+
+      // C) "My Space" Scheduled Topics Alert (Topics scheduled for today)
+      const mySpaceRaw = localStorage.getItem("my_space_topics");
+      if (mySpaceRaw) {
+        try {
+          const mySpaceList: any[] = JSON.parse(mySpaceRaw);
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          const day = String(now.getDate()).padStart(2, "0");
+          const todayFormatted = `${year}-${month}-${day}`;
+
+          mySpaceList.forEach((topic) => {
+            if (topic.targetDate === todayFormatted && topic.status !== "completed") {
+              const timeStr = topic.targetTime ? ` at ${topic.targetTime}` : "";
+              notifList.push({
+                id: `myspace-${topic.id}`,
+                type: "my-space",
+                title: `Topic Reminder — ${topic.subject}`,
+                message: `${topic.unit}: Cover topic "${topic.title}" today${timeStr}.`,
+                link: "/app/study-material",
+                level: "info"
+              });
+            }
+          });
+        } catch (e) {
+          console.error("Failed to calculate my_space notifications", e);
+        }
       }
 
       setNotifications(notifList);
@@ -447,12 +476,16 @@ export function Dashboard() {
                           className={`p-3 rounded-xl border text-xs flex items-start gap-3 transition-all ${
                             n.level === "urgent"
                               ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-300"
+                              : n.type === "my-space"
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300"
                               : "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-300"
                           }`}
                         >
                           <div className="mt-0.5 flex-shrink-0">
                             {n.type === "attendance" ? (
                               <AlertTriangle className="w-4 h-4 text-red-500" />
+                            ) : n.type === "my-space" ? (
+                              <Bookmark className="w-4 h-4 text-amber-500" />
                             ) : (
                               <Calendar className="w-4 h-4 text-purple-500" />
                             )}
