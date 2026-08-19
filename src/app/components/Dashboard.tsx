@@ -63,6 +63,7 @@ export function Dashboard() {
 
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [selectedOverviewSem, setSelectedOverviewSem] = useState<string>("current");
   const [stats, setStats] = useState<{
     attendance: number;
     cgpa: number;
@@ -406,14 +407,82 @@ export function Dashboard() {
   };
 
   const scheduleData = getTodaySchedule();
-  const attPercentage = attendanceDetails.totalConducted > 0 ? stats.attendance : 97.8;
-  const cgpaDisplay = stats.cgpa > 0 ? stats.cgpa.toFixed(2) : "9.59";
-  const classesHeld = attendanceDetails.totalConducted > 0 ? attendanceDetails.totalConducted : 92;
-  const classesAttended = attendanceDetails.totalConducted > 0 ? attendanceDetails.totalAttended : 90;
+
+  // Performance Overview calculations per selected option
+  const savedMarks = JSON.parse(localStorage.getItem("semester_marks") || "[]");
+  const currentSemNum = parseInt(profile?.currentSemester || "1", 10);
+
+  // Generate Overview Semester Selector options
+  const overviewSemOptions = [
+    { value: "1", label: "1st Semester" },
+    { value: "2", label: "2nd Semester" },
+  ];
+  for (let s = 3; s < currentSemNum; s++) {
+    const suffix = s === 3 ? "rd" : "th";
+    overviewSemOptions.push({ value: s.toString(), label: `${s}${suffix} Semester` });
+  }
+  overviewSemOptions.push({ value: "current", label: `This Semester (Sem ${currentSemNum})` });
+  overviewSemOptions.push({ value: "overall", label: "Overall" });
+
+  let overviewAttDisplay = "-";
+  let overviewAttPercentNum = 0;
+  let overviewClassesHeld = "-";
+  let overviewClassesAttended = "-";
+  let overviewGpaLabel = "CGPA";
+  let overviewGpaDisplay = "-";
+  let overviewTargetCgpaDisplay = "-";
+
+  if (selectedOverviewSem === "overall") {
+    overviewGpaLabel = "CGPA";
+    overviewGpaDisplay = stats.cgpa > 0 ? stats.cgpa.toFixed(2) : "-";
+    overviewTargetCgpaDisplay = stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "-";
+
+    if (attendanceDetails.totalConducted > 0) {
+      overviewAttPercentNum = stats.attendance;
+      overviewAttDisplay = `${stats.attendance.toFixed(1)}%`;
+      overviewClassesHeld = `${attendanceDetails.totalConducted}`;
+      overviewClassesAttended = `${attendanceDetails.totalAttended}`;
+    }
+  } else if (selectedOverviewSem === "current") {
+    overviewGpaLabel = "SGPA";
+    const currentSemMark = savedMarks.find((m: any) => m.semester === currentSemNum);
+    if (currentSemMark && currentSemMark.sgpa && currentSemMark.sgpa !== -1 && currentSemMark.sgpa > 0) {
+      overviewGpaDisplay = currentSemMark.sgpa.toFixed(2);
+    } else {
+      overviewGpaDisplay = "-";
+    }
+
+    overviewTargetCgpaDisplay = stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "-";
+
+    if (attendanceDetails.totalConducted > 0) {
+      overviewAttPercentNum = stats.attendance;
+      overviewAttDisplay = `${stats.attendance.toFixed(1)}%`;
+      overviewClassesHeld = `${attendanceDetails.totalConducted}`;
+      overviewClassesAttended = `${attendanceDetails.totalAttended}`;
+    }
+  } else {
+    // Specific past semester option (e.g. "1" or "2")
+    const semNum = parseInt(selectedOverviewSem, 10);
+    overviewGpaLabel = "SGPA";
+
+    const semMark = savedMarks.find((m: any) => m.semester === semNum);
+    if (semMark && semMark.sgpa && semMark.sgpa !== -1 && semMark.sgpa > 0) {
+      overviewGpaDisplay = semMark.sgpa.toFixed(2);
+    } else {
+      overviewGpaDisplay = "-";
+    }
+
+    // Records for past sem attendance & target CGPA not found -> "-"
+    overviewAttDisplay = "-";
+    overviewAttPercentNum = 0;
+    overviewClassesHeld = "-";
+    overviewClassesAttended = "-";
+    overviewTargetCgpaDisplay = "-";
+  }
 
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (circumference * Math.min(100, Math.max(0, attPercentage))) / 100;
+  const strokeDashoffset = circumference - (circumference * Math.min(100, Math.max(0, overviewAttPercentNum))) / 100;
 
   return (
     <div className="p-4 md:p-8 space-y-8">
@@ -877,17 +946,24 @@ export function Dashboard() {
               </h2>
             </div>
 
-            {/* Semester Dropdown Selector matching Photo 3 */}
+            {/* Semester Dropdown Selector */}
             <div className="relative">
-              <select className="appearance-none bg-[#1c1c26] border border-white/10 hover:border-amber-500/40 text-amber-400 font-bold text-xs sm:text-sm py-2 pl-4 pr-9 rounded-xl focus:outline-none cursor-pointer transition-all">
-                <option>This Semester</option>
-                <option>Overall</option>
+              <select
+                value={selectedOverviewSem}
+                onChange={(e) => setSelectedOverviewSem(e.target.value)}
+                className="appearance-none bg-[#1c1c26] border border-white/10 hover:border-amber-500/40 text-amber-400 font-bold text-xs sm:text-sm py-2 pl-4 pr-9 rounded-xl focus:outline-none cursor-pointer transition-all"
+              >
+                {overviewSemOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="w-4 h-4 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
-          {/* Upper Section: Attendance Donut Ring + CGPA Block */}
+          {/* Upper Section: Attendance Donut Ring + SGPA/CGPA Block */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
             {/* Attendance Circular Donut Ring Gauge */}
             <div className="bg-[#181822] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden">
@@ -916,7 +992,7 @@ export function Dashboard() {
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                   <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                    {attPercentage.toFixed(1)}%
+                    {overviewAttDisplay}
                   </span>
                   <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                     Attendance
@@ -925,13 +1001,13 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* CGPA Display Box */}
+            {/* SGPA / CGPA Display Box */}
             <div className="bg-[#181822] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[160px] text-center">
               <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-                {cgpaDisplay}
+                {overviewGpaDisplay}
               </span>
               <span className="text-xs sm:text-sm font-bold text-gray-400 uppercase tracking-wider mt-2">
-                CGPA
+                {overviewGpaLabel}
               </span>
             </div>
           </div>
@@ -943,7 +1019,7 @@ export function Dashboard() {
                 Classes Held
               </p>
               <p className="text-2xl sm:text-3xl font-black text-white mt-2">
-                {classesHeld}
+                {overviewClassesHeld}
               </p>
             </div>
 
@@ -952,7 +1028,7 @@ export function Dashboard() {
                 Classes Attended
               </p>
               <p className="text-2xl sm:text-3xl font-black text-emerald-400 mt-2">
-                {classesAttended}
+                {overviewClassesAttended}
               </p>
             </div>
 
@@ -961,7 +1037,7 @@ export function Dashboard() {
                 Target CGPA
               </p>
               <p className="text-2xl sm:text-3xl font-black text-amber-400 mt-2">
-                {stats.targetCgpa > 0 ? stats.targetCgpa.toFixed(2) : "Not Set"}
+                {overviewTargetCgpaDisplay}
               </p>
             </div>
           </div>
