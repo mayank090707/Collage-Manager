@@ -261,4 +261,37 @@ export const api = {
     };
     return maps[key] || key;
   },
+
+  // ── Campus AI ────────────────────────────────────────────────────────────
+  async askCampusAI(message: string, history: Array<{ role: 'user' | 'assistant'; content: string }> = []) {
+    const userId = getUserId();
+    if (!userId) {
+      return {
+        message: "Please log in to ask Campus AI questions about your academic account.",
+        intent: "UNAUTHENTICATED",
+        actions: [],
+      };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, message, history }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.warn('[Campus AI] Chat API request failed:', error);
+      return {
+        message: "Sorry, I'm having trouble connecting right now. Please try again.",
+        intent: "ERROR",
+        actions: [],
+      };
+    }
+  },
 };

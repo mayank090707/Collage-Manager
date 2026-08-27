@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
+import { CampusAIChat } from "./CampusAIChat";
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -211,6 +212,9 @@ export function DashboardLayout() {
           </div>
         </main>
       </div>
+
+      {/* Campus AI Assistant Widget */}
+      <CampusAIChat />
     </div>
   );
 }
