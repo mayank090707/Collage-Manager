@@ -39,7 +39,7 @@ interface DayEvent {
   id: string;
   date: string; // "YYYY-MM-DD"
   label: string;
-  examType: ExamType | "custom";
+  examType: ExamType | "holiday" | "custom";
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -162,7 +162,7 @@ export function ExamCalendar() {
 
   // Day event state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [dayForm, setDayForm] = useState({ label: "", examType: "custom" as ExamType | "custom" });
+  const [dayForm, setDayForm] = useState<{ label: string; examType: ExamType | "holiday" | "custom" }>({ label: "", examType: "custom" });
   const [editingEvent, setEditingEvent] = useState<DayEvent | null>(null);
 
   // Calendar scroll
@@ -608,13 +608,13 @@ export function ExamCalendar() {
           </span>
         ))}
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />Custom Event
+          <span className="w-2.5 h-2.5 rounded-sm bg-purple-500 border border-purple-400" />🎉 Holiday (Purple)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/50" />Weekend (Sat/Sun)
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/80 border border-red-400" />Weekend (Red)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm bg-rose-500/80 border border-rose-400" />🎉 Festival Holiday
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />Other Event
         </span>
         <span className="ml-auto text-gray-500">Click any date to add an event or note</span>
       </div>
@@ -675,8 +675,15 @@ export function ExamCalendar() {
             <div className="p-5">
               {/* Weekday headers */}
               <div className="grid grid-cols-7 mb-2">
-                {WEEKDAY_LABELS.map((d) => (
-                  <div key={d} className="text-center text-xs font-semibold text-gray-600 py-2 tracking-wider uppercase">{d}</div>
+                {WEEKDAY_LABELS.map((d, i) => (
+                  <div
+                    key={d}
+                    className={`text-center text-xs font-semibold py-2 tracking-wider uppercase ${
+                      i === 0 || i === 6 ? "text-red-400 font-bold" : "text-gray-600"
+                    }`}
+                  >
+                    {d}
+                  </div>
                 ))}
               </div>
 
@@ -691,35 +698,32 @@ export function ExamCalendar() {
                   const isCurrentDay = isToday(day);
                   const meta = examType ? EXAM_META[examType] : null;
                   const weekend = isWeekend(day);
-                  const holiday = getNationalHoliday(dateStr);
-                  const isFestival = !!holiday;
-                  const isRedDay = weekend || isFestival;
+                  const nationalHoliday = getNationalHoliday(dateStr);
+                  const customHoliday = events.find(
+                    (e) => e.examType === "holiday" || e.label.toLowerCase().includes("holiday")
+                  );
+                  const holidayName = nationalHoliday || (customHoliday ? customHoliday.label : null);
+                  const isHoliday = !!holidayName;
+                  const isRedDay = weekend || isHoliday;
 
                   // Determine cell background class
                   let cellClass = "";
+                  let dateNumClass = "text-gray-300";
+
                   if (examType && meta) {
                     cellClass = `${meta.bg} border ${meta.border} ${meta.glow}`;
+                    dateNumClass = meta.color;
+                  } else if (isHoliday) {
+                    cellClass = "bg-purple-500/20 border border-purple-500/40 hover:bg-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.25)]";
+                    dateNumClass = "text-purple-300 font-black";
+                  } else if (weekend) {
+                    cellClass = "bg-red-500/10 border border-red-500/25 hover:bg-red-500/20";
+                    dateNumClass = "text-red-400 font-bold";
                   } else if (isCurrentDay) {
                     cellClass = "bg-[var(--brand-start)]/5 border border-[var(--brand-start)]/30";
-                  } else if (isFestival) {
-                    // Distinct Light Rose Warm Festival Color
-                    cellClass = "bg-rose-500/20 border border-rose-500/40 hover:bg-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.25)]";
-                  } else if (weekend) {
-                    cellClass = "bg-red-500/10 border border-red-500/25 hover:bg-red-500/15";
+                    dateNumClass = "bg-[var(--brand-start)] text-[#0a0a0f]";
                   } else {
                     cellClass = "border border-transparent hover:bg-gray-800/30 hover:border-gray-700/50";
-                  }
-
-                  // Date number color
-                  let dateNumClass = "text-gray-300";
-                  if (isCurrentDay) {
-                    dateNumClass = "bg-[var(--brand-start)] text-[#0a0a0f]";
-                  } else if (examType && meta) {
-                    dateNumClass = meta.color;
-                  } else if (isFestival) {
-                    dateNumClass = "text-rose-300 font-black";
-                  } else if (weekend) {
-                    dateNumClass = "text-red-400";
                   }
 
                   return (
@@ -732,28 +736,31 @@ export function ExamCalendar() {
                     >
                       {/* Date number */}
                       <span
-                        className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-0.5 ${dateNumClass}`}
+                        className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full mb-0.5 ${
+                          isCurrentDay && !examType ? "bg-[var(--brand-start)] text-[#0a0a0f]" : dateNumClass
+                        }`}
                       >
                         {format(day, "d")}
                       </span>
 
                       {/* Festival / Holiday badge */}
-                      {holiday && (
-                        <span className="text-[9px] font-bold text-rose-300 bg-rose-500/25 border border-rose-500/40 rounded px-1.5 py-0.5 leading-tight text-center mt-0.5 max-w-full truncate shadow-xs">
-                          🎉 {holiday}
+                      {holidayName && (
+                        <span className="text-[9px] font-bold text-purple-300 bg-purple-500/25 border border-purple-500/40 rounded px-1.5 py-0.5 leading-tight text-center mt-0.5 max-w-full truncate shadow-xs">
+                          🎉 {holidayName}
                         </span>
                       )}
 
-                      {/* Exam type label (non-festival days) */}
-                      {examType && meta && !holiday && (
+                      {/* Exam type label (non-holiday days) */}
+                      {examType && meta && !holidayName && (
                         <span className={`text-[9px] font-semibold ${meta.color} leading-tight text-center px-1`}>
                           {examType === "midsem1" ? "MID-1" : examType === "midsem2" ? "MID-2" : "END"}
                         </span>
                       )}
 
                       {/* Day events */}
-                      {events.slice(0, 2).map((ev, i) => {
-                        const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
+                      {events.filter((ev) => ev !== customHoliday).slice(0, 2).map((ev) => {
+                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" ? EXAM_META[ev.examType as ExamType] : null;
+                        const isEvHoliday = ev.examType === "holiday";
                         return (
                           <div
                             key={ev.id}
@@ -761,6 +768,8 @@ export function ExamCalendar() {
                             className={`w-full mt-0.5 px-1 py-0.5 rounded text-[9px] font-medium truncate leading-tight ${
                               evMeta
                                 ? `${evMeta.bg} ${evMeta.color}`
+                                : isEvHoliday
+                                ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
                                 : "bg-emerald-500/20 text-emerald-300"
                             }`}
                           >
@@ -972,16 +981,22 @@ export function ExamCalendar() {
                   { value: "midsem1", label: "Mid-1" },
                   { value: "midsem2", label: "Mid-2" },
                   { value: "endsem",  label: "End Sem" },
+                  { value: "holiday", label: "🎉 Holiday" },
                   { value: "custom",  label: "Other" },
                 ].map(({ value, label }) => {
-                  const m = value !== "custom" ? EXAM_META[value as ExamType] : null;
+                  const m = value !== "custom" && value !== "holiday" ? EXAM_META[value as ExamType] : null;
+                  const isHolidayCat = value === "holiday";
                   return (
                     <button
                       key={value}
-                      onClick={() => setDayForm({ ...dayForm, examType: value as ExamType | "custom" })}
+                      onClick={() => setDayForm({ ...dayForm, examType: value as ExamType | "holiday" | "custom" })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         dayForm.examType === value
-                          ? m ? `${m.bg} ${m.border} ${m.color}` : "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                          ? m
+                            ? `${m.bg} ${m.border} ${m.color}`
+                            : isHolidayCat
+                            ? "bg-purple-500/25 border-purple-500/50 text-purple-300"
+                            : "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
                           : "border-gray-700 text-gray-400 hover:border-gray-500"
                       }`}
                     >

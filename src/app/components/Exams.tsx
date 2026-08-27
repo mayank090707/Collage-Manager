@@ -26,7 +26,7 @@ interface DayEvent {
   id: string;
   date: string;
   label: string;
-  examType: ExamType | "custom";
+  examType: ExamType | "holiday" | "custom";
 }
 
 interface SemesterConfig {
@@ -61,6 +61,49 @@ const EXAM_META: Record<ExamType, { label: string; color: string; bg: string; bo
 };
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// ── Indian National Holidays ──────────────────────────────────────────────────
+const FIXED_HOLIDAYS: Record<string, string> = {
+  "01-26": "Republic Day",
+  "08-15": "Independence Day",
+  "10-02": "Gandhi Jayanti",
+  "12-25": "Christmas Day",
+  "11-01": "Diwali (Approx.)",
+};
+
+const SPECIFIC_HOLIDAYS: Record<string, string> = {
+  "2024-03-25": "Holi",
+  "2024-11-01": "Diwali",
+  "2024-04-14": "Ambedkar Jayanti",
+  "2024-08-26": "Janmashtami",
+  "2024-10-12": "Dussehra",
+  "2024-11-15": "Guru Nanak Jayanti",
+  "2025-03-14": "Holi",
+  "2025-10-20": "Diwali",
+  "2025-04-14": "Ambedkar Jayanti",
+  "2025-08-16": "Janmashtami",
+  "2025-10-02": "Gandhi Jayanti / Dussehra",
+  "2025-11-05": "Guru Nanak Jayanti",
+  "2025-03-31": "Eid",
+  "2026-03-03": "Holika Dahan",
+  "2026-03-04": "Holi",
+  "2026-04-14": "Ambedkar Jayanti",
+  "2026-09-04": "Janmashtami",
+  "2026-10-20": "Dussehra",
+  "2026-11-08": "Diwali",
+  "2026-11-24": "Guru Nanak Jayanti",
+};
+
+function getNationalHoliday(dateStr: string): string | null {
+  if (SPECIFIC_HOLIDAYS[dateStr]) return SPECIFIC_HOLIDAYS[dateStr];
+  const monthDay = dateStr.slice(5);
+  return FIXED_HOLIDAYS[monthDay] || null;
+}
+
+function isWeekend(day: Date): boolean {
+  const dow = day.getDay();
+  return dow === 0 || dow === 6; // 0=Sunday, 6=Saturday
+}
 
 function urgencyStyle(days: number) {
   if (days <= 1) return { card: "from-red-500/25 to-rose-600/25 border-red-500/50", text: "text-red-400", dot: "bg-red-500" };
@@ -252,8 +295,15 @@ export function Exams() {
             <div className="p-4">
               {/* Weekday headers */}
               <div className="grid grid-cols-7 mb-1">
-                {WEEKDAYS.map((d) => (
-                  <div key={d} className="text-center text-xs font-semibold text-gray-600 py-2 uppercase tracking-wider">{d}</div>
+                {WEEKDAYS.map((d, i) => (
+                  <div
+                    key={d}
+                    className={`text-center text-xs font-semibold py-2 uppercase tracking-wider ${
+                      i === 0 || i === 6 ? "text-red-400 font-bold" : "text-gray-600"
+                    }`}
+                  >
+                    {d}
+                  </div>
                 ))}
               </div>
 
@@ -267,18 +317,40 @@ export function Exams() {
                   const events = getEventsOnDate(dateStr);
                   const isCurrent = isToday(day);
                   const meta = examType ? EXAM_META[examType] : null;
+                  const weekend = isWeekend(day);
+                  
+                  const nationalHoliday = getNationalHoliday(dateStr);
+                  const customHoliday = events.find(
+                    (e) => e.examType === "holiday" || e.label.toLowerCase().includes("holiday")
+                  );
+                  const holidayName = nationalHoliday || (customHoliday ? customHoliday.label : null);
+                  const isHoliday = !!holidayName;
+
+                  // Determine cell container styling
+                  let cellClass = "";
+                  let dateNumClass = "text-gray-400";
+
+                  if (examType && meta) {
+                    cellClass = `${meta.bg} ${meta.border} shadow-sm`;
+                    dateNumClass = meta.color;
+                  } else if (isHoliday) {
+                    cellClass = "bg-purple-500/20 border border-purple-500/40 shadow-[0_0_10px_rgba(168,85,247,0.25)] hover:bg-purple-500/30";
+                    dateNumClass = "text-purple-300 font-extrabold";
+                  } else if (weekend) {
+                    cellClass = "bg-red-500/10 border border-red-500/25 hover:bg-red-500/20";
+                    dateNumClass = "text-red-400 font-bold";
+                  } else if (isCurrent) {
+                    cellClass = "bg-[var(--brand-start)]/8 border-[var(--brand-start)]/30";
+                    dateNumClass = "bg-[var(--brand-start)] text-[#0a0a0f]";
+                  } else {
+                    cellClass = "border-transparent hover:bg-gray-800/20";
+                  }
 
                   return (
                     <motion.div
                       key={dateStr}
                       whileHover={{ scale: 1.04 }}
-                      className={`relative rounded-xl flex flex-col items-center pt-1.5 pb-1 min-h-[64px] border transition-all cursor-default ${
-                        examType && meta
-                          ? `${meta.bg} ${meta.border} shadow-sm`
-                          : isCurrent
-                          ? "bg-[var(--brand-start)]/8 border-[var(--brand-start)]/30"
-                          : "border-transparent hover:bg-gray-800/20"
-                      }`}
+                      className={`relative rounded-xl flex flex-col items-center pt-1.5 pb-1 min-h-[64px] border transition-all cursor-default ${cellClass}`}
                     >
                       {/* Today ring */}
                       {isCurrent && (
@@ -286,23 +358,28 @@ export function Exams() {
                       )}
 
                       <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${
-                        isCurrent ? "bg-[var(--brand-start)] text-[#0a0a0f]"
-                          : examType && meta ? meta.color
-                          : "text-gray-400"
+                        isCurrent && !examType ? "bg-[var(--brand-start)] text-[#0a0a0f]" : dateNumClass
                       }`}>
                         {format(day, "d")}
                       </span>
 
-                      {/* Exam band label */}
-                      {examType && meta && (
+                      {/* Holiday Badge (Purple) */}
+                      {holidayName && (
+                        <span className="text-[8px] font-bold text-purple-300 bg-purple-500/30 border border-purple-500/50 rounded px-1 py-0.5 leading-tight text-center mt-0.5 max-w-full truncate shadow-xs">
+                          🎉 {holidayName}
+                        </span>
+                      )}
+
+                      {/* Exam band label (if not holiday) */}
+                      {examType && meta && !holidayName && (
                         <span className={`text-[8px] font-bold ${meta.color} mt-0.5 leading-none`}>
                           {examType === "midsem1" ? "MID-1" : examType === "midsem2" ? "MID-2" : "END"}
                         </span>
                       )}
 
                       {/* Event chips */}
-                      {events.slice(0, 2).map((ev) => {
-                        const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
+                      {events.filter((ev) => ev !== customHoliday).slice(0, 2).map((ev) => {
+                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" ? EXAM_META[ev.examType as ExamType] : null;
                         return (
                           <div
                             key={ev.id}
@@ -330,6 +407,12 @@ export function Exams() {
                   <span className={`w-2 h-2 rounded-sm ${m.dot}`} />{m.label}
                 </span>
               ))}
+              <span className="flex items-center gap-1.5 text-xs text-purple-300">
+                <span className="w-2 h-2 rounded-sm bg-purple-500 border border-purple-400" />Holiday (Purple)
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-red-400">
+                <span className="w-2 h-2 rounded-sm bg-red-500 border border-red-400" />Weekend (Red)
+              </span>
               <span className="flex items-center gap-1.5 text-xs text-gray-400">
                 <span className="w-2 h-2 rounded-sm bg-emerald-400" />Other Event
               </span>
