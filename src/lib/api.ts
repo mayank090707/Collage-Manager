@@ -263,7 +263,7 @@ export const api = {
   },
 
   // ── Campus AI ────────────────────────────────────────────────────────────
-  async askCampusAI(message: string, history: Array<{ role: 'user' | 'assistant'; content: string }> = []) {
+  async askCampusAI(message: string, history: Array<{ role: 'user' | 'assistant'; content: string }> = [], context?: any) {
     const userId = getUserId();
     if (!userId) {
       return {
@@ -277,7 +277,7 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, message, history }),
+        body: JSON.stringify({ userId, message, history, context }),
       });
 
       if (!response.ok) {

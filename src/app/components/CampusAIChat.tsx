@@ -36,6 +36,7 @@ export function CampusAIChat() {
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const aiContextRef = useRef<any>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,7 +69,12 @@ export function CampusAIChat() {
       .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await api.askCampusAI(query, historyPayload);
+      const res = await api.askCampusAI(query, historyPayload, aiContextRef.current);
+
+      if (res.context) {
+        aiContextRef.current = res.context;
+      }
+
       const assistantMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -100,6 +106,7 @@ export function CampusAIChat() {
   };
 
   const handleClearHistory = () => {
+    aiContextRef.current = null;
     setMessages([
       {
         id: "welcome-1",
