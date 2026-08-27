@@ -17,6 +17,7 @@ import {
 } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { ExamLiveCountdownCard, getUnifiedUpcomingTargets } from "./Exams";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -500,6 +501,7 @@ export function ExamCalendar() {
 
   // ─── CALENDAR VIEW ──────────────────────────────────────────────────────────
   const currentMonthData = semesterMonths[viewMonth] ?? semesterMonths[0];
+  const unifiedUpcomingTargets = semConfig ? getUnifiedUpcomingTargets({ semConfig, examPeriods, dayEvents }) : [];
 
   const getCalendarDays = (monthDate: Date) => {
     const start = startOfMonth(monthDate);
@@ -796,58 +798,17 @@ export function ExamCalendar() {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Upcoming exam events countdown ── */}
-      {upcomingExamEvents.length > 0 && (
-        <div className="space-y-3">
+      {/* ── Upcoming exam events live real-time countdown ── */}
+      {unifiedUpcomingTargets.length > 0 && (
+        <div className="space-y-4 pt-2">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-400" />
-            Exam Day Countdown
+            Live Real-Time Countdown to Exams
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {upcomingExamEvents.map((ev, i) => {
-              const daysLeft = differenceInDays(parseISO(ev.date), new Date());
-              const meta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
-              const urgentBg =
-                daysLeft <= 1 ? "from-red-500/25 to-rose-500/25 border-red-500/50" :
-                daysLeft <= 3 ? "from-orange-500/25 to-amber-500/25 border-orange-500/50" :
-                daysLeft <= 7 ? "from-yellow-500/20 to-amber-400/20 border-yellow-500/40" :
-                meta ? `${meta.bg} ${meta.border}` : "from-emerald-500/15 to-teal-500/15 border-emerald-500/30";
-              const daysText = daysLeft === 0 ? "Today" : daysLeft === 1 ? "Tomorrow" : `${daysLeft} days`;
-              const daysColor = daysLeft <= 1 ? "text-red-400" : daysLeft <= 3 ? "text-orange-400" : daysLeft <= 7 ? "text-yellow-400" : meta ? meta.color : "text-emerald-400";
-
-              return (
-                <motion.div
-                  key={ev.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Card className={`relative overflow-hidden bg-gradient-to-br ${urgentBg} border p-4`}>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      {meta && <span className={`text-[10px] font-bold ${meta.color} bg-black/20 px-2 py-0.5 rounded-full`}>{meta.label}</span>}
-                      {daysLeft <= 3 && <Flame className="w-4 h-4 text-orange-400 flex-shrink-0" />}
-                    </div>
-                    <p className="text-white font-semibold text-sm mb-1 leading-tight">{ev.label}</p>
-                    <p className="text-gray-400 text-xs mb-3 flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3" />
-                      {format(parseISO(ev.date), "EEE, MMM d yyyy")}
-                    </p>
-                    <div className={`text-3xl font-black ${daysColor} leading-none`}>
-                      {daysLeft > 0 ? daysLeft : "0"}
-                      <span className="text-sm font-semibold ml-1">{daysLeft === 1 ? "day" : "days"}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{daysText}</p>
-                    {/* Bottom urgency bar */}
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
-                      <div
-                        className={`h-full transition-all ${daysLeft <= 1 ? "bg-red-500" : daysLeft <= 3 ? "bg-orange-400" : daysLeft <= 7 ? "bg-yellow-400" : meta ? meta.dot : "bg-emerald-400"}`}
-                        style={{ width: `${Math.max(4, Math.min(100, 100 - (daysLeft / 60) * 100))}%` }}
-                      />
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
+          <div className="grid md:grid-cols-2 gap-4">
+            {unifiedUpcomingTargets.map((target) => (
+              <ExamLiveCountdownCard key={target.id} target={target} />
+            ))}
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import {
-  CalendarDays, Clock, Flame, ChevronLeft, ChevronRight, AlertTriangle, BookOpen, Settings2
+  CalendarDays, Clock, Flame, ChevronLeft, ChevronRight, AlertTriangle, BookOpen, Settings2, Timer
 } from "lucide-react";
 import {
   format, parseISO, differenceInDays, isPast,
@@ -112,6 +112,199 @@ function urgencyStyle(days: number) {
   return { card: "from-[var(--brand-start)]/15 to-[var(--brand-end)]/15 border-[var(--brand-start)]/30", text: "text-[var(--brand-start)]", dot: "bg-[var(--brand-end)]" };
 }
 
+// ── Countdown Timer Types & Helper Components ─────────────────────────────────
+interface UpcomingExamTarget {
+  id: string;
+  label: string;
+  subtitle?: string;
+  dateStr: string; // ISO date string YYYY-MM-DD
+  endDateStr?: string | null;
+  examType: ExamType | "holiday" | "custom";
+  isPeriod?: boolean;
+}
+
+function calculateTimeRemaining(targetDateStr: string, endDateStr?: string | null) {
+  try {
+    const now = new Date();
+    const targetDate = parseISO(targetDateStr);
+    const diffMs = targetDate.getTime() - now.getTime();
+
+    if (diffMs <= 0) {
+      if (endDateStr) {
+        const endDate = parseISO(endDateStr);
+        endDate.setHours(23, 59, 59, 999);
+        if (now.getTime() <= endDate.getTime()) {
+          return { months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isOngoing: true, isEnded: false };
+        }
+      }
+      return { months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isOngoing: false, isEnded: true };
+    }
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const seconds = totalSeconds % 60;
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const minutes = totalMinutes % 60;
+    const totalHours = Math.floor(totalMinutes / 60);
+    const hours = totalHours % 24;
+    const totalDays = Math.floor(totalHours / 24);
+    const months = Math.floor(totalDays / 30);
+    const days = totalDays % 30;
+
+    return { months, days, hours, minutes, seconds, isOngoing: false, isEnded: false };
+  } catch {
+    return { months: 0, days: 0, hours: 0, minutes: 0, seconds: 0, isOngoing: false, isEnded: true };
+  }
+}
+
+export function ExamLiveCountdownCard({ target }: { target: UpcomingExamTarget }) {
+  const [timeLeft, setTimeLeft] = useState(() =>
+    calculateTimeRemaining(target.dateStr, target.endDateStr)
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeRemaining(target.dateStr, target.endDateStr));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [target.dateStr, target.endDateStr]);
+
+  const meta = target.examType !== "custom" && target.examType !== "holiday" ? EXAM_META[target.examType as ExamType] : null;
+
+  if (timeLeft.isEnded) {
+    return null;
+  }
+
+  if (timeLeft.isOngoing) {
+    return (
+      <Card className="relative overflow-hidden bg-gradient-to-br from-red-500/20 via-[#111118] to-rose-500/10 border border-red-500/40 p-5 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="flex h-2.5 w-2.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+          </span>
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-red-400">🚨 Exam In Progress</span>
+        </div>
+        <h3 className="text-lg font-bold text-white mb-1">{target.label}</h3>
+        <p className="text-xs text-gray-400">{target.subtitle || "Currently active exam period."}</p>
+      </Card>
+    );
+  }
+
+  const { months, days, hours, minutes, seconds } = timeLeft;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const brandColor = meta ? meta.color : "text-amber-400";
+  const borderColor = meta ? meta.border : "border-amber-500/40";
+  const glowColor = meta ? meta.bg : "bg-amber-500/10";
+
+  return (
+    <Card className={`relative overflow-hidden bg-[#111118]/90 backdrop-blur-xl border ${borderColor} p-5 rounded-2xl shadow-xl`}>
+      <div className={`absolute -top-12 -right-12 w-36 h-36 ${glowColor} rounded-full blur-3xl pointer-events-none`} />
+
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2">
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+          </span>
+          <span className={`text-[11px] font-extrabold uppercase tracking-widest ${brandColor}`}>
+            Next Exam Countdown
+          </span>
+        </div>
+        {meta && (
+          <span className={`text-[10px] font-bold ${meta.pill} border rounded-full px-2 py-0.5`}>
+            {meta.label}
+          </span>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-white leading-snug flex items-center gap-2">
+          <Timer className={`w-5 h-5 ${brandColor}`} />
+          {target.label}
+        </h3>
+        <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-1">
+          <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
+          Starts on {format(parseISO(target.dateStr), "EEEE, MMM d, yyyy")}
+        </p>
+      </div>
+
+      {/* Countdown Grid */}
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+        <div className="flex flex-col items-center bg-[#0a0a0f] border border-gray-800/80 rounded-xl py-2 px-1 text-center">
+          <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-white">{pad(months)}</span>
+          <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-amber-400/90 mt-1">Months</span>
+        </div>
+        <div className="flex flex-col items-center bg-[#0a0a0f] border border-gray-800/80 rounded-xl py-2 px-1 text-center">
+          <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-white">{pad(days)}</span>
+          <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-amber-400/90 mt-1">Days</span>
+        </div>
+        <div className="flex flex-col items-center bg-[#0a0a0f] border border-gray-800/80 rounded-xl py-2 px-1 text-center">
+          <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-white">{pad(hours)}</span>
+          <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-amber-400/90 mt-1">Hours</span>
+        </div>
+        <div className="flex flex-col items-center bg-[#0a0a0f] border border-gray-800/80 rounded-xl py-2 px-1 text-center">
+          <span className="text-xl sm:text-2xl font-black font-mono tracking-tight text-white">{pad(minutes)}</span>
+          <span className="text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider text-amber-400/90 mt-1">Mins</span>
+        </div>
+        <div className={`flex flex-col items-center bg-[#0a0a0f] border ${borderColor} rounded-xl py-2 px-1 text-center relative shadow-sm`}>
+          <span className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${brandColor} animate-pulse`}>{pad(seconds)}</span>
+          <span className={`text-[8px] sm:text-[9px] font-extrabold uppercase tracking-wider ${brandColor} mt-1`}>Secs</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+export function getUnifiedUpcomingTargets(data: CalendarState): UpcomingExamTarget[] {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const targets: UpcomingExamTarget[] = [];
+
+  // 1. Specific day events
+  for (const ev of data.dayEvents) {
+    if (ev.examType === "holiday" || ev.examType === "custom") continue;
+    if (ev.date >= todayStr) {
+      targets.push({
+        id: ev.id,
+        label: ev.label,
+        subtitle: (ev.examType as string) !== "custom" && (ev.examType as string) !== "holiday" ? EXAM_META[ev.examType as ExamType]?.label : undefined,
+        dateStr: ev.date,
+        examType: ev.examType,
+        isPeriod: false,
+      });
+    }
+  }
+
+  // 2. Exam periods (Mid Sem 1, Mid Sem 2, End Sem)
+  for (const p of data.examPeriods) {
+    if (!p.startDate) continue;
+    const isFuture = p.startDate >= todayStr;
+    const isOngoing = p.endDate ? p.startDate <= todayStr && p.endDate >= todayStr : false;
+
+    if (isFuture || isOngoing) {
+      const meta = EXAM_META[p.type];
+      targets.push({
+        id: `period-${p.type}`,
+        label: `${meta.label}${isOngoing ? " (In Progress)" : " Start"}`,
+        subtitle: p.endDate ? `${format(parseISO(p.startDate), "MMM d")} – ${format(parseISO(p.endDate), "MMM d, yyyy")}` : format(parseISO(p.startDate), "MMM d, yyyy"),
+        dateStr: p.startDate,
+        endDateStr: p.endDate,
+        examType: p.type,
+        isPeriod: true,
+      });
+    }
+  }
+
+  targets.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+
+  const seen = new Set<string>();
+  return targets.filter((t) => {
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function Exams() {
   const navigate = useNavigate();
@@ -160,15 +353,15 @@ export function Exams() {
 
   // ── Derived lists ─────────────────────────────────────────────────────────
   const allEvents = data?.dayEvents ?? [];
-  const upcomingExamEvents = allEvents
-    .filter((e) => e.examType !== "custom" && differenceInDays(parseISO(e.date), new Date()) >= 0)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const unifiedTargets = data ? getUnifiedUpcomingTargets(data) : [];
+  const primaryTarget = unifiedTargets[0] || null;
+
   const pastExamEvents = allEvents
-    .filter((e) => e.examType !== "custom" && differenceInDays(parseISO(e.date), new Date()) < 0)
+    .filter((e) => (e.examType as string) !== "custom" && (e.examType as string) !== "holiday" && differenceInDays(parseISO(e.date), new Date()) < 0)
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  const hasUrgent = upcomingExamEvents.some(
-    (e) => differenceInDays(parseISO(e.date), new Date()) <= 3
+  const hasUrgent = unifiedTargets.some(
+    (t) => differenceInDays(parseISO(t.dateStr), new Date()) <= 3
   );
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -422,21 +615,30 @@ export function Exams() {
 
         {/* ── Right panel ── */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Upcoming exam events */}
+
+          {/* Primary Live Real-Time Countdown Card */}
+          {primaryTarget && (
+            <ExamLiveCountdownCard target={primaryTarget} />
+          )}
+
+          {/* Upcoming exam list */}
           <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-5">
-            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Upcoming Exams</h3>
-            {upcomingExamEvents.length > 0 ? (
-              <div className="space-y-2">
-                {upcomingExamEvents.map((ev, i) => {
-                  const daysLeft = differenceInDays(parseISO(ev.date), new Date());
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+              <span>Upcoming Exams</span>
+              <span className="text-xs text-amber-400 font-mono font-semibold">{unifiedTargets.length} scheduled</span>
+            </h3>
+            {unifiedTargets.length > 0 ? (
+              <div className="space-y-2.5">
+                {unifiedTargets.map((t, i) => {
+                  const daysLeft = differenceInDays(parseISO(t.dateStr), new Date());
                   const u = urgencyStyle(daysLeft);
-                  const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
+                  const evMeta = (t.examType as string) !== "custom" && (t.examType as string) !== "holiday" ? EXAM_META[t.examType as ExamType] : null;
                   return (
                     <motion.div
-                      key={ev.id}
+                      key={t.id}
                       initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.04 }}
-                      className={`bg-gradient-to-r ${u.card} border rounded-xl p-3`}
+                      className={`bg-gradient-to-r ${u.card} border rounded-xl p-3.5`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
@@ -445,15 +647,16 @@ export function Exams() {
                               {evMeta.label}
                             </span>
                           )}
-                          <p className="text-white font-semibold text-sm truncate">{ev.label}</p>
-                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                            <CalendarDays className="w-3 h-3" />
-                            {format(parseISO(ev.date), "EEE, MMM d")}
+                          <p className="text-white font-semibold text-sm truncate">{t.label}</p>
+                          {t.subtitle && <p className="text-[11px] text-gray-400 truncate">{t.subtitle}</p>}
+                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                            <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
+                            {format(parseISO(t.dateStr), "EEE, MMM d, yyyy")}
                           </p>
                         </div>
                         <div className={`flex-shrink-0 text-right`}>
                           <p className={`text-xl font-black ${u.text} leading-none`}>
-                            {daysLeft === 0 ? "Today" : daysLeft === 1 ? "1d" : `${daysLeft}d`}
+                            {daysLeft <= 0 ? "Today" : daysLeft === 1 ? "1d" : `${daysLeft}d`}
                           </p>
                           {daysLeft > 0 && <p className="text-[10px] text-gray-500">left</p>}
                           {daysLeft <= 3 && <Flame className={`w-3.5 h-3.5 ${u.text} mx-auto mt-0.5`} />}
@@ -477,7 +680,7 @@ export function Exams() {
               <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">Completed</h3>
               <div className="space-y-2">
                 {pastExamEvents.slice(0, 6).map((ev) => {
-                  const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
+                  const evMeta = (ev.examType as string) !== "custom" && (ev.examType as string) !== "holiday" ? EXAM_META[ev.examType as ExamType] : null;
                   return (
                     <div key={ev.id} className="flex items-center gap-3 opacity-50">
                       <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${evMeta ? evMeta.dot : "bg-emerald-400"}`} />
@@ -495,51 +698,17 @@ export function Exams() {
         </div>
       </div>
 
-      {/* Bottom countdown cards */}
-      {upcomingExamEvents.length > 0 && (
-        <div className="space-y-4">
+      {/* ── Bottom Section: Full Live Real-Time Countdowns for All Upcoming Exams ── */}
+      {unifiedTargets.length > 0 && (
+        <div className="space-y-4 pt-2">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Flame className="w-5 h-5 text-orange-400" />
-            Countdown
+            Live Real-Time Countdown to Exams
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {upcomingExamEvents.map((ev, i) => {
-              const daysLeft = differenceInDays(parseISO(ev.date), new Date());
-              const u = urgencyStyle(daysLeft);
-              const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
-              return (
-                <motion.div
-                  key={ev.id}
-                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Card className={`relative overflow-hidden bg-gradient-to-br ${u.card} border p-5`}>
-                    {evMeta && (
-                      <span className={`text-[10px] font-bold ${evMeta.color} mb-2 block`}>{evMeta.label}</span>
-                    )}
-                    <p className="text-white font-semibold text-sm leading-tight mb-1">{ev.label}</p>
-                    <p className="text-gray-400 text-xs mb-3 flex items-center gap-1">
-                      <CalendarDays className="w-3 h-3" />
-                      {format(parseISO(ev.date), "EEE, MMM d yyyy")}
-                    </p>
-                    <div className={`text-4xl font-black ${u.text} leading-none`}>
-                      {daysLeft > 0 ? daysLeft : 0}
-                      <span className="text-sm font-semibold ml-1">{daysLeft === 1 ? "day" : "days"}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {daysLeft === 0 ? "Today!" : daysLeft === 1 ? "Tomorrow" : "remaining"}
-                    </p>
-                    {/* urgency bar */}
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/20">
-                      <div
-                        className={`h-full ${u.dot}`}
-                        style={{ width: `${Math.max(4, Math.min(100, 100 - (daysLeft / 60) * 100))}%` }}
-                      />
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
+          <div className="grid md:grid-cols-2 gap-4">
+            {unifiedTargets.map((target) => (
+              <ExamLiveCountdownCard key={target.id} target={target} />
+            ))}
           </div>
         </div>
       )}
