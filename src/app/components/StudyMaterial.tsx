@@ -137,7 +137,7 @@ export function StudyMaterial() {
   const [newTopicDate, setNewTopicDate] = useState("");
   const [newTopicTime, setNewTopicTime] = useState("");
 
-  useEffect(() => {
+  const loadStudyMaterialData = () => {
     // Load current semester
     const profileSaved = localStorage.getItem("student_profile");
     let sem = "1";
@@ -170,6 +170,13 @@ export function StudyMaterial() {
         console.error("Failed to parse my_space_topics", e);
       }
     }
+  };
+
+  useEffect(() => {
+    loadStudyMaterialData();
+    const handleStorage = () => loadStudyMaterialData();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const saveMySpaceTopics = (updated: MySpaceTopic[]) => {

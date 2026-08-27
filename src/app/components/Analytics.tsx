@@ -98,6 +98,9 @@ export function Analytics() {
   // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     loadAll();
+    const handleStorage = () => loadAll();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const loadAll = () => {

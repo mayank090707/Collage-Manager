@@ -75,16 +75,22 @@ export function Exams() {
   const [data, setData] = useState<CalendarState | null>(null);
   const [viewMonth, setViewMonth] = useState(new Date());
 
-  useEffect(() => {
+  const loadExamData = () => {
     try {
       const raw = localStorage.getItem("exam_calendar_v2");
       if (raw) {
         const parsed: CalendarState = JSON.parse(raw);
         setData(parsed);
-        // Start calendar at semester start month
         setViewMonth(parseISO(parsed.semConfig.startDate));
       }
     } catch {}
+  };
+
+  useEffect(() => {
+    loadExamData();
+    const handleStorage = () => loadExamData();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   // ── Helpers ──────────────────────────────────────────────────────────────

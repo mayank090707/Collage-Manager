@@ -36,14 +36,19 @@ const DB_MAP: Record<string, string> = {
   'exam_calendar_v2': 'examCalendar',
   'target_cgpa':      'targetCgpa',
   'onboarding_complete': 'isOnboarded',
+  'my_space_topics':  'mySpaceTopics',
 };
 
 // GLOBAL INTERCEPTOR: any localStorage.setItem() for known keys auto-syncs to the backend
 let isSyncing = false;
+const lastLocalSaveTime: Record<string, number> = {};
+
 const originalSetItem = localStorage.setItem.bind(localStorage);
 localStorage.setItem = function(key: string, value: string) {
   originalSetItem(key, value);
   if (isSyncing) return;
+
+  lastLocalSaveTime[key] = Date.now();
 
   const userId = getUserId();
   const dbKey  = DB_MAP[key];
@@ -153,6 +158,10 @@ export const api = {
       let hasChanged = false;
 
       const setIfDifferent = (key: string, newValue: string) => {
+        // Skip overwriting if local save occurred in last 4 seconds
+        if (lastLocalSaveTime[key] && Date.now() - lastLocalSaveTime[key] < 4000) {
+          return;
+        }
         if (localStorage.getItem(key) !== newValue) {
           localStorage.setItem(key, newValue);
           hasChanged = true;
@@ -169,6 +178,7 @@ export const api = {
       if (data.examCalendar != null)             setIfDifferent('exam_calendar_v2',   JSON.stringify(data.examCalendar));
       if (data.targetCgpa   != null)             setIfDifferent('target_cgpa',        data.targetCgpa.toString());
       if (data.isOnboarded  != null)             setIfDifferent('onboarding_complete', data.isOnboarded.toString());
+      if (Array.isArray(data.mySpaceTopics))     setIfDifferent('my_space_topics',    JSON.stringify(data.mySpaceTopics));
 
       isSyncing = false;
 
@@ -221,6 +231,7 @@ export const api = {
       examCalendar:      JSON.parse(localStorage.getItem('exam_calendar_v2') || 'null'),
       targetCgpa:        parseFloat(localStorage.getItem('target_cgpa') || '0'),
       isOnboarded,
+      mySpaceTopics:     JSON.parse(localStorage.getItem('my_space_topics') || '[]'),
     };
 
     try {
@@ -246,6 +257,7 @@ export const api = {
       backlogs:          'backlogs',
       examCalendar:      'exam_calendar_v2',
       targetCgpa:        'target_cgpa',
+      mySpaceTopics:     'my_space_topics',
     };
     return maps[key] || key;
   },

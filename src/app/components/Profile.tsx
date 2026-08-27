@@ -62,6 +62,12 @@ export function Profile() {
   useEffect(() => {
     loadProfile();
     loadStats();
+    const handleStorage = () => {
+      loadProfile();
+      loadStats();
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const loadProfile = () => {

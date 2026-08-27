@@ -60,6 +60,9 @@ export function AttendanceTab() {
 
   useEffect(() => {
     loadData();
+    const handleStorage = () => loadData();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const loadData = () => {

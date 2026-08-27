@@ -38,6 +38,7 @@ export interface IUserData extends Document {
   examCalendar:      any;
   targetCgpa:        number;
   isOnboarded:       boolean;
+  mySpaceTopics:     any[];
 }
 
 const UserDataSchema = new Schema<IUserData>({
@@ -52,6 +53,7 @@ const UserDataSchema = new Schema<IUserData>({
   examCalendar:      { type: Schema.Types.Mixed,   default: null  },
   targetCgpa:        { type: Number,               default: 0     },
   isOnboarded:       { type: Boolean,              default: false },
+  mySpaceTopics:     { type: Schema.Types.Mixed,   default: []    },
 }, { timestamps: true });
 
 export const UserModel    = mongoose.model<IUser>('User', UserSchema);

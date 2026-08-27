@@ -39,6 +39,9 @@ export function Timetable() {
 
   useEffect(() => {
     loadTimetable();
+    const handleStorage = () => loadTimetable();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const loadTimetable = () => {

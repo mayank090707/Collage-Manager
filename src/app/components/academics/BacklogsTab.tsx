@@ -32,6 +32,9 @@ export function BacklogsTab() {
 
   useEffect(() => {
     loadBacklogs();
+    const handleStorage = () => loadBacklogs();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const loadBacklogs = () => {
@@ -44,6 +47,7 @@ export function BacklogsTab() {
   const saveBacklogs = (updatedBacklogs: Backlog[]) => {
     localStorage.setItem("backlogs", JSON.stringify(updatedBacklogs));
     setBacklogs(updatedBacklogs);
+    window.dispatchEvent(new Event("storage"));
   };
 
   const handleAddBacklog = () => {

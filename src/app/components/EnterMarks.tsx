@@ -93,7 +93,7 @@ export function EnterMarks() {
     });
   };
 
-  useEffect(() => {
+  const loadMarksData = () => {
     const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
     const semNum = parseInt(profile.currentSemester) || 1;
     setCurrentSem(semNum);
@@ -132,6 +132,13 @@ export function EnterMarks() {
       }
     }
     setMarks(initMarks);
+  };
+
+  useEffect(() => {
+    loadMarksData();
+    const handleStorage = () => loadMarksData();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
   const updateMark = (sem: number, idx: number, field: "internalMarks" | "externalMarks", val: string) => {
