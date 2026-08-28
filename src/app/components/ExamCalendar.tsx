@@ -230,6 +230,7 @@ export function ExamCalendar() {
 
   const persist = (config: SemesterConfig, periods: ExamPeriod[], events: DayEvent[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ semConfig: config, examPeriods: periods, dayEvents: events }));
+    window.dispatchEvent(new Event("storage"));
   };
 
   // ── Setup submit ────────────────────────────────────────────────────────────

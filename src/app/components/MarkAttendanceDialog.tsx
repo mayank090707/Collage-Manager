@@ -7,6 +7,7 @@ import { CheckCircle, XCircle, Ban, BookOpen, Plus, Trash2, Calendar as Calendar
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { logActivity } from "../../lib/activityTracker";
+import { getHolidayInfo } from "../../lib/academicUtils";
 
 interface TimetableSlot {
   day: string;
@@ -336,6 +337,8 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
   const formattedDayName = format(selectedDateObj, "EEEE");
   const formattedDateTitle = format(selectedDateObj, "EEEE, MMMM d, yyyy");
 
+  const holidayInfo = getHolidayInfo(selectedDateStr);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-[#111118] border-gray-800 text-white max-w-xl max-h-[90vh] overflow-y-auto">
@@ -374,8 +377,25 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
               onChange={(e) => e.target.value && setSelectedDateStr(e.target.value)}
               className="bg-[#0a0a0f] border-gray-700 text-white focus:border-[var(--brand-start)] h-11 text-base font-semibold cursor-pointer"
             />
-
           </div>
+
+          {/* Holiday Banner if selected date is a holiday */}
+          {holidayInfo.isHoliday && (
+            <div className="rounded-xl bg-purple-500/15 border border-purple-500/40 p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-xl flex-shrink-0">
+                🎉
+              </div>
+              <div>
+                <p className="text-[10px] text-purple-300 font-bold uppercase tracking-widest">Holiday Notice</p>
+                <p className="text-white text-base font-extrabold">
+                  {holidayInfo.holidayName ? `Holiday Today: ${holidayInfo.holidayName}` : "Holiday Today"} — No Class
+                </p>
+                <p className="text-purple-200/80 text-xs mt-0.5">
+                  Holiday today so no class scheduled on your calendar.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Class Slots Header & Add Class Action */}
           <div className="space-y-3 pt-2">
@@ -427,14 +447,24 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
             )}
 
             {slots.length === 0 ? (
-              <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6 text-center space-y-2">
-                <p className="text-gray-400 text-sm">
-                  No classes scheduled in your timetable for <strong>{formattedDayName}</strong>.
-                </p>
-                <p className="text-xs text-gray-500">
-                  Did you have an extra or rescheduled class? Click <strong>&quot;Add Extra Class&quot;</strong> above to mark attendance.
-                </p>
-              </div>
+              holidayInfo.isHoliday ? (
+                <div className="rounded-xl bg-purple-500/10 border border-purple-500/30 p-6 text-center space-y-2">
+                  <span className="text-3xl">🎉</span>
+                  <h4 className="text-white font-bold text-base">Holiday Today — No Class</h4>
+                  <p className="text-purple-300/80 text-xs max-w-sm mx-auto">
+                    {holidayInfo.holidayName ? `${holidayInfo.holidayName} is marked on your calendar.` : "This day is marked as a holiday."} Holiday today so no class.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl bg-gray-800/30 border border-gray-700 p-6 text-center space-y-2">
+                  <p className="text-gray-400 text-sm">
+                    No classes scheduled in your timetable for <strong>{formattedDayName}</strong>.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Did you have an extra or rescheduled class? Click <strong>&quot;Add Extra Class&quot;</strong> above to mark attendance.
+                  </p>
+                </div>
+              )
             ) : (
               <div className="space-y-4">
                 {slots.map((slot, idx) => {
@@ -445,11 +475,16 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
                     >
                       {/* Slot header */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="w-7 h-7 rounded-full bg-[var(--brand-start)]/20 border border-[var(--brand-start)]/40 flex items-center justify-center text-[var(--brand-start)] text-xs font-bold flex-shrink-0">
                             P{slot.period}
                           </span>
                           <span className="text-white font-semibold">{slot.subject}</span>
+                          {holidayInfo.isHoliday && (
+                            <span className="text-[11px] bg-purple-500/25 border border-purple-500/50 text-purple-300 px-2.5 py-0.5 rounded-full font-extrabold flex items-center gap-1 shadow-xs">
+                              🎉 Holiday today so no class
+                            </span>
+                          )}
                           {slot.isManual && (
                             <span className="text-[10px] bg-amber-500/20 border border-amber-500/40 text-amber-400 px-2 py-0.5 rounded-full font-bold">
                               Extra Class

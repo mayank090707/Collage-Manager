@@ -163,6 +163,8 @@ export function computeAttendanceStats(): OverallAttendanceResult {
       const dateObj = new Date(year, month - 1, day);
       const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(dateObj);
 
+      const isHolidayDate = getHolidayInfo(record.date).isHoliday;
+
       const slots = timetable.filter((t) => t.day === dayName && t.subject === subject.name);
       const processedKeys = new Set<string>();
 
@@ -171,7 +173,7 @@ export function computeAttendanceStats(): OverallAttendanceResult {
         const key = `${slot.subject}-${slot.period}`;
         processedKeys.add(key);
         const isCancelled = record.cancelled?.some((c) => c.key === key);
-        if (!isCancelled) {
+        if (!isCancelled && !isHolidayDate) {
           conducted++;
           if (record.subjects?.includes(key)) {
             attended++;
@@ -243,6 +245,76 @@ export function computeAttendanceStats(): OverallAttendanceResult {
     subjectList: statsList,
     hasData: grandConducted > 0,
   };
+}
+
+/**
+ * Holiday utilities & definitions.
+ */
+export const FIXED_HOLIDAYS: Record<string, string> = {
+  "01-26": "Republic Day",
+  "08-15": "Independence Day",
+  "10-02": "Gandhi Jayanti",
+  "12-25": "Christmas Day",
+  "11-01": "Diwali (Approx.)",
+};
+
+export const SPECIFIC_HOLIDAYS: Record<string, string> = {
+  "2024-03-25": "Holi",
+  "2024-11-01": "Diwali",
+  "2024-04-14": "Ambedkar Jayanti",
+  "2024-08-26": "Janmashtami",
+  "2024-10-12": "Dussehra",
+  "2024-11-15": "Guru Nanak Jayanti",
+  "2025-03-14": "Holi",
+  "2025-10-20": "Diwali",
+  "2025-04-14": "Ambedkar Jayanti",
+  "2025-08-16": "Janmashtami",
+  "2025-10-02": "Gandhi Jayanti / Dussehra",
+  "2025-11-05": "Guru Nanak Jayanti",
+  "2025-03-31": "Eid",
+  "2026-03-03": "Holika Dahan",
+  "2026-03-04": "Holi",
+  "2026-04-14": "Ambedkar Jayanti",
+  "2026-09-04": "Janmashtami",
+  "2026-10-20": "Dussehra",
+  "2026-11-08": "Diwali",
+  "2026-11-24": "Guru Nanak Jayanti",
+};
+
+export function getNationalHoliday(dateStr: string): string | null {
+  if (SPECIFIC_HOLIDAYS[dateStr]) return SPECIFIC_HOLIDAYS[dateStr];
+  const monthDay = dateStr.slice(5);
+  return FIXED_HOLIDAYS[monthDay] || null;
+}
+
+export function getHolidayInfo(dateStr: string): { isHoliday: boolean; holidayName: string | null } {
+  if (!dateStr) return { isHoliday: false, holidayName: null };
+
+  const national = getNationalHoliday(dateStr);
+  if (national) {
+    return { isHoliday: true, holidayName: national };
+  }
+
+  try {
+    const calendarData = localStorage.getItem("exam_calendar_v2");
+    if (calendarData) {
+      const parsed = JSON.parse(calendarData);
+      if (Array.isArray(parsed.dayEvents)) {
+        const match = parsed.dayEvents.find(
+          (e: any) =>
+            e.date === dateStr &&
+            (e.examType === "holiday" || e.label?.toLowerCase().includes("holiday"))
+        );
+        if (match) {
+          return { isHoliday: true, holidayName: match.label || "Holiday" };
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error reading exam_calendar_v2 for holiday check", e);
+  }
+
+  return { isHoliday: false, holidayName: null };
 }
 
 /**

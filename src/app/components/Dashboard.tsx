@@ -12,7 +12,7 @@ import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
-import { computeCGPA, computeRequiredSGPA, computeAttendanceStats, PERIOD_TIMINGS_MAP } from "../../lib/academicUtils";
+import { computeCGPA, computeRequiredSGPA, computeAttendanceStats, PERIOD_TIMINGS_MAP, getHolidayInfo } from "../../lib/academicUtils";
 
 interface StudentProfile {
   fullName: string;
@@ -286,14 +286,53 @@ export function Dashboard() {
     const todayName = dayNames[currentTime.getDay()];
     const isWeekend = todayName === "Saturday" || todayName === "Sunday";
 
+    const year = currentTime.getFullYear();
+    const month = String(currentTime.getMonth() + 1).padStart(2, "0");
+    const day = String(currentTime.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    const holidayInfo = getHolidayInfo(todayStr);
+
+    if (holidayInfo.isHoliday) {
+      let slots: any[] = [];
+      if (timetableStr) {
+        try {
+          const timetable: { day: string; subject: string; period: number }[] = JSON.parse(timetableStr);
+          slots = timetable
+            .filter((t) => t.day === todayName)
+            .sort((a, b) => a.period - b.period)
+            .map((t) => {
+              const timingInfo = PERIOD_TIMINGS_MAP[t.period] || { display: `Period ${t.period}` };
+              return {
+                subject: t.subject,
+                timing: timingInfo.display,
+                period: t.period,
+                status: "Holiday Today — No Class",
+                isHoliday: true,
+              };
+            });
+        } catch {}
+      }
+
+      return {
+        isWeekend: false,
+        isHoliday: true,
+        holidayName: holidayInfo.holidayName || "Holiday",
+        isNoClasses: slots.length === 0,
+        dayName: todayName,
+        slots,
+      };
+    }
+
     if (isWeekend) {
-      return { isWeekend: true, isNoClasses: false, slots: [], dayName: todayName };
+      return { isWeekend: true, isHoliday: false, isNoClasses: false, slots: [], dayName: todayName };
     }
 
     if (!timetableStr) {
       // Default fallback schedule matching timetable timings when no timetable has been set up yet
       return {
         isWeekend: false,
+        isHoliday: false,
         isNoClasses: false,
         dayName: todayName,
         slots: [
@@ -336,10 +375,10 @@ export function Dashboard() {
       });
 
     if (slots.length === 0) {
-      return { isWeekend: false, isNoClasses: true, slots: [], dayName: todayName };
+      return { isWeekend: false, isHoliday: false, isNoClasses: true, slots: [], dayName: todayName };
     }
 
-    return { isWeekend: false, isNoClasses: false, slots, dayName: todayName };
+    return { isWeekend: false, isHoliday: false, isNoClasses: false, slots, dayName: todayName };
   };
 
   const statCards = [
@@ -864,7 +903,50 @@ export function Dashboard() {
               </Button>
             </div>
 
-            {scheduleData.isWeekend ? (
+            {scheduleData.isHoliday ? (
+              <div className="space-y-4 my-auto">
+                <div className="py-5 px-6 text-center bg-gradient-to-br from-purple-900/30 via-[#181822] to-purple-950/20 rounded-2xl border border-purple-500/30 space-y-2">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                    🎉
+                  </div>
+                  <h3 className="text-xl font-black text-white">Holiday Today</h3>
+                  <p className="text-purple-300 text-xs font-bold uppercase tracking-wider">
+                    {scheduleData.holidayName} · {scheduleData.dayName}
+                  </p>
+                  <p className="text-purple-200/80 text-xs sm:text-sm max-w-xs mx-auto leading-relaxed font-semibold">
+                    Holiday today so no class! Enjoy your day off.
+                  </p>
+                </div>
+
+                {scheduleData.slots.length > 0 && (
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    <p className="text-[11px] text-purple-300 font-bold uppercase tracking-wider px-1">
+                      Classes on {scheduleData.dayName} (Holiday Today)
+                    </p>
+                    {scheduleData.slots.map((slot, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-[#181822] border border-purple-500/20 rounded-2xl p-3.5 flex items-center justify-between transition-all relative overflow-hidden group shadow-sm"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-500 rounded-l-2xl" />
+                        <div className="pl-3">
+                          <h4 className="font-bold text-white text-sm">
+                            {slot.subject}
+                          </h4>
+                          <p className="text-gray-400 text-xs mt-0.5 font-medium flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-purple-400" />
+                            {slot.timing}
+                          </p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold border bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs flex items-center gap-1">
+                          🎉 Holiday today so no class
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : scheduleData.isWeekend ? (
               <div className="py-8 px-6 text-center bg-[#181822] rounded-2xl border border-white/5 space-y-3 my-auto">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                   🌴
