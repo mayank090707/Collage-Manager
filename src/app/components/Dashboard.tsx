@@ -182,7 +182,8 @@ export function Dashboard() {
         today.setHours(0, 0, 0, 0);
 
         examData.dayEvents.forEach((ev: any) => {
-          if (ev.examType && ev.examType !== "custom" && ev.date) {
+          const isRealExam = ev.examType === "midsem1" || ev.examType === "midsem2" || ev.examType === "endsem";
+          if (isRealExam && ev.date) {
             const evDate = new Date(ev.date + "T00:00:00");
             evDate.setHours(0, 0, 0, 0);
             const diffTime = evDate.getTime() - today.getTime();
@@ -904,47 +905,17 @@ export function Dashboard() {
             </div>
 
             {scheduleData.isHoliday ? (
-              <div className="space-y-4 my-auto">
-                <div className="py-5 px-6 text-center bg-gradient-to-br from-purple-900/30 via-[#181822] to-purple-950/20 rounded-2xl border border-purple-500/30 space-y-2">
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(168,85,247,0.3)]">
-                    🎉
-                  </div>
-                  <h3 className="text-xl font-black text-white">Holiday Today</h3>
-                  <p className="text-purple-300 text-xs font-bold uppercase tracking-wider">
-                    {scheduleData.holidayName} · {scheduleData.dayName}
-                  </p>
-                  <p className="text-purple-200/80 text-xs sm:text-sm max-w-xs mx-auto leading-relaxed font-semibold">
-                    Holiday today so no class! Enjoy your day off.
-                  </p>
+              <div className="py-8 px-6 text-center bg-[#181822] rounded-2xl border border-purple-500/30 space-y-3 my-auto">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                  🎉
                 </div>
-
-                {scheduleData.slots.length > 0 && (
-                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                    <p className="text-[11px] text-purple-300 font-bold uppercase tracking-wider px-1">
-                      Classes on {scheduleData.dayName} (Holiday Today)
-                    </p>
-                    {scheduleData.slots.map((slot, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-[#181822] border border-purple-500/20 rounded-2xl p-3.5 flex items-center justify-between transition-all relative overflow-hidden group shadow-sm"
-                      >
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-purple-500 rounded-l-2xl" />
-                        <div className="pl-3">
-                          <h4 className="font-bold text-white text-sm">
-                            {slot.subject}
-                          </h4>
-                          <p className="text-gray-400 text-xs mt-0.5 font-medium flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-purple-400" />
-                            {slot.timing}
-                          </p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-bold border bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-xs flex items-center gap-1">
-                          🎉 Holiday today so no class
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <h3 className="text-lg font-black text-white">Holiday Today</h3>
+                <p className="text-purple-400 font-bold text-xs uppercase tracking-wider">
+                  {scheduleData.holidayName} · {scheduleData.dayName}
+                </p>
+                <p className="text-gray-400 text-xs sm:text-sm max-w-xs mx-auto leading-relaxed font-semibold">
+                  Holiday today so no class scheduled! Take time to rest, relax, and recharge.
+                </p>
               </div>
             ) : scheduleData.isWeekend ? (
               <div className="py-8 px-6 text-center bg-[#181822] rounded-2xl border border-white/5 space-y-3 my-auto">

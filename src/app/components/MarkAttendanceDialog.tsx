@@ -480,11 +480,6 @@ export function MarkAttendanceDialog({ open, onClose }: MarkAttendanceDialogProp
                             P{slot.period}
                           </span>
                           <span className="text-white font-semibold">{slot.subject}</span>
-                          {holidayInfo.isHoliday && (
-                            <span className="text-[11px] bg-purple-500/25 border border-purple-500/50 text-purple-300 px-2.5 py-0.5 rounded-full font-extrabold flex items-center gap-1 shadow-xs">
-                              🎉 Holiday today so no class
-                            </span>
-                          )}
                           {slot.isManual && (
                             <span className="text-[10px] bg-amber-500/20 border border-amber-500/40 text-amber-400 px-2 py-0.5 rounded-full font-bold">
                               Extra Class
