@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useLocation } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import {
@@ -120,6 +121,9 @@ const SYLLABUS_PDF_MAP: Record<string, { title: string; url: string; branch: str
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 export function StudyMaterial() {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const [subjects, setSubjects] = useState<string[]>([]);
   const [currentSemester, setCurrentSemester] = useState("1");
   const [activeSyllabusSem, setActiveSyllabusSem] = useState<string>("3");
@@ -130,6 +134,14 @@ export function StudyMaterial() {
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedExamType, setSelectedExamType] = useState<string | null>(null);
+
+  // Sync tab from search params / location state
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") || (location.state as any)?.tab;
+    if (tabParam && ["all", "syllabus", "important-topics", "pyq", "study-reference", "my-space"].includes(tabParam)) {
+      setActiveSection(tabParam as Section);
+    }
+  }, [searchParams, location]);
 
   // My Space topics & input state
   const [mySpaceTopics, setMySpaceTopics] = useState<MySpaceTopic[]>([]);

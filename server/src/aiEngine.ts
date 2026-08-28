@@ -59,12 +59,18 @@ const ROUTE_MAP: Record<string, { label: string; route: string }> = {
   EXAMS: { label: 'Open Exams', route: '/app/exams' },
   TIMETABLE: { label: 'Open Timetable', route: '/app/timetable' },
   ANALYTICS: { label: 'Open Analytics', route: '/app/analytics' },
-  STUDY_MATERIAL: { label: 'Open Study Material', route: '/app/study-material' },
-  SYLLABUS: { label: 'Open Syllabus', route: '/app/study-material' },
-  PYQ: { label: 'Open PYQs', route: '/app/study-material' },
-  IMPORTANT_TOPICS: { label: 'Open Important Topics', route: '/app/study-material' },
-  STUDY_REFERENCE: { label: 'Open Study Reference', route: '/app/study-material' },
-  MY_SPACE: { label: 'Open My Space', route: '/app/study-material' },
+  STUDY_MATERIAL: { label: 'Open Study Material', route: '/app/study-material?tab=all' },
+  SYLLABUS: { label: 'Open Syllabus', route: '/app/study-material?tab=syllabus' },
+  PYQ: { label: 'Open PYQs', route: '/app/study-material?tab=pyq' },
+  IMPORTANT_TOPICS: { label: 'Open Important Topics', route: '/app/study-material?tab=important-topics' },
+  STUDY_REFERENCE: { label: 'Open Study Reference', route: '/app/study-material?tab=study-reference' },
+  MY_SPACE: { label: 'Open My Space', route: '/app/study-material?tab=my-space' },
+  NAVIGATE_STUDY_MATERIAL: { label: 'Open Study Material', route: '/app/study-material?tab=all' },
+  NAVIGATE_SYLLABUS: { label: 'Open Syllabus', route: '/app/study-material?tab=syllabus' },
+  NAVIGATE_PYQ: { label: 'Open PYQs', route: '/app/study-material?tab=pyq' },
+  NAVIGATE_IMPORTANT_TOPICS: { label: 'Open Important Topics', route: '/app/study-material?tab=important-topics' },
+  NAVIGATE_STUDY_REFERENCE: { label: 'Open Study Reference', route: '/app/study-material?tab=study-reference' },
+  NAVIGATE_MY_SPACE: { label: 'Open My Space', route: '/app/study-material?tab=my-space' },
   PROFILE: { label: 'Open Profile', route: '/app/profile' },
   TARGET_PREDICTOR: { label: 'Open Target Predictor', route: '/app/target-predictor' },
   MARKS_CALCULATOR: { label: 'Open Marks Calculator', route: '/app/marks-calculator' },
@@ -213,26 +219,204 @@ export async function processCampusAIQuery(
   userMessage: string,
   contextHistory?: ConversationContext
 ): Promise<AIResponse> {
-  const registeredSubjects = await getStudentSubjects(userId);
-  const entities = extractEntities(userMessage, registeredSubjects);
   const lower = userMessage.toLowerCase().trim();
 
-  // Handle Stateful Context Inheritance
+  // ═════════════════════════════════════════════════════════════════════════
+  // CATEGORY 1 & 2: NAVIGATION & STUDY MATERIAL (HIGH PRIORITY)
+  // ═════════════════════════════════════════════════════════════════════════
+  const isFollowUpToMySpace =
+    contextHistory?.lastTopic === 'NAVIGATE_MY_SPACE' || contextHistory?.lastTopic === 'MY_SPACE';
+
+  // 1. My Space Intent
+  const isMySpaceQuery =
+    /\b(my\s*space|personal\s*space)\b/i.test(lower) ||
+    /\b(my|saved|practice|own|created|added)\s+(?:study\s+)?topics?\b/i.test(lower) ||
+    /\btopics?\s+i\s+(?:added|created|saved|have)\b/i.test(lower) ||
+    /\b(?:where|how|where\s+can\s+i|where\s+do\s+i|i\s+want\s+to|how\s+do\s+i)\s+.*?\b(?:add|save|create|manage|practice|store|put)\s+.*?\btopics?\b/i.test(lower) ||
+    /\b(?:add|save|create|manage|practice)\s+.*?\btopics?\b/i.test(lower) ||
+    /\bwhere\s+are\s+my\s+(?:saved|practice)?\s*topics\b/i.test(lower) ||
+    /\bwhere\s+is\s+the\s+place\s+where\s+i\s+can\s+add\s+topics\b/i.test(lower) ||
+    /\b(i\s*want\s*to\s*practice\s*topics)\b/i.test(lower) ||
+    (isFollowUpToMySpace && /\b(there|that|add|topic|topics|own|create|save|yes|can\s+i|how)\b/i.test(lower));
+
+  if (isMySpaceQuery) {
+    const isDirectFollowUp = isFollowUpToMySpace && (/\b(can\s+i\s+add|add|there|create)\b/i.test(lower));
+    return {
+      message: isDirectFollowUp
+        ? "Yes. My Space is where you can manage your own topics."
+        : "Your My Space is inside Study Material. You can use it to manage your own study/practice topics.",
+      intent: 'NAVIGATE_MY_SPACE',
+      entities: {},
+      actions: [{ label: 'Open My Space', route: '/app/study-material?tab=my-space' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_MY_SPACE' },
+    };
+  }
+
+  // 2. Syllabus Intent
+  const isSyllabusQuery = /\b(syllabus|curriculum|course\s*outline)\b/i.test(lower);
+  if (isSyllabusQuery) {
+    return {
+      message: "You can view and download official course syllabi under Syllabus in Study Material.",
+      intent: 'NAVIGATE_SYLLABUS',
+      entities: {},
+      actions: [{ label: 'Open Syllabus', route: '/app/study-material?tab=syllabus' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_SYLLABUS' },
+    };
+  }
+
+  // 3. Important Topics Intent
+  const isImportantTopicsQuery =
+    /\b(important\s*topics|key\s*topics|main\s*topics)\b/i.test(lower) ||
+    (/\btopics\b/i.test(lower) && /\b(important|for|in|exam|unit)\b/i.test(lower) && !/\b(add|save|create|my|own|practice)\b/i.test(lower));
+
+  if (isImportantTopicsQuery) {
+    return {
+      message: "Unit-wise important topics for your subjects can be found under Important Topics in Study Material.",
+      intent: 'NAVIGATE_IMPORTANT_TOPICS',
+      entities: {},
+      actions: [{ label: 'Open Important Topics', route: '/app/study-material?tab=important-topics' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_IMPORTANT_TOPICS' },
+    };
+  }
+
+  // 4. PYQ Intent
+  const isPyqQuery = /\b(pyq|pyqs|previous\s*year|past\s*papers|question\s*papers|old\s*papers)\b/i.test(lower);
+  if (isPyqQuery) {
+    return {
+      message: "Previous year question papers (Mid Sem & End Sem) are available under PYQ in Study Material.",
+      intent: 'NAVIGATE_PYQ',
+      entities: {},
+      actions: [{ label: 'Open PYQs', route: '/app/study-material?tab=pyq' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_PYQ' },
+    };
+  }
+
+  // 5. Study Reference Intent
+  const isStudyReferenceQuery = /\b(study\s*reference|reference\s*books?|youtube|video\s*lectures?|reference\s*links?)\b/i.test(lower);
+  if (isStudyReferenceQuery) {
+    return {
+      message: "YouTube video references and study links for each unit are located under Study Reference in Study Material.",
+      intent: 'NAVIGATE_STUDY_REFERENCE',
+      entities: {},
+      actions: [{ label: 'Open Study Reference', route: '/app/study-material?tab=study-reference' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_STUDY_REFERENCE' },
+    };
+  }
+
+  // 6. General Study Material Intent
+  const isStudyMaterialQuery = /\b(study\s*material|study\s*resources|where\s*is\s*study\s*material|open\s*study\s*material)\b/i.test(lower);
+  if (isStudyMaterialQuery) {
+    return {
+      message: "You can access all syllabi, important topics, PYQs, study references, and your personal My Space planner in Study Material.",
+      intent: 'NAVIGATE_STUDY_MATERIAL',
+      entities: {},
+      actions: [{ label: 'Open Study Material', route: '/app/study-material?tab=all' }],
+      contextToSave: { ...contextHistory, lastTopic: 'NAVIGATE_STUDY_MATERIAL' },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CATEGORY 1 & 7: GENERAL PAGE NAVIGATION & PROFILE
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (/\b(profile|account|student details)\b/i.test(lower) && /\b(where|show|open|find|go|take|my)\b/i.test(lower)) {
+    return {
+      message: "You can view and manage your profile details in Profile.",
+      intent: 'NAVIGATE_PROFILE',
+      entities: {},
+      actions: [{ label: 'Open Profile', route: '/app/profile' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  if (/\b(dashboard|home)\b/i.test(lower) && /\b(where|show|open|find|go|take)\b/i.test(lower)) {
+    return {
+      message: "Taking you to your Dashboard overview.",
+      intent: 'NAVIGATE_DASHBOARD',
+      entities: {},
+      actions: [{ label: 'Open Dashboard', route: '/app' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  if (/\b(target predictor|cgpa predictor|predict cgpa)\b/i.test(lower)) {
+    return {
+      message: "You can project your target CGPA and required scores in Target Predictor.",
+      intent: 'NAVIGATE_TARGET_PREDICTOR',
+      entities: {},
+      actions: [{ label: 'Open Target Predictor', route: '/app/target-predictor' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  if (/\b(marks calculator|grade calculator|calculate marks)\b/i.test(lower)) {
+    return {
+      message: "Calculate internal and external subject marks in Marks Calculator.",
+      intent: 'NAVIGATE_MARKS_CALCULATOR',
+      entities: {},
+      actions: [{ label: 'Open Marks Calculator', route: '/app/marks-calculator' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CATEGORY 8: GREETINGS & HELP
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (/\b(hello|hi|hey)\b/i.test(lower) && !/\b(bunk|attendance|marks|exam|class|classes|gpa|cgpa|sgpa)\b/i.test(lower)) {
+    return {
+      message: "Hello! I'm Campus AI, your personal academic assistant. How can I help you with your attendance, SGPA, CGPA, exams, timetable, or study material today?",
+      intent: 'GREETING',
+      entities: {},
+      actions: [{ label: 'Open Attendance', route: '/app/academics' }, { label: 'Open Timetable', route: '/app/timetable' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // INTENT FLAGS FOR ACADEMIC DATA QUERIES
+  // ─────────────────────────────────────────────────────────────────────────────
+  let isAttendanceQuery = /\b(attendance|attended|conducted|classes)\b/i.test(lower);
+  let isBunkQuery = /\b(bunk|bunks|safe bunks|miss|skip|absent)\b/i.test(lower);
+  let isCgpaQuery = /\b(cgpa)\b/i.test(lower);
+  let isSgpaQuery = /\b(sgpa)\b/i.test(lower);
+  let isMarksQuery = /\b(marks|score|scored|internal|external|grade|grades)\b/i.test(lower);
+  let isBacklogQuery = /\b(backlog|backlogs|re-appear|failed)\b/i.test(lower);
+  let isExamQuery = /\b(exam|exams|mid sem|end sem|test|assessment)\b/i.test(lower);
+  let isTimetableQuery = /\b(timetable|schedule|class|classes|lecture|lectures|period|periods|timing)\b/i.test(lower);
+  let isAnalyticsQuery = /\b(placement|readiness|analytics|trend)\b/i.test(lower);
+  let isSummaryQuery = /\b(summary|overview|academic status|report|how am i doing)\b/i.test(lower);
+
+  const isAcademicDataQuery =
+    isAttendanceQuery || isBunkQuery || isCgpaQuery || isSgpaQuery ||
+    isMarksQuery || isBacklogQuery || isExamQuery || isTimetableQuery ||
+    isAnalyticsQuery || isSummaryQuery;
+
+  if (!isAcademicDataQuery) {
+    return {
+      message: "I'm Campus AI, your Campus Hub academic assistant. I can help answer questions about your attendance, CGPA, SGPA, backlogs, exams, timetable, analytics, study material, and Campus Hub features.",
+      intent: 'OFF_TOPIC',
+      entities: {},
+      actions: [{ label: 'Open Dashboard', route: '/app' }],
+      contextToSave: { ...contextHistory },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // CATEGORY 9: SUBJECT RESOLUTION (ONLY EXECUTED IF INTENT ACTUALLY REQUIRES IT)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const registeredSubjects = await getStudentSubjects(userId);
+  const entities = extractEntities(userMessage, registeredSubjects);
+
   let activeSubject = entities.subject;
   if (!activeSubject && contextHistory?.lastSubject) {
-    // If query is a follow-up ("what about OOPS?", "how many can I bunk?", "can I skip tomorrow?")
     if (
-      /\b(bunk|miss|skip|classes|attendance|marks|grade)\b/.test(lower) ||
-      lower.startsWith('what about') ||
-      lower.startsWith('how about') ||
-      lower.startsWith('and') ||
-      lower.startsWith('for')
+      isAttendanceQuery || isBunkQuery || isMarksQuery ||
+      lower.startsWith('what about') || lower.startsWith('how about') || lower.startsWith('and') || lower.startsWith('for')
     ) {
       activeSubject = contextHistory.lastSubject;
     }
   }
 
-  // Handle Ambiguous Subject Match
+  // Handle Ambiguous Subject Match (ONLY for subject-specific queries)
   if (entities.multipleMatches && entities.multipleMatches.length > 1 && !activeSubject) {
     return {
       message: `Which subject do you mean? I found multiple matches in your account: ${entities.multipleMatches.join(', ')}.`,
@@ -243,8 +427,8 @@ export async function processCampusAIQuery(
     };
   }
 
-  // Handle Unknown Subject Mentioned
-  if (entities.requestedUnknown && !activeSubject && registeredSubjects.length > 0) {
+  // Handle Unknown Subject Mentioned (ONLY if the query explicitly targeted a subject)
+  if (entities.requestedUnknown && !activeSubject && registeredSubjects.length > 0 && (isAttendanceQuery || isBunkQuery || isMarksQuery)) {
     const subListStr = registeredSubjects.map(s => s.name).join(', ');
     return {
       message: `I couldn't find "${entities.requestedUnknown}" in your registered subjects. Your current subjects are: ${subListStr}.`,
@@ -264,88 +448,6 @@ export async function processCampusAIQuery(
       actions.push(ROUTE_MAP[key]);
     }
   };
-
-  // Intent Flags
-  let isNavQuery = false;
-  let isAttendanceQuery = false;
-  let isBunkQuery = false;
-  let isCgpaQuery = false;
-  let isSgpaQuery = false;
-  let isMarksQuery = false;
-  let isBacklogQuery = false;
-  let isExamQuery = false;
-  let isTimetableQuery = false;
-  let isAnalyticsQuery = false;
-  let isSummaryQuery = false;
-  let isOffTopic = false;
-
-  // ── Navigation Detection ──
-  if (/\b(pyq|pyqs|previous year|past papers)\b/.test(lower)) {
-    addAction('PYQ');
-    isNavQuery = true;
-  }
-  if (/\b(syllabus)\b/.test(lower)) {
-    addAction('SYLLABUS');
-    isNavQuery = true;
-  }
-  if (/\b(important topics|key topics)\b/.test(lower)) {
-    addAction('IMPORTANT_TOPICS');
-    isNavQuery = true;
-  }
-  if (/\b(study reference|reference books|notes)\b/.test(lower)) {
-    addAction('STUDY_REFERENCE');
-    isNavQuery = true;
-  }
-  if (/\b(my space|personal notes)\b/.test(lower)) {
-    addAction('MY_SPACE');
-    isNavQuery = true;
-  }
-  if (/\b(study material)\b/.test(lower) && !/\b(what|how|where|find)\b/.test(lower)) {
-    addAction('STUDY_MATERIAL');
-    isNavQuery = true;
-  }
-  if (/\b(profile|account|student details)\b/.test(lower) && /\b(where|show|open|find|go)\b/.test(lower)) {
-    addAction('PROFILE');
-    isNavQuery = true;
-  }
-
-  // ── Data Queries Detection ──
-  if (/\b(bunk|bunks|safe bunks|miss|skip|absent)\b/.test(lower)) isBunkQuery = true;
-  if (/\b(attendance|attended|conducted|classes)\b/.test(lower)) isAttendanceQuery = true;
-  if (/\b(cgpa)\b/.test(lower)) isCgpaQuery = true;
-  if (/\b(sgpa)\b/.test(lower)) isSgpaQuery = true;
-  if (/\b(marks|score|scored|internal|external|grade|grades)\b/.test(lower)) isMarksQuery = true;
-  if (/\b(backlog|backlogs|re-appear|failed)\b/.test(lower)) isBacklogQuery = true;
-  if (/\b(exam|exams|mid sem|end sem|test|assessment)\b/.test(lower)) isExamQuery = true;
-  if (/\b(timetable|schedule|class|classes|lecture|lectures|period|periods|timing)\b/.test(lower)) isTimetableQuery = true;
-  if (/\b(placement|readiness|analytics|trend)\b/.test(lower)) isAnalyticsQuery = true;
-  if (/\b(summary|overview|academic status|report|how am i doing)\b/.test(lower)) isSummaryQuery = true;
-
-  // Off-topic refusal check
-  if (
-    !isNavQuery && !isAttendanceQuery && !isBunkQuery && !isCgpaQuery &&
-    !isSgpaQuery && !isMarksQuery && !isBacklogQuery && !isExamQuery &&
-    !isTimetableQuery && !isAnalyticsQuery && !isSummaryQuery
-  ) {
-    if (/\b(poem|joke|story|code|recipe|weather|who are you|hello|hi|hey|thanks|thank you)\b/.test(lower)) {
-      if (/\b(hello|hi|hey)\b/.test(lower)) {
-        return {
-          message: "Hello! I'm Campus AI, your personal academic assistant. How can I help you with your attendance, SGPA, CGPA, exams, timetable, or study material today?",
-          intent: 'GREETING',
-          entities: {},
-          actions: [{ label: 'Open Attendance', route: '/app/academics' }, { label: 'Open Timetable', route: '/app/timetable' }],
-          contextToSave: { ...contextHistory },
-        };
-      }
-      return {
-        message: "I'm Campus AI, your Campus Hub academic assistant. I can help answer questions about your attendance, CGPA, SGPA, backlogs, exams, timetable, analytics, study material, and Campus Hub features.",
-        intent: 'OFF_TOPIC',
-        entities: {},
-        actions: [{ label: 'Open Dashboard', route: '/app' }],
-        contextToSave: { ...contextHistory },
-      };
-    }
-  }
 
   const responseSections: string[] = [];
   let primaryIntent = 'GET_ACADEMIC_DATA';
@@ -590,13 +692,7 @@ export async function processCampusAIQuery(
     }
   }
 
-  // Pure Navigation Query Fallback
-  if (responseSections.length === 0 && isNavQuery) {
-    primaryIntent = 'NAVIGATE';
-    responseSections.push("Here is the requested link to open the page in Campus Hub.");
-  }
-
-  // Final Fallback if nothing matched
+  // Final Fallback if no specific data section produced output
   if (responseSections.length === 0) {
     primaryIntent = 'UNKNOWN';
     responseSections.push(
