@@ -26,7 +26,7 @@ interface DayEvent {
   id: string;
   date: string;
   label: string;
-  examType: ExamType | "holiday" | "custom";
+  examType: ExamType | "holiday" | "custom" | "assignment";
 }
 
 interface SemesterConfig {
@@ -119,7 +119,7 @@ interface UpcomingExamTarget {
   subtitle?: string;
   dateStr: string; // ISO date string YYYY-MM-DD
   endDateStr?: string | null;
-  examType: ExamType | "holiday" | "custom";
+  examType: ExamType | "holiday" | "custom" | "assignment";
   isPeriod?: boolean;
 }
 
@@ -260,14 +260,19 @@ export function getUnifiedUpcomingTargets(data: CalendarState): UpcomingExamTarg
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const targets: UpcomingExamTarget[] = [];
 
-  // 1. Specific day events
+  // 1. Specific day events (exams + assignments, skip holidays/custom)
   for (const ev of data.dayEvents) {
     if (ev.examType === "holiday" || ev.examType === "custom") continue;
     if (ev.date >= todayStr) {
+      const isAssignment = ev.examType === "assignment";
       targets.push({
         id: ev.id,
         label: ev.label,
-        subtitle: (ev.examType as string) !== "custom" && (ev.examType as string) !== "holiday" ? EXAM_META[ev.examType as ExamType]?.label : undefined,
+        subtitle: isAssignment
+          ? "Assignment Deadline"
+          : (ev.examType as string) !== "custom" && (ev.examType as string) !== "holiday"
+            ? EXAM_META[ev.examType as ExamType]?.label
+            : undefined,
         dateStr: ev.date,
         examType: ev.examType,
         isPeriod: false,
@@ -572,12 +577,13 @@ export function Exams() {
 
                       {/* Event chips */}
                       {events.filter((ev) => ev !== customHoliday).slice(0, 2).map((ev) => {
-                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" ? EXAM_META[ev.examType as ExamType] : null;
+                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" && ev.examType !== "assignment" ? EXAM_META[ev.examType as ExamType] : null;
+                        const isEvAssignment = ev.examType === "assignment";
                         return (
                           <div
                             key={ev.id}
                             className={`w-[90%] mt-0.5 px-1 py-0.5 rounded text-[8px] font-semibold truncate leading-tight text-center ${
-                              evMeta ? `${evMeta.bg} ${evMeta.color}` : "bg-emerald-500/20 text-emerald-300"
+                              evMeta ? `${evMeta.bg} ${evMeta.color}` : isEvAssignment ? "bg-blue-500/20 text-blue-300" : "bg-emerald-500/20 text-emerald-300"
                             }`}
                           >
                             {ev.label}
@@ -600,6 +606,9 @@ export function Exams() {
                   <span className={`w-2 h-2 rounded-sm ${m.dot}`} />{m.label}
                 </span>
               ))}
+              <span className="flex items-center gap-1.5 text-xs text-blue-300">
+                <span className="w-2 h-2 rounded-sm bg-blue-500 border border-blue-400" />Assignment (Blue)
+              </span>
               <span className="flex items-center gap-1.5 text-xs text-purple-300">
                 <span className="w-2 h-2 rounded-sm bg-purple-500 border border-purple-400" />Holiday (Purple)
               </span>
@@ -616,23 +625,19 @@ export function Exams() {
         {/* ── Right panel ── */}
         <div className="lg:col-span-2 space-y-4">
 
-          {/* Primary Live Real-Time Countdown Card */}
-          {primaryTarget && (
-            <ExamLiveCountdownCard target={primaryTarget} />
-          )}
-
-          {/* Upcoming exam list */}
+          {/* Upcoming deadlines list */}
           <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-5">
             <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center justify-between">
-              <span>Upcoming Exams</span>
-              <span className="text-xs text-amber-400 font-mono font-semibold">{unifiedTargets.length} scheduled</span>
+              <span>Upcoming Deadlines</span>
+              <span className="text-xs text-blue-400 font-mono font-semibold">{unifiedTargets.length} scheduled</span>
             </h3>
             {unifiedTargets.length > 0 ? (
               <div className="space-y-2.5">
                 {unifiedTargets.map((t, i) => {
                   const daysLeft = differenceInDays(parseISO(t.dateStr), new Date());
                   const u = urgencyStyle(daysLeft);
-                  const evMeta = (t.examType as string) !== "custom" && (t.examType as string) !== "holiday" ? EXAM_META[t.examType as ExamType] : null;
+                  const isAssBtn = t.examType === "assignment";
+                  const evMeta = !isAssBtn && (t.examType as string) !== "custom" && (t.examType as string) !== "holiday" ? EXAM_META[t.examType as ExamType] : null;
                   return (
                     <motion.div
                       key={t.id}
@@ -642,7 +647,11 @@ export function Exams() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          {evMeta && (
+                          {t.examType === "assignment" ? (
+                            <span className="text-[10px] font-bold bg-blue-500/20 border border-blue-500/40 text-blue-300 rounded-full px-2 py-0.5 mb-1 inline-block">
+                              📋 Assignment
+                            </span>
+                          ) : evMeta && (
                             <span className={`text-[10px] font-bold ${evMeta.pill} border rounded-full px-2 py-0.5 mb-1 inline-block`}>
                               {evMeta.label}
                             </span>
@@ -698,17 +707,73 @@ export function Exams() {
         </div>
       </div>
 
-      {/* ── Bottom Section: Full Live Real-Time Countdowns for All Upcoming Exams ── */}
+      {/* ── Bottom Section: All Deadlines (Exams + Assignments) ── */}
       {unifiedTargets.length > 0 && (
         <div className="space-y-4 pt-2">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Flame className="w-5 h-5 text-orange-400" />
-            Live Real-Time Countdown to Exams
+            <CalendarDays className="w-5 h-5 text-blue-400" />
+            Deadlines
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
-            {unifiedTargets.map((target) => (
-              <ExamLiveCountdownCard key={target.id} target={target} />
-            ))}
+            {unifiedTargets.map((target) => {
+              const isAssignment = target.examType === "assignment";
+              const targetMeta = !isAssignment && target.examType !== "custom" && target.examType !== "holiday"
+                ? EXAM_META[target.examType as ExamType] : null;
+              const dl = differenceInDays(parseISO(target.dateStr), new Date());
+              const urgBase = urgencyStyle(dl);
+              // Use blue accent for assignments instead of brand color
+              const urg = isAssignment && dl > 7
+                ? { ...urgBase, card: "from-blue-500/15 to-blue-400/10 border-blue-500/30", text: "text-blue-400" }
+                : urgBase;
+              const isOngoing = (() => {
+                if (!target.endDateStr) return false;
+                const now = new Date();
+                try { return parseISO(target.dateStr) <= now && parseISO(target.endDateStr) >= now; } catch { return false; }
+              })();
+              return (
+                <motion.div
+                  key={target.id}
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className={`relative overflow-hidden bg-gradient-to-br ${urg.card} border rounded-2xl p-5 shadow-lg`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 mb-2 inline-block uppercase tracking-wide ${
+                        isAssignment ? "bg-blue-500/20 border-blue-500/40 text-blue-300" :
+                        targetMeta ? `${targetMeta.bg} ${targetMeta.border} ${targetMeta.color}` :
+                        "bg-gray-700/40 border-gray-600/40 text-gray-400"
+                      }`}>
+                        {isAssignment ? "📋 Assignment" : targetMeta ? targetMeta.label : "Event"}
+                      </span>
+                      <h3 className="text-base font-bold text-white leading-snug truncate">{target.label}</h3>
+                      {target.subtitle && <p className="text-xs text-gray-400 mt-0.5 truncate">{target.subtitle}</p>}
+                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-2">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {isOngoing ? "Ends " : "Due "}{format(parseISO(target.endDateStr ?? target.dateStr), "EEE, MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      {isOngoing ? (
+                        <div className="flex flex-col items-center">
+                          <span className="flex h-3 w-3 relative mb-1">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                          </span>
+                          <p className="text-[10px] text-red-400 font-bold uppercase">Active</p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className={`text-2xl font-black leading-none ${urg.text}`}>
+                            {dl <= 0 ? "Today" : dl === 1 ? "1d" : `${dl}d`}
+                          </p>
+                          {dl > 0 && <p className="text-[10px] text-gray-500">left</p>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       )}

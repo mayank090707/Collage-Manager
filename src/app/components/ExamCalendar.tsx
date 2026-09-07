@@ -17,7 +17,7 @@ import {
 } from "date-fns";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
-import { ExamLiveCountdownCard, getUnifiedUpcomingTargets } from "./Exams";
+import { getUnifiedUpcomingTargets } from "./Exams";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ interface DayEvent {
   id: string;
   date: string; // "YYYY-MM-DD"
   label: string;
-  examType: ExamType | "holiday" | "custom";
+  examType: ExamType | "holiday" | "custom" | "assignment";
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -130,6 +130,107 @@ function makeDate(year: number, month: number, day: number) {
   return format(new Date(year, month, day), "yyyy-MM-dd");
 }
 
+// ─── Deadline Card (replaces live countdown) ──────────────────────────────────
+
+interface UpcomingDeadlineTarget {
+  id: string;
+  label: string;
+  subtitle?: string;
+  dateStr: string;
+  endDateStr?: string | null;
+  examType: ExamType | "holiday" | "custom" | "assignment";
+  isPeriod?: boolean;
+}
+
+function urgencyStyle(days: number) {
+  if (days <= 1) return { card: "from-red-500/25 to-rose-600/25 border-red-500/50", text: "text-red-400", dot: "bg-red-500" };
+  if (days <= 3) return { card: "from-orange-500/25 to-amber-500/25 border-orange-500/50", text: "text-orange-400", dot: "bg-orange-400" };
+  if (days <= 7) return { card: "from-yellow-500/20 to-amber-400/20 border-yellow-500/40", text: "text-yellow-400", dot: "bg-yellow-400" };
+  return { card: "from-blue-500/15 to-blue-400/10 border-blue-500/30", text: "text-blue-400", dot: "bg-blue-400" };
+}
+
+function DeadlineCard({ target }: { target: UpcomingDeadlineTarget }) {
+  const isAssignment = target.examType === "assignment";
+  const meta = !isAssignment && target.examType !== "custom" && target.examType !== "holiday"
+    ? EXAM_META[target.examType as ExamType]
+    : null;
+
+  const daysLeft = differenceInDays(parseISO(target.dateStr), new Date());
+  const u = urgencyStyle(daysLeft);
+
+  // Check if ongoing (period event)
+  const isOngoing = (() => {
+    if (!target.endDateStr) return false;
+    const now = new Date();
+    try {
+      return parseISO(target.dateStr) <= now && parseISO(target.endDateStr) >= now;
+    } catch { return false; }
+  })();
+
+  const typeLabel = isAssignment
+    ? "📋 Assignment"
+    : meta
+    ? meta.label
+    : "Event";
+
+  const typePill = isAssignment
+    ? "bg-blue-500/20 border-blue-500/40 text-blue-300"
+    : meta
+    ? `${meta.bg} ${meta.border} ${meta.color}`
+    : "bg-gray-700/40 border-gray-600/40 text-gray-400";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`relative overflow-hidden bg-gradient-to-br ${u.card} border rounded-2xl p-5 shadow-lg backdrop-blur-sm`}
+    >
+      {/* Glow blob */}
+      <div className={`absolute -top-10 -right-10 w-32 h-32 ${isAssignment ? "bg-blue-500/10" : meta ? meta.bg : "bg-gray-700/10"} rounded-full blur-3xl pointer-events-none`} />
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          {/* Type pill */}
+          <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 mb-2 inline-block uppercase tracking-wide ${typePill}`}>
+            {typeLabel}
+          </span>
+
+          <h3 className="text-base font-bold text-white leading-snug truncate">{target.label}</h3>
+
+          {target.subtitle && (
+            <p className="text-xs text-gray-400 mt-0.5 truncate">{target.subtitle}</p>
+          )}
+
+          <p className="text-xs text-gray-500 flex items-center gap-1 mt-2">
+            <CalendarDays className="w-3.5 h-3.5" />
+            {isOngoing ? "Ends " : "Due "}{format(parseISO(target.endDateStr ?? target.dateStr), "EEE, MMM d, yyyy")}
+          </p>
+        </div>
+
+        {/* Days badge */}
+        <div className="flex-shrink-0 text-right">
+          {isOngoing ? (
+            <div className="flex flex-col items-center">
+              <span className="flex h-3 w-3 relative mb-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              </span>
+              <p className="text-[10px] text-red-400 font-bold uppercase">Active</p>
+            </div>
+          ) : (
+            <>
+              <p className={`text-2xl font-black leading-none ${u.text}`}>
+                {daysLeft <= 0 ? "Today" : daysLeft === 1 ? "1d" : `${daysLeft}d`}
+              </p>
+              {daysLeft > 0 && <p className="text-[10px] text-gray-500">left</p>}
+            </>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ExamCalendar() {
@@ -163,7 +264,7 @@ export function ExamCalendar() {
 
   // Day event state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [dayForm, setDayForm] = useState<{ label: string; examType: ExamType | "holiday" | "custom" }>({ label: "", examType: "custom" });
+  const [dayForm, setDayForm] = useState<{ label: string; examType: ExamType | "holiday" | "custom" | "assignment" }>({ label: "", examType: "custom" });
   const [editingEvent, setEditingEvent] = useState<DayEvent | null>(null);
 
   // Calendar scroll
@@ -611,6 +712,9 @@ export function ExamCalendar() {
           </span>
         ))}
         <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 border border-blue-400" />📋 Assignment (Blue)
+        </span>
+        <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-sm bg-purple-500 border border-purple-400" />🎉 Holiday (Purple)
         </span>
         <span className="flex items-center gap-1.5">
@@ -762,8 +866,9 @@ export function ExamCalendar() {
 
                       {/* Day events */}
                       {events.filter((ev) => ev !== customHoliday).slice(0, 2).map((ev) => {
-                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" ? EXAM_META[ev.examType as ExamType] : null;
+                        const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" && ev.examType !== "assignment" ? EXAM_META[ev.examType as ExamType] : null;
                         const isEvHoliday = ev.examType === "holiday";
+                        const isEvAssignment = ev.examType === "assignment";
                         return (
                           <div
                             key={ev.id}
@@ -771,6 +876,8 @@ export function ExamCalendar() {
                             className={`w-full mt-0.5 px-1 py-0.5 rounded text-[9px] font-medium truncate leading-tight ${
                               evMeta
                                 ? `${evMeta.bg} ${evMeta.color}`
+                                : isEvAssignment
+                                ? "bg-blue-500/25 text-blue-300 border border-blue-500/30"
                                 : isEvHoliday
                                 ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
                                 : "bg-emerald-500/20 text-emerald-300"
@@ -799,16 +906,16 @@ export function ExamCalendar() {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Upcoming exam events live real-time countdown ── */}
+      {/* ── Deadlines section (Exams + Assignments) ── */}
       {unifiedUpcomingTargets.length > 0 && (
         <div className="space-y-4 pt-2">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Flame className="w-5 h-5 text-orange-400" />
-            Live Real-Time Countdown to Exams
+            <CalendarDays className="w-5 h-5 text-blue-400" />
+            Deadlines
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
             {unifiedUpcomingTargets.map((target) => (
-              <ExamLiveCountdownCard key={target.id} target={target} />
+              <DeadlineCard key={target.id} target={target} />
             ))}
           </div>
         </div>
@@ -886,12 +993,26 @@ export function ExamCalendar() {
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Events on this day</p>
                 {getEventsOnDate(selectedDate).map((ev) => {
-                  const evMeta = ev.examType !== "custom" ? EXAM_META[ev.examType as ExamType] : null;
+                  const evMeta = ev.examType !== "custom" && ev.examType !== "holiday" && ev.examType !== "assignment" ? EXAM_META[ev.examType as ExamType] : null;
+                  const isEvAssignment = ev.examType === "assignment";
+                  const isEvHoliday = ev.examType === "holiday";
                   return (
-                    <div key={ev.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${evMeta ? `${evMeta.bg} ${evMeta.border}` : "bg-emerald-500/10 border-emerald-500/20"}`}>
+                    <div key={ev.id} className={`flex items-center justify-between rounded-lg px-3 py-2 border ${
+                      evMeta ? `${evMeta.bg} ${evMeta.border}` :
+                      isEvAssignment ? "bg-blue-500/15 border-blue-500/30" :
+                      isEvHoliday ? "bg-purple-500/15 border-purple-500/30" :
+                      "bg-emerald-500/10 border-emerald-500/20"
+                    }`}>
                       <div>
-                        <p className={`text-sm font-medium ${evMeta ? evMeta.color : "text-emerald-300"}`}>{ev.label}</p>
-                        <p className="text-xs text-gray-500">{evMeta ? evMeta.label : "Custom"}</p>
+                        <p className={`text-sm font-medium ${
+                          evMeta ? evMeta.color :
+                          isEvAssignment ? "text-blue-300" :
+                          isEvHoliday ? "text-purple-300" :
+                          "text-emerald-300"
+                        }`}>{ev.label}</p>
+                        <p className="text-xs text-gray-500">
+                          {evMeta ? evMeta.label : isEvAssignment ? "Assignment" : isEvHoliday ? "Holiday" : "Custom"}
+                        </p>
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEditEvent(ev)} className="w-7 h-7 text-gray-400 hover:text-white">
@@ -940,22 +1061,26 @@ export function ExamCalendar() {
               <Label className="text-gray-300">Category</Label>
               <div className="flex gap-2 flex-wrap">
                 {[
-                  { value: "midsem1", label: "Mid-1" },
-                  { value: "midsem2", label: "Mid-2" },
-                  { value: "endsem",  label: "End Sem" },
-                  { value: "holiday", label: "🎉 Holiday" },
-                  { value: "custom",  label: "Other" },
+                  { value: "midsem1",    label: "Mid-1" },
+                  { value: "midsem2",    label: "Mid-2" },
+                  { value: "endsem",     label: "End Sem" },
+                  { value: "assignment", label: "📋 Assignment" },
+                  { value: "holiday",    label: "🎉 Holiday" },
+                  { value: "custom",     label: "Other" },
                 ].map(({ value, label }) => {
-                  const m = value !== "custom" && value !== "holiday" ? EXAM_META[value as ExamType] : null;
-                  const isHolidayCat = value === "holiday";
+                  const m = value !== "custom" && value !== "holiday" && value !== "assignment" ? EXAM_META[value as ExamType] : null;
+                  const isHolidayCat   = value === "holiday";
+                  const isAssignment   = value === "assignment";
                   return (
                     <button
                       key={value}
-                      onClick={() => setDayForm({ ...dayForm, examType: value as ExamType | "holiday" | "custom" })}
+                      onClick={() => setDayForm({ ...dayForm, examType: value as ExamType | "holiday" | "custom" | "assignment" })}
                       className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                         dayForm.examType === value
                           ? m
                             ? `${m.bg} ${m.border} ${m.color}`
+                            : isAssignment
+                            ? "bg-blue-500/25 border-blue-500/50 text-blue-300"
                             : isHolidayCat
                             ? "bg-purple-500/25 border-purple-500/50 text-purple-300"
                             : "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"

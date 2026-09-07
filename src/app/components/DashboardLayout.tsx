@@ -51,7 +51,7 @@ export function DashboardLayout() {
   const studentMenuItems = [
     { icon: Home, label: "Dashboard", path: "/app" },
     { icon: BookOpen, label: "Academics", path: "/app/academics" },
-    { icon: Calendar, label: "Exams", path: "/app/exams" },
+    { icon: Calendar, label: "Calendar", path: "/app/exams" },
     { icon: LayoutGrid, label: "Timetable", path: "/app/timetable" },
     { icon: BarChart3, label: "Analytics", path: "/app/analytics" },
     { icon: FolderOpen, label: "Study Material", path: "/app/study-material" },
