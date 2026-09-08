@@ -128,6 +128,7 @@ function calculateTimeRemaining(targetDateStr: string, endDateStr?: string | nul
   try {
     const now = new Date();
     const targetDate = parseISO(targetDateStr);
+    targetDate.setHours(9, 30, 0, 0); // Count down to 9:30 AM on scheduled date
     const diffMs = targetDate.getTime() - now.getTime();
 
     if (diffMs <= 0) {
@@ -226,7 +227,7 @@ export function ExamLiveCountdownCard({ target }: { target: UpcomingExamTarget }
         </h3>
         <p className="text-xs text-gray-400 flex items-center gap-1.5 mt-1">
           <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
-          Starts on {format(parseISO(target.dateStr), "EEEE, MMM d, yyyy")}
+          Starts on {format(parseISO(target.dateStr), "EEEE, MMM d, yyyy")} at 9:30 AM
         </p>
       </div>
 
@@ -265,7 +266,7 @@ function InlineCountdown({ dateStr, urgencyText }: { dateStr: string; urgencyTex
     return () => clearInterval(iv);
   }, [dateStr]);
 
-  if (time.isEnded) return <p className="text-xs text-gray-500 text-center">Deadline has passed</p>;
+  if (time.isEnded) return <p className="text-xs text-gray-500 text-center">Deadline passed (9:30 AM target)</p>;
   if (time.isOngoing) return (
     <div className="flex items-center justify-center gap-2">
       <span className="flex h-2 w-2 relative">
