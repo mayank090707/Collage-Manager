@@ -22,7 +22,7 @@ interface StudentProfile {
 
 interface NotificationItem {
   id: string;
-  type: "attendance" | "exam" | "my-space";
+  type: "attendance" | "exam" | "my-space" | "assignment";
   title: string;
   message: string;
   link: string;
@@ -183,7 +183,9 @@ export function Dashboard() {
 
         examData.dayEvents.forEach((ev: any) => {
           const isRealExam = ev.examType === "midsem1" || ev.examType === "midsem2" || ev.examType === "endsem";
-          if (isRealExam && ev.date) {
+          const isAssignment = ev.examType === "assignment";
+
+          if ((isRealExam || isAssignment) && ev.date) {
             const evDate = new Date(ev.date + "T00:00:00");
             evDate.setHours(0, 0, 0, 0);
             const diffTime = evDate.getTime() - today.getTime();
@@ -191,14 +193,26 @@ export function Dashboard() {
 
             if (diffDays >= 0 && diffDays <= 3) {
               const dayStr = diffDays === 0 ? "Today" : diffDays === 1 ? "Tomorrow" : `in ${diffDays} days`;
-              notifList.push({
-                id: `exam-${ev.date}-${ev.title || ev.subject || "Exam"}`,
-                type: "exam",
-                title: "Upcoming Exam Alert",
-                message: `${ev.title || ev.subject || "Exam"} is scheduled ${dayStr} (${ev.date}).`,
-                link: "/app/exams",
-                level: "urgent"
-              });
+
+              if (isRealExam) {
+                notifList.push({
+                  id: `exam-${ev.date}-${ev.label || "Exam"}`,
+                  type: "exam",
+                  title: "Upcoming Exam Alert",
+                  message: `${ev.label || "Exam"} is scheduled ${dayStr} (${ev.date}).`,
+                  link: "/app/exams",
+                  level: "urgent"
+                });
+              } else if (isAssignment) {
+                notifList.push({
+                  id: `assignment-${ev.date}-${ev.label || "Assignment"}`,
+                  type: "assignment",
+                  title: "Assignment Due Soon",
+                  message: `📋 "${ev.label || "Assignment"}" is to be submitted ${dayStr} (${ev.date}).`,
+                  link: "/app/exams",
+                  level: "info"
+                });
+              }
             }
           }
         });
@@ -583,7 +597,9 @@ export function Dashboard() {
                         <div
                           key={n.id}
                           className={`p-3 rounded-xl border text-xs flex items-start gap-3 transition-all ${
-                            n.level === "urgent"
+                            n.type === "assignment"
+                              ? "bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-300"
+                              : n.level === "urgent"
                               ? "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-300"
                               : n.type === "my-space"
                               ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-300"
@@ -595,6 +611,8 @@ export function Dashboard() {
                               <AlertTriangle className="w-4 h-4 text-red-500" />
                             ) : n.type === "my-space" ? (
                               <Bookmark className="w-4 h-4 text-amber-500" />
+                            ) : n.type === "assignment" ? (
+                              <Calendar className="w-4 h-4 text-blue-400" />
                             ) : (
                               <Calendar className="w-4 h-4 text-purple-500" />
                             )}

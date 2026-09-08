@@ -359,14 +359,22 @@ export function Exams() {
   // ── Derived lists ─────────────────────────────────────────────────────────
   const allEvents = data?.dayEvents ?? [];
   const unifiedTargets = data ? getUnifiedUpcomingTargets(data) : [];
-  const primaryTarget = unifiedTargets[0] || null;
+  // primaryTarget should be the nearest real EXAM (not assignment) for the countdown
+  const REAL_EXAM_TYPES = ["midsem1", "midsem2", "endsem"];
+  const primaryTarget =
+    unifiedTargets.find((t) => REAL_EXAM_TYPES.includes(t.examType as string)) ||
+    unifiedTargets[0] ||
+    null;
 
   const pastExamEvents = allEvents
     .filter((e) => (e.examType as string) !== "custom" && (e.examType as string) !== "holiday" && differenceInDays(parseISO(e.date), new Date()) < 0)
     .sort((a, b) => b.date.localeCompare(a.date));
 
+  // hasUrgent only fires for real exams — assignments use the notification bell instead
   const hasUrgent = unifiedTargets.some(
-    (t) => differenceInDays(parseISO(t.dateStr), new Date()) <= 3
+    (t) =>
+      REAL_EXAM_TYPES.includes(t.examType as string) &&
+      differenceInDays(parseISO(t.dateStr), new Date()) <= 3
   );
 
   // ── Empty state ───────────────────────────────────────────────────────────
@@ -402,7 +410,7 @@ export function Exams() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-4xl mb-1 bg-gradient-to-r from-[var(--brand-start)] via-white to-[var(--brand-end)] bg-clip-text text-transparent">
-            Exams
+            Calendar
           </h1>
           <p className="text-gray-400">
             Semester {semConfig.semester} ·{" "}
@@ -428,8 +436,8 @@ export function Exams() {
         >
           <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-red-300 font-semibold text-sm">Urgent — Exams in the next 3 days!</p>
-            <p className="text-red-400/70 text-xs mt-0.5">Check your schedule and prepare accordingly.</p>
+            <p className="text-red-300 font-semibold text-sm">Urgent — Exam coming up in the next 3 days!</p>
+            <p className="text-red-400/70 text-xs mt-0.5">Check your calendar and prepare accordingly.</p>
           </div>
         </motion.div>
       )}
@@ -624,6 +632,11 @@ export function Exams() {
 
         {/* ── Right panel ── */}
         <div className="lg:col-span-2 space-y-4">
+
+          {/* Primary Live Countdown Card (for nearest real exam) */}
+          {primaryTarget && REAL_EXAM_TYPES.includes(primaryTarget.examType as string) && (
+            <ExamLiveCountdownCard target={primaryTarget} />
+          )}
 
           {/* Upcoming deadlines list */}
           <Card className="bg-[#111118]/80 backdrop-blur-xl border-gray-800/50 p-5">
