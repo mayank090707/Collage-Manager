@@ -41,6 +41,7 @@ interface DayEvent {
   date: string; // "YYYY-MM-DD"
   label: string;
   examType: ExamType | "holiday" | "custom" | "assignment";
+  completed?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -877,7 +878,9 @@ export function ExamCalendar() {
                               evMeta
                                 ? `${evMeta.bg} ${evMeta.color}`
                                 : isEvAssignment
-                                ? "bg-blue-500/25 text-blue-300 border border-blue-500/30"
+                                ? ev.completed
+                                  ? "bg-blue-950/90 text-blue-400/60 border border-blue-900/60 line-through"
+                                  : "bg-blue-500/25 text-blue-300 border border-blue-500/30"
                                 : isEvHoliday
                                 ? "bg-purple-500/30 text-purple-200 border border-purple-500/40"
                                 : "bg-emerald-500/20 text-emerald-300"

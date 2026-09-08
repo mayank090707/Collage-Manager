@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
 import {
-  CalendarDays, Clock, Flame, ChevronLeft, ChevronRight, AlertTriangle, BookOpen, Settings2, Timer
+  CalendarDays, Clock, Flame, ChevronLeft, ChevronRight, AlertTriangle, BookOpen, Settings2, Timer, CheckCircle2
 } from "lucide-react";
 import {
   format, parseISO, differenceInDays, isPast,
@@ -27,6 +27,7 @@ interface DayEvent {
   date: string;
   label: string;
   examType: ExamType | "holiday" | "custom" | "assignment";
+  completed?: boolean;
 }
 
 interface SemesterConfig {
@@ -256,6 +257,54 @@ export function ExamLiveCountdownCard({ target }: { target: UpcomingExamTarget }
   );
 }
 
+// Compact inline HH:MM:SS countdown shown when a deadline card is clicked
+function InlineCountdown({ dateStr, urgencyText }: { dateStr: string; urgencyText: string }) {
+  const [time, setTime] = useState(() => calculateTimeRemaining(dateStr));
+  useEffect(() => {
+    const iv = setInterval(() => setTime(calculateTimeRemaining(dateStr)), 1000);
+    return () => clearInterval(iv);
+  }, [dateStr]);
+
+  if (time.isEnded) return <p className="text-xs text-gray-500 text-center">Deadline has passed</p>;
+  if (time.isOngoing) return (
+    <div className="flex items-center justify-center gap-2">
+      <span className="flex h-2 w-2 relative">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+      </span>
+      <span className="text-xs text-red-400 font-bold">In Progress</span>
+    </div>
+  );
+
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return (
+    <div className="flex items-center justify-center gap-1.5">
+      {time.months > 0 && (
+        <div className="flex flex-col items-center bg-black/30 rounded-lg px-2 py-1.5 min-w-[36px]">
+          <span className={`text-base font-black font-mono ${urgencyText}`}>{pad(time.months)}</span>
+          <span className="text-[8px] text-gray-500 uppercase font-bold">mo</span>
+        </div>
+      )}
+      <div className="flex flex-col items-center bg-black/30 rounded-lg px-2 py-1.5 min-w-[36px]">
+        <span className={`text-base font-black font-mono ${urgencyText}`}>{pad(time.days)}</span>
+        <span className="text-[8px] text-gray-500 uppercase font-bold">d</span>
+      </div>
+      <div className="flex flex-col items-center bg-black/30 rounded-lg px-2 py-1.5 min-w-[36px]">
+        <span className={`text-base font-black font-mono ${urgencyText}`}>{pad(time.hours)}</span>
+        <span className="text-[8px] text-gray-500 uppercase font-bold">h</span>
+      </div>
+      <div className="flex flex-col items-center bg-black/30 rounded-lg px-2 py-1.5 min-w-[36px]">
+        <span className={`text-base font-black font-mono ${urgencyText}`}>{pad(time.minutes)}</span>
+        <span className="text-[8px] text-gray-500 uppercase font-bold">m</span>
+      </div>
+      <div className="flex flex-col items-center bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 min-w-[36px]">
+        <span className={`text-base font-black font-mono ${urgencyText} animate-pulse`}>{pad(time.seconds)}</span>
+        <span className="text-[8px] text-gray-500 uppercase font-bold">s</span>
+      </div>
+    </div>
+  );
+}
+
 export function getUnifiedUpcomingTargets(data: CalendarState): UpcomingExamTarget[] {
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const targets: UpcomingExamTarget[] = [];
@@ -315,6 +364,7 @@ export function Exams() {
   const navigate = useNavigate();
   const [data, setData] = useState<CalendarState | null>(null);
   const [viewMonth, setViewMonth] = useState(new Date());
+  const [selectedCountdownId, setSelectedCountdownId] = useState<string | null>(null);
 
   const loadExamData = () => {
     try {
@@ -325,6 +375,20 @@ export function Exams() {
         setViewMonth(parseISO(parsed.semConfig.startDate));
       }
     } catch {}
+  };
+
+  // Toggle completed status of a dayEvent and save to localStorage
+  const toggleCompleted = (eventId: string) => {
+    if (!data) return;
+    const updated: CalendarState = {
+      ...data,
+      dayEvents: data.dayEvents.map((ev) =>
+        ev.id === eventId ? { ...ev, completed: !ev.completed } : ev
+      ),
+    };
+    localStorage.setItem("exam_calendar_v2", JSON.stringify(updated));
+    setData(updated);
+    window.dispatchEvent(new Event("storage"));
   };
 
   useEffect(() => {
@@ -591,7 +655,13 @@ export function Exams() {
                           <div
                             key={ev.id}
                             className={`w-[90%] mt-0.5 px-1 py-0.5 rounded text-[8px] font-semibold truncate leading-tight text-center ${
-                              evMeta ? `${evMeta.bg} ${evMeta.color}` : isEvAssignment ? "bg-blue-500/20 text-blue-300" : "bg-emerald-500/20 text-emerald-300"
+                              evMeta
+                                ? `${evMeta.bg} ${evMeta.color}`
+                                : isEvAssignment
+                                ? ev.completed
+                                  ? "bg-blue-950/90 text-blue-400/60 border border-blue-900/60 line-through"
+                                  : "bg-blue-500/20 text-blue-300"
+                                : "bg-emerald-500/20 text-emerald-300"
                             }`}
                           >
                             {ev.label}
@@ -651,39 +721,97 @@ export function Exams() {
                   const u = urgencyStyle(daysLeft);
                   const isAssBtn = t.examType === "assignment";
                   const evMeta = !isAssBtn && (t.examType as string) !== "custom" && (t.examType as string) !== "holiday" ? EXAM_META[t.examType as ExamType] : null;
+                  // Find the actual dayEvent to get completed status (for assignments/day events)
+                  const dayEvent = data?.dayEvents.find((ev) => ev.id === t.id);
+                  const isCompleted = dayEvent?.completed ?? false;
+                  const isExpanded = selectedCountdownId === t.id;
+
                   return (
                     <motion.div
                       key={t.id}
                       initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.04 }}
-                      className={`bg-gradient-to-r ${u.card} border rounded-xl p-3.5`}
+                      className={`border rounded-xl overflow-hidden transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-gradient-to-r from-gray-800/40 to-gray-700/30 border-gray-700/40 opacity-70"
+                          : `bg-gradient-to-r ${u.card}`
+                      }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          {t.examType === "assignment" ? (
-                            <span className="text-[10px] font-bold bg-blue-500/20 border border-blue-500/40 text-blue-300 rounded-full px-2 py-0.5 mb-1 inline-block">
-                              📋 Assignment
-                            </span>
-                          ) : evMeta && (
-                            <span className={`text-[10px] font-bold ${evMeta.pill} border rounded-full px-2 py-0.5 mb-1 inline-block`}>
-                              {evMeta.label}
-                            </span>
+                      {/* Main row — click to toggle countdown */}
+                      <button
+                        onClick={() => setSelectedCountdownId(isExpanded ? null : t.id)}
+                        className="w-full text-left p-3.5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            {isAssBtn ? (
+                              <span className={`text-[10px] font-bold border rounded-full px-2 py-0.5 mb-1 inline-block ${
+                                isCompleted ? "bg-blue-900/40 border-blue-900/60 text-blue-400/70 line-through" : "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                              }`}>
+                                📋 Assignment
+                              </span>
+                            ) : evMeta && (
+                              <span className={`text-[10px] font-bold ${evMeta.pill} border rounded-full px-2 py-0.5 mb-1 inline-block`}>
+                                {evMeta.label}
+                              </span>
+                            )}
+                            <p className={`font-semibold text-sm truncate ${isCompleted ? "text-gray-500 line-through" : "text-white"}`}>{t.label}</p>
+                            {t.subtitle && <p className="text-[11px] text-gray-400 truncate">{t.subtitle}</p>}
+                            <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                              <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
+                              {format(parseISO(t.dateStr), "EEE, MMM d, yyyy")}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 text-right flex flex-col items-center gap-1">
+                            {isCompleted ? (
+                              <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                            ) : (
+                              <>
+                                <p className={`text-xl font-black ${u.text} leading-none`}>
+                                  {daysLeft <= 0 ? "Today" : daysLeft === 1 ? "1d" : `${daysLeft}d`}
+                                </p>
+                                {daysLeft > 0 && <p className="text-[10px] text-gray-500">left</p>}
+                                {daysLeft <= 3 && <Flame className={`w-3.5 h-3.5 ${u.text}`} />}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Expanded countdown + tick */}
+                      {isExpanded && !isCompleted && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t border-white/10 px-3.5 pb-3.5 pt-3 space-y-3"
+                        >
+                          {/* Live HH:MM:SS inline countdown */}
+                          <InlineCountdown dateStr={t.dateStr} urgencyText={u.text} />
+                          {/* Tick button — only for day events (id matches a dayEvent) */}
+                          {dayEvent && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleCompleted(t.id); }}
+                              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              Mark as Submitted / Done
+                            </button>
                           )}
-                          <p className="text-white font-semibold text-sm truncate">{t.label}</p>
-                          {t.subtitle && <p className="text-[11px] text-gray-400 truncate">{t.subtitle}</p>}
-                          <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                            <CalendarDays className="w-3.5 h-3.5 text-gray-500" />
-                            {format(parseISO(t.dateStr), "EEE, MMM d, yyyy")}
-                          </p>
+                        </motion.div>
+                      )}
+
+                      {/* Show un-tick option for completed items */}
+                      {isCompleted && dayEvent && (
+                        <div className="border-t border-gray-700/30 px-3.5 pb-2.5 pt-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleCompleted(t.id); }}
+                            className="text-[11px] text-gray-600 hover:text-gray-400 underline underline-offset-2 transition-colors"
+                          >
+                            Undo — mark as pending
+                          </button>
                         </div>
-                        <div className={`flex-shrink-0 text-right`}>
-                          <p className={`text-xl font-black ${u.text} leading-none`}>
-                            {daysLeft <= 0 ? "Today" : daysLeft === 1 ? "1d" : `${daysLeft}d`}
-                          </p>
-                          {daysLeft > 0 && <p className="text-[10px] text-gray-500">left</p>}
-                          {daysLeft <= 3 && <Flame className={`w-3.5 h-3.5 ${u.text} mx-auto mt-0.5`} />}
-                        </div>
-                      </div>
+                      )}
                     </motion.div>
                   );
                 })}
@@ -691,7 +819,7 @@ export function Exams() {
             ) : (
               <div className="text-center py-8">
                 <BookOpen className="w-10 h-10 text-gray-700 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">No upcoming exams</p>
+                <p className="text-gray-500 text-sm">No upcoming deadlines</p>
               </div>
             )}
           </Card>
