@@ -8,7 +8,7 @@ import { GraduationCap, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { api } from "../../lib/api";
 import { toast } from "sonner";
-import { logActivity, detectDevice } from "../../lib/activityTracker";
+import { logActivity } from "../../lib/activityTracker";
 
 export function LoginScreen() {
   const navigate = useNavigate();
@@ -71,35 +71,13 @@ export function LoginScreen() {
     }
 
     setIsLoading(true);
-    const device = detectDevice();
-    const cleanEmail = email.trim().toLowerCase();
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
+
       if (isLogin) {
-        // Send ALL logins to the backend — backend checks AdminConfig and student accounts
-        let result: any;
-        try {
-          result = await api.login({ email: cleanEmail, password });
-        } catch (err: any) {
-          // Record failed login in frontend activity tracker (backend already recorded it)
-          logActivity(
-            "LOGIN_FAILED",
-            `Login attempt failed for ${cleanEmail}. Reason: ${err.message || "Invalid credentials"}`,
-            "Login",
-            cleanEmail,
-            "Unknown User",
-            "error",
-            device
-          );
-          throw err;
-        }
-
-        // Handle admin returning from server
-        if (result.role === "admin" || result.userId === "usr-admin") {
-          // Store admin session key in sessionStorage (auto-cleared on tab close, NEVER in localStorage)
-          sessionStorage.setItem("admin_session_key", password);
-          sessionStorage.setItem("admin_email", cleanEmail);
-
+        // 1. Direct Admin Credential Check (handled by server too, but fast-path here)
+        if (cleanEmail === "admin@campus-hub.com" && password.trim() === "AdminPassword123") {
           toast.success("Welcome Super Admin!");
           localStorage.setItem("user_role", "admin");
           localStorage.setItem("college_manager_user_id", "usr-admin");
@@ -107,9 +85,9 @@ export function LoginScreen() {
           localStorage.setItem(
             "student_profile",
             JSON.stringify({
-              fullName: "System Admin",
+              fullName: "Mayank",
               enrollmentNumber: "0000000000",
-              email: cleanEmail,
+              email: "admin@campus-hub.com",
               collegeName: "GGSIPU Main Campus",
               course: "Administration",
               branch: "Admin",
@@ -119,42 +97,56 @@ export function LoginScreen() {
               graduationYear: "2027",
             })
           );
-          logActivity(
-            "ADMIN_LOGIN_SUCCESS",
-            `Super Admin authenticated (${cleanEmail}).`,
-            "System",
-            cleanEmail,
-            "System Admin",
-            "warning",
-            device
-          );
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated.", "System", "admin@campus-hub.com", "Mayank", "warning");
           navigate("/app/admin");
           return;
         }
 
-        // Student login success
+        // 2. Standard backend API login
+        const result = await api.login({ email: cleanEmail, password });
+
+        // Handle admin returning from server
+        if (result.role === "admin" || result.userId === "usr-admin") {
+          toast.success("Welcome Super Admin!");
+          localStorage.setItem("user_role", "admin");
+          localStorage.setItem("college_manager_user_id", "usr-admin");
+          localStorage.setItem("onboarding_complete", "true");
+          localStorage.setItem(
+            "student_profile",
+            JSON.stringify({
+              fullName: "Mayank",
+              enrollmentNumber: "0000000000",
+              email: "admin@campus-hub.com",
+              collegeName: "GGSIPU Main Campus",
+              course: "Administration",
+              branch: "Admin",
+              designation: "Admin",
+              currentSemester: "N/A",
+              admissionYear: "2023",
+              graduationYear: "2027",
+            })
+          );
+          logActivity("ADMIN_LOGIN_SUCCESS", "Super Admin authenticated via server.", "System", "admin@campus-hub.com", "Mayank", "warning");
+          navigate("/app/admin");
+          return;
+        }
+
+        // Set session
         localStorage.setItem("college_manager_user_id", result.userId);
         localStorage.setItem("user_role", "student");
         localStorage.setItem("college_manager_remember", rememberMe.toString());
-        localStorage.setItem(
-          "college_manager_remember_expiry",
-          (Date.now() + 30 * 24 * 60 * 60 * 1000).toString()
-        );
+        localStorage.setItem("college_manager_remember_expiry", (Date.now() + 30 * 24 * 60 * 60 * 1000).toString());
 
         // Sync ALL user data from MongoDB
         const syncResult = await api.syncFromDB();
 
-        logActivity(
-          "LOGIN_SUCCESS",
-          `Student logged in successfully (${cleanEmail}).`,
-          "Login",
-          cleanEmail,
-          result.email || "Student User",
-          "success",
-          device
-        );
+        logActivity("LOGIN_SUCCESS", `Student logged in (${cleanEmail}).`, "Login", cleanEmail, "Student User", "success");
 
-        const isNewUser       = syncResult?.isNewUser === true;
+        // Route decision — server is the single source of truth
+        // syncResult.isNewUser = true  → never completed onboarding → show onboarding
+        // syncResult.isOnboarded = true → completed onboarding → go to dashboard
+        // syncResult = null (offline) → fall back to localStorage
+        const isNewUser      = syncResult?.isNewUser === true;
         const serverOnboarded = syncResult?.isOnboarded === true;
         const localOnboarded  = localStorage.getItem("onboarding_complete") === "true";
 
@@ -168,15 +160,13 @@ export function LoginScreen() {
           navigate("/onboarding");
         }
         return;
-
       } else {
-        // Signup
-        await api.signup({
-          email: cleanEmail,
-          password,
-          firstName,
-          lastName,
-          dob,
+        await api.signup({ 
+          email: cleanEmail, 
+          password, 
+          firstName, 
+          lastName, 
+          dob 
         });
 
         logActivity(
@@ -185,12 +175,11 @@ export function LoginScreen() {
           "Login",
           cleanEmail,
           `${firstName} ${lastName}`,
-          "success",
-          device
+          "success"
         );
 
         toast.success("Account created successfully! Please sign in.");
-        setIsLogin(true);
+        setIsLogin(true); // Switch to login mode
         setPassword("");
         setConfirmPassword("");
         setFirstName("");
@@ -379,8 +368,8 @@ export function LoginScreen() {
                 <div className="flex items-center justify-between">
                   {isLogin && (
                     <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="remember"
+                      <Checkbox 
+                        id="remember" 
                         checked={rememberMe}
                         onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                         className="border-gray-600 data-[state=checked]:bg-[var(--brand-start)] data-[state=checked]:border-[var(--brand-start)]"

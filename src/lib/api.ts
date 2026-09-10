@@ -3,10 +3,6 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '') ||
 // Helper — get current user ID
 const getUserId = () => localStorage.getItem('college_manager_user_id');
 
-// Helper — get admin session key from sessionStorage (set at login, auto-cleared on tab close)
-// NEVER stored in hardcoded constants or localStorage
-const getAdminKey = (): string => sessionStorage.getItem('admin_session_key') || '';
-
 // Helper — safely parse response body (JSON or text/HTML error fallback)
 async function parseResponse(response: Response): Promise<any> {
   const text = await response.text();
@@ -25,19 +21,22 @@ async function parseResponse(response: Response): Promise<any> {
   return json || {};
 }
 
+// Admin key for protected admin API calls
+const ADMIN_KEY = 'AdminPassword123';
+
 // Storage key → API field mapping
 const DB_MAP: Record<string, string> = {
-  'student_profile':       'profile',
-  'subjects':              'subjects',
-  'timetable':             'timetable',
-  'attendance_records':    'attendanceRecords',
-  'semester_data':         'semesterData',
-  'semester_marks':        'semesterMarks',
-  'backlogs':              'backlogs',
-  'exam_calendar_v2':      'examCalendar',
-  'target_cgpa':           'targetCgpa',
-  'onboarding_complete':   'isOnboarded',
-  'my_space_topics':       'mySpaceTopics',
+  'student_profile':  'profile',
+  'subjects':         'subjects',
+  'timetable':        'timetable',
+  'attendance_records': 'attendanceRecords',
+  'semester_data':    'semesterData',
+  'semester_marks':   'semesterMarks',
+  'backlogs':         'backlogs',
+  'exam_calendar_v2': 'examCalendar',
+  'target_cgpa':      'targetCgpa',
+  'onboarding_complete': 'isOnboarded',
+  'my_space_topics':  'mySpaceTopics',
 };
 
 // GLOBAL INTERCEPTOR: any localStorage.setItem() for known keys auto-syncs to the backend
@@ -90,35 +89,14 @@ export const api = {
   // ── Admin ────────────────────────────────────────────────────────────────
   async getAdminUsers() {
     const response = await fetch(`${API_BASE_URL}/admin/users`, {
-      headers: { 'x-admin-key': getAdminKey() },
+      headers: { 'x-admin-key': ADMIN_KEY },
     });
     return parseResponse(response);
   },
 
   async getAdminStats() {
     const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-      headers: { 'x-admin-key': getAdminKey() },
-    });
-    return parseResponse(response);
-  },
-
-  async getAdminEmail(): Promise<string> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/credentials/email`, {
-        headers: { 'x-admin-key': getAdminKey() },
-      });
-      const data = await parseResponse(response);
-      return data.adminEmail || '';
-    } catch {
-      return sessionStorage.getItem('admin_email') || 'admin@campus-hub.com';
-    }
-  },
-
-  async changeAdminCredentials(payload: { currentPassword?: string; newEmail?: string; newPassword?: string; confirmPassword?: string }) {
-    const response = await fetch(`${API_BASE_URL}/admin/credentials`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
-      body:    JSON.stringify(payload),
+      headers: { 'x-admin-key': ADMIN_KEY },
     });
     return parseResponse(response);
   },
@@ -126,26 +104,8 @@ export const api = {
   async updateAdminUser(userData: any) {
     const response = await fetch(`${API_BASE_URL}/admin/users/update`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify(userData),
-    });
-    return parseResponse(response);
-  },
-
-  async resetUserPassword(payload: { id: string; newPassword: string; confirmPassword: string }) {
-    const response = await fetch(`${API_BASE_URL}/admin/users/reset-password`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
-      body:    JSON.stringify(payload),
-    });
-    return parseResponse(response);
-  },
-
-  async toggleUserStatus(payload: { id: string; status: 'active' | 'blocked' }) {
-    const response = await fetch(`${API_BASE_URL}/admin/users/toggle-status`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
-      body:    JSON.stringify(payload),
     });
     return parseResponse(response);
   },
@@ -153,7 +113,7 @@ export const api = {
   async createAdminUser(userData: any) {
     const response = await fetch(`${API_BASE_URL}/admin/users/create`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify(userData),
     });
     return parseResponse(response);
@@ -162,67 +122,21 @@ export const api = {
   async deleteAdminUser(id: string) {
     const response = await fetch(`${API_BASE_URL}/admin/users/delete`, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_KEY },
       body:    JSON.stringify({ id }),
     });
     return parseResponse(response);
   },
 
-  // ── Login Activity ────────────────────────────────────────────────────────
-  async getLoginActivity() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/login-activity`, {
-        headers: { 'x-admin-key': getAdminKey() },
-      });
-      return await parseResponse(response);
-    } catch {
-      return [];
-    }
-  },
-
-  async getLoginActivityByUserId(userId: string) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/login-activity/user/${encodeURIComponent(userId)}`, {
-        headers: { 'x-admin-key': getAdminKey() },
-      });
-      return await parseResponse(response);
-    } catch {
-      return [];
-    }
-  },
-
-  async getLoginActivityByEmail(email: string) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/login-activity/email/${encodeURIComponent(email)}`, {
-        headers: { 'x-admin-key': getAdminKey() },
-      });
-      return await parseResponse(response);
-    } catch {
-      return [];
-    }
-  },
-
-  async clearLoginActivity() {
-    const response = await fetch(`${API_BASE_URL}/admin/login-activity`, {
-      method: 'DELETE',
-      headers: { 'x-admin-key': getAdminKey() },
-    });
-    return parseResponse(response);
-  },
-
-  // ── Admin Audit Log ───────────────────────────────────────────────────────
-  async getAdminAuditLog() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/admin/audit-log`, {
-        headers: { 'x-admin-key': getAdminKey() },
-      });
-      return await parseResponse(response);
-    } catch {
-      return [];
-    }
-  },
-
   // ── syncFromDB ───────────────────────────────────────────────────────────
+  /**
+   * Fetches the current user's data from MongoDB and restores it to localStorage.
+   *
+   * Returns:
+   *   { data, isNewUser: true }  — no data found on server (brand new account)
+   *   { data, isNewUser: false } — data found and restored
+   *   null                       — network/server error (use cached localStorage)
+   */
   async syncFromDB(): Promise<any> {
     const userId = getUserId();
     if (!userId) return null;
@@ -296,6 +210,10 @@ export const api = {
   },
 
   // ── migrateLocalStorageToDB ──────────────────────────────────────────────
+  /**
+   * Pushes all current localStorage data to MongoDB.
+   * Called at the end of onboarding to persist initial data.
+   */
   async migrateLocalStorageToDB() {
     const userId = getUserId();
     if (!userId) return;
