@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card } from "./ui/card";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, Check, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 
@@ -192,30 +192,85 @@ export function OnboardingFlow() {
 
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-4xl">
-          {/* Progress */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center flex-1">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                      step >= s
-                        ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white shadow-[0_0_20px_rgba(var(--brand-start-rgb), 0.5)]"
-                        : "bg-gray-700 text-gray-400"
+          {/* Catchy Hero Header */}
+          <div className="text-center mb-8 space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-start)]/10 border border-[var(--brand-start)]/30 text-[var(--brand-start)] text-xs font-semibold uppercase tracking-wider mb-1">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Quick Setup • Step {step} of 3
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
+              Personalize Your <span className="bg-gradient-to-r from-[var(--brand-start)] via-amber-400 to-[var(--brand-end)] bg-clip-text text-transparent">Academic Hub</span>
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base max-w-md mx-auto">
+              Set up your profile, current semester subjects, and class timetable in 3 easy steps.
+            </p>
+          </div>
+
+          {/* Stepper Header */}
+          <div className="relative mb-10 max-w-2xl mx-auto px-4">
+            {/* Horizontal Line Connecting Circle Centers */}
+            <div className="absolute top-5 left-8 right-8 -translate-y-1/2 pointer-events-none z-0">
+              <div className="h-1 w-full bg-gray-800/80 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] transition-all duration-500 ease-out shadow-[0_0_15px_rgba(var(--brand-start-rgb),0.8)]"
+                  style={{
+                    width: step === 1 ? "0%" : step === 2 ? "50%" : "100%",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Stepper Tiles (1, 2, 3) */}
+            <div className="relative z-10 flex justify-between items-center">
+              {[
+                { num: 1, label: "Student Info" },
+                { num: 2, label: "Subjects" },
+                { num: 3, label: "Timetable" },
+              ].map((s) => {
+                const isActive = step === s.num;
+                const isCompleted = step > s.num;
+
+                return (
+                  <button
+                    key={s.num}
+                    type="button"
+                    onClick={() => {
+                      if (isCompleted || s.num < step) {
+                        setStep(s.num);
+                      }
+                    }}
+                    disabled={!isCompleted && s.num > step}
+                    className={`flex flex-col items-center group transition-all duration-200 ${
+                      isCompleted || s.num < step ? "cursor-pointer" : "cursor-default"
                     }`}
                   >
-                    {s}
-                  </div>
-                  {s < 3 && (
-                    <div className={`flex-1 h-1 mx-2 rounded ${step > s ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)]" : "bg-gray-700"}`} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between text-sm text-gray-400">
-              <span>Student Info</span>
-              <span>Subjects</span>
-              <span>Timetable</span>
+                    {/* Number Tile / Circle */}
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 ${
+                        isActive
+                          ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white shadow-[0_0_22px_rgba(var(--brand-start-rgb),0.7)] scale-110 ring-4 ring-[var(--brand-start)]/25"
+                          : isCompleted
+                          ? "bg-gradient-to-r from-[var(--brand-start)] to-[var(--brand-end)] text-white shadow-[0_0_12px_rgba(var(--brand-start-rgb),0.4)] group-hover:scale-105"
+                          : "bg-[#14141f] border border-gray-700/80 text-gray-400"
+                      }`}
+                    >
+                      {isCompleted ? <Check className="w-5 h-5 stroke-[2.5]" /> : s.num}
+                    </div>
+
+                    {/* Step Title */}
+                    <span
+                      className={`mt-2.5 text-xs font-semibold tracking-wide transition-all duration-300 ${
+                        isActive
+                          ? "text-[var(--brand-start)] font-bold scale-105"
+                          : isCompleted
+                          ? "text-gray-200 group-hover:text-white"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
