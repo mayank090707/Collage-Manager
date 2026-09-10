@@ -4,7 +4,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
-import { motion } from "motion/react";
 import {
   Users,
   ShieldCheck,
@@ -17,40 +16,58 @@ import {
   Key,
   Mail,
   CheckCircle2,
-  Server,
+  XCircle,
   RefreshCw,
   Award,
   Clock,
   BookOpen,
-  Calendar,
-  FileText,
   Lock,
   ArrowLeft,
-  Sparkles,
-  Laptop,
-  GraduationCap,
-  Layers,
-  ChevronRight,
-  Eye,
-  EyeOff
+  History,
+  FileText,
+  UserX,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
-import { getActivities, clearActivities, logActivity, ActivityLog } from "../../lib/activityTracker";
+import { getActivities, clearActivities, logActivity, ActivityLog, detectDevice } from "../../lib/activityTracker";
 import { api } from "../../lib/api";
 
 interface UserAccount {
   id: string;
   fullName: string;
   email: string;
-  passwordHash: string;
   enrollmentNumber: string;
   collegeName: string;
   branch: string;
   admissionYear: number;
   graduationYear: number;
   lastLogin: string;
+  lastLoginDevice: string;
   status: "active" | "offline" | "blocked";
+}
+
+interface LoginActivityRecord {
+  _id?: string;
+  attemptedEmail: string;
+  userId?: string;
+  success: boolean;
+  timestamp: string;
+  browser: string;
+  os: string;
+  device: string;
+  ipAddress?: string;
+}
+
+interface AdminAuditRecord {
+  _id?: string;
+  action: string;
+  targetEmail?: string;
+  adminEmail: string;
+  timestamp: string;
+  device: string;
+  ipAddress?: string;
+  details?: string;
 }
 
 export function AdminDashboard() {
@@ -63,38 +80,48 @@ export function AdminDashboard() {
 
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [activePartition, setActivePartition] = useState<"telemetry" | "users">("telemetry");
+  const [backendLoginLogs, setBackendLoginLogs] = useState<LoginActivityRecord[]>([]);
+  const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditRecord[]>([]);
+  const [adminEmail, setAdminEmail] = useState<string>("admin@campus-hub.com");
+
+  const [activePartition, setActivePartition] = useState<"telemetry" | "users" | "audit">("telemetry");
   const [realStats, setRealStats] = useState({ totalUsers: 0, activeUsers: 0, onboarded: 0 });
-  
-  // User Record Authentication & Activity Filter States
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [showAuthPass, setShowAuthPass] = useState(false);
-  const [authenticatedUser, setAuthenticatedUser] = useState<UserAccount | null>(null);
-  const [userAuthSuccess, setUserAuthSuccess] = useState(false);
 
   // Telemetry Filter States
   const [telemetrySearch, setTelemetrySearch] = useState("");
-  const [telemetryCategory, setTelemetryCategory] = useState<string>("ALL");
+  const [telemetryFilterStatus, setTelemetryFilterStatus] = useState<"ALL" | "SUCCESS" | "FAILED">("ALL");
 
   // User Manager States
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserAccount | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
 
-  // Edit Form State
-  const [editEmail, setEditEmail] = useState("");
-  const [editPassword, setEditPassword] = useState("");
+  // Dialog States
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showResetPassDialog, setShowResetPassDialog] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showCredChangeDialog, setShowCredChangeDialog] = useState(false);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserAccount | null>(null);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [userHistoryLogs, setUserHistoryLogs] = useState<LoginActivityRecord[]>([]);
+  const [historyUser, setHistoryUser] = useState<UserAccount | null>(null);
+
+  // Form States
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editStatus, setEditStatus] = useState<"active" | "offline" | "blocked">("active");
 
-  // Add Form State
+  const [resetPassNew, setResetPassNew] = useState("");
+  const [resetPassConfirm, setResetPassConfirm] = useState("");
+
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newEnrollment, setNewEnrollment] = useState("");
+
+  const [credNewEmail, setCredNewEmail] = useState("");
+  const [credNewPassword, setCredNewPassword] = useState("");
+  const [credConfirmPassword, setCredConfirmPassword] = useState("");
 
   useEffect(() => {
     if (isAdmin) {
@@ -103,280 +130,210 @@ export function AdminDashboard() {
   }, [isAdmin]);
 
   const loadRealDatabaseData = async () => {
-    let loadedUsers: UserAccount[] = [];
-
-    // 1. Fetch live users from backend API (MongoDB — always real data)
+    // Fetch live users
     try {
       const apiUsers = await api.getAdminUsers();
-      if (Array.isArray(apiUsers) && apiUsers.length > 0) {
-        loadedUsers = apiUsers;
+      if (Array.isArray(apiUsers)) {
+        setUsers(apiUsers);
       }
     } catch (e) {
       console.warn("API admin users fetch failed.", e);
     }
 
-    // 2. Fetch real stats from the server
+    // Fetch Admin Email
+    try {
+      const email = await api.getAdminEmail();
+      if (email) setAdminEmail(email);
+    } catch (e) {}
+
+    // Fetch Stats
     try {
       const stats = await api.getAdminStats();
       setRealStats(stats);
-    } catch (e) {
-      // Fall back to inferring from user list
-      setRealStats({
-        totalUsers: loadedUsers.filter(u => u.id !== 'usr-admin').length,
-        activeUsers: loadedUsers.filter(u => u.status === 'active' && u.id !== 'usr-admin').length,
-        onboarded: loadedUsers.filter(u => (u as any).isOnboarded === true).length,
-      });
-    }
+    } catch (e) {}
 
-    // 3. Minimal fallback if API completely fails
-    if (loadedUsers.length === 0) {
-      loadedUsers = [
-        {
-          id: "usr-admin",
-          fullName: "Mayank",
-          email: "admin@campus-hub.com",
-          passwordHash: "AdminPassword123",
-          enrollmentNumber: "0000000000",
-          collegeName: "GGSIPU Main Campus",
-          branch: "Admin",
-          admissionYear: 2023,
-          graduationYear: 2027,
-          lastLogin: new Date().toLocaleString(),
-          status: "active",
-        }
-      ];
-    }
-
-    setUsers(loadedUsers);
-    localStorage.setItem("system_users", JSON.stringify(loadedUsers));
-
-    // 3. Read real Telemetry Logs from activityTracker
-    const loadedActivities = getActivities();
-    setActivities(loadedActivities);
-  };
-
-  const handleUserAuthSignIn = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!authEmail.trim()) {
-      toast.error("Please enter a user email address.");
-      return;
-    }
-
-    const cleanEmail = authEmail.trim().toLowerCase();
-    const inputPass = authPassword.trim();
-
-    // Check against master admin credentials
-    if (cleanEmail === "admin@campus-hub.com" && (inputPass === "AdminPassword123" || inputPass === "")) {
-      const adminUser: UserAccount = {
-        id: "usr-admin",
-        fullName: "Mayank",
-        email: "admin@campus-hub.com",
-        passwordHash: "AdminPassword123",
-        enrollmentNumber: "0000000000",
-        collegeName: "GGSIPU Main Campus",
-        branch: "Admin",
-        admissionYear: 2023,
-        graduationYear: 2027,
-        lastLogin: new Date().toLocaleString(),
-        status: "active",
-      };
-      setAuthenticatedUser(adminUser);
-      setUserAuthSuccess(true);
-      toast.success("Authenticated! Displaying Admin User Activity Record (Mayank).");
-      logActivity("ADMIN_USER_AUTH", "Admin authenticated to inspect own Mayank activity records.", "System", "admin@campus-hub.com", "Mayank", "info");
-      return;
-    }
-
-    // Check against registered user accounts
-    const found = users.find((u) => u.email.toLowerCase() === cleanEmail);
-    if (found) {
-      const matchPass =
-        inputPass === found.passwordHash ||
-        inputPass === (found as any).rawPassword ||
-        inputPass === "AdminPassword123" ||
-        inputPass === "";
-
-      if (matchPass) {
-        setAuthenticatedUser(found);
-        setUserAuthSuccess(true);
-        toast.success(`Successfully authenticated! Displaying User Record for ${found.fullName} (${found.email}).`);
-        logActivity(
-          "ADMIN_USER_AUTH",
-          `Admin authenticated user credentials to view activity record of ${found.fullName} (${found.email}).`,
-          "System",
-          "admin@campus-hub.com",
-          "Mayank",
-          "info"
-        );
-        return;
+    // Fetch Backend Login Activity Records
+    try {
+      const loginLogs = await api.getLoginActivity();
+      if (Array.isArray(loginLogs)) {
+        setBackendLoginLogs(loginLogs);
       }
+    } catch (e) {}
+
+    // Fetch Admin Audit Log Records
+    try {
+      const auditLogs = await api.getAdminAuditLog();
+      if (Array.isArray(auditLogs)) {
+        setAdminAuditLogs(auditLogs);
+      }
+    } catch (e) {}
+
+    // Local telemetry logs
+    setActivities(getActivities());
+  };
+
+  // Status Toggle (Activate / Deactivate)
+  const handleToggleStatus = async (user: UserAccount) => {
+    if (user.id === "usr-admin") {
+      toast.error("Cannot deactivate Root Admin account");
+      return;
     }
-
-    setUserAuthSuccess(false);
-    setAuthenticatedUser(null);
-    toast.error("Authentication Failed: Invalid email or password credentials.");
-  };
-
-  const handleSignOutUserView = () => {
-    setAuthenticatedUser(null);
-    setUserAuthSuccess(false);
-    setAuthEmail("");
-    setAuthPassword("");
-    toast.info("Signed out of user record view.");
-  };
-
-  const handleClearActivities = () => {
-    if (confirm("Are you sure you want to clear all telemetry logs from the database?")) {
-      clearActivities();
-      setActivities([]);
-      toast.success("Telemetry logs cleared!");
+    const newStatus = user.status === "active" ? "blocked" : "active";
+    try {
+      await api.toggleUserStatus({ id: user.id, status: newStatus });
+      toast.success(`Account for ${user.email} set to ${newStatus}`);
+      loadRealDatabaseData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to change status");
     }
   };
 
-  const togglePasswordReveal = (id: string) => {
-    setRevealedPasswords(prev => ({ ...prev, [id]: !prev[id] }));
+  // Change Admin Credentials
+  const handleChangeAdminCredentials = async () => {
+    if (credNewPassword && credNewPassword !== credConfirmPassword) {
+      toast.error("New passwords do not match!");
+      return;
+    }
+    try {
+      await api.changeAdminCredentials({
+        newEmail: credNewEmail.trim() || undefined,
+        newPassword: credNewPassword || undefined,
+        confirmPassword: credConfirmPassword || undefined,
+      });
+      toast.success("Admin credentials updated! Please log in again.");
+      sessionStorage.removeItem("admin_session_key");
+      sessionStorage.removeItem("admin_email");
+      localStorage.removeItem("user_role");
+      localStorage.removeItem("college_manager_user_id");
+      setShowCredChangeDialog(false);
+      navigate("/");
+    } catch (err: any) {
+      toast.error(err.message || "Credential update failed");
+    }
   };
 
+  // Open Edit User Dialog
   const handleEditClick = (user: UserAccount) => {
     setSelectedUser(user);
     setEditName(user.fullName);
     setEditEmail(user.email);
-    setEditPassword(user.passwordHash);
     setEditStatus(user.status || "active");
     setShowEditDialog(true);
   };
 
+  // Save User Edit (Name, Email, Status)
   const handleSaveUser = async () => {
     if (!selectedUser) return;
-    if (!editEmail.trim() || !editPassword.trim()) {
-      toast.error("Email and password cannot be empty");
+    if (!editEmail.trim()) {
+      toast.error("Email cannot be empty");
       return;
     }
-
-    const updated = users.map((u) =>
-      u.id === selectedUser.id
-        ? { ...u, fullName: editName, email: editEmail, passwordHash: editPassword, status: editStatus }
-        : u
-    );
-
-    setUsers(updated);
-    localStorage.setItem("system_users", JSON.stringify(updated));
-
     try {
       await api.updateAdminUser({
         id: selectedUser.id,
         fullName: editName,
-        email: editEmail,
-        passwordHash: editPassword,
-        status: editStatus
+        email: editEmail.trim(),
+        status: editStatus,
       });
-    } catch (err) {
-      console.error("API update error:", err);
+      toast.success(`Account ${editEmail} updated`);
+      setShowEditDialog(false);
+      loadRealDatabaseData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update user");
     }
-
-    if (selectedUser.id !== "usr-admin") {
-      const profile = JSON.parse(localStorage.getItem("student_profile") || "{}");
-      profile.fullName = editName;
-      profile.email = editEmail;
-      localStorage.setItem("student_profile", JSON.stringify(profile));
-    }
-
-    logActivity(
-      "ACCOUNT_UPDATED",
-      `Admin updated login credentials for account ${editEmail}.`,
-      "System",
-      "admin@campus-hub.com",
-      "System Admin",
-      "info"
-    );
-
-    setShowEditDialog(false);
-    toast.success(`Credentials updated for ${editEmail}`);
-    loadRealDatabaseData();
   };
 
-  const handleDeleteUser = async (id: string, name: string) => {
-    if (id === "usr-admin") {
-      toast.error("Cannot delete root admin account!");
+  // Open Reset Password Dialog
+  const handleOpenResetPass = (user: UserAccount) => {
+    setSelectedUser(user);
+    setResetPassNew("");
+    setResetPassConfirm("");
+    setShowResetPassDialog(true);
+  };
+
+  // Save Password Reset
+  const handleSaveResetPass = async () => {
+    if (!selectedUser) return;
+    if (!resetPassNew) {
+      toast.error("New password is required");
       return;
     }
-
-    if (confirm(`Are you sure you want to delete user account "${name}"?`)) {
-      const updated = users.filter((u) => u.id !== id);
-      setUsers(updated);
-      localStorage.setItem("system_users", JSON.stringify(updated));
-
-      try {
-        await api.deleteAdminUser(id);
-      } catch (err) {
-        console.error("API delete user error:", err);
-      }
-
-      logActivity(
-        "ACCOUNT_DELETED",
-        `Admin deleted user account "${name}" (${id}).`,
-        "System",
-        "admin@campus-hub.com",
-        "System Admin",
-        "warning"
-      );
-
-      toast.success(`User ${name} removed`);
-      loadRealDatabaseData();
+    if (resetPassNew !== resetPassConfirm) {
+      toast.error("Passwords do not match!");
+      return;
+    }
+    try {
+      await api.resetUserPassword({
+        id: selectedUser.id,
+        newPassword: resetPassNew,
+        confirmPassword: resetPassConfirm,
+      });
+      toast.success(`Password reset successfully for ${selectedUser.email}`);
+      setShowResetPassDialog(false);
+    } catch (err: any) {
+      toast.error(err.message || "Password reset failed");
     }
   };
 
+  // Open Delete Confirmation
+  const handleOpenDelete = (user: UserAccount) => {
+    if (user.id === "usr-admin") {
+      toast.error("Cannot delete Root Admin account!");
+      return;
+    }
+    setUserToDelete(user);
+    setShowDeleteConfirmDialog(true);
+  };
+
+  // Confirm Delete User
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      await api.deleteAdminUser(userToDelete.id);
+      toast.success(`Account ${userToDelete.email} permanently deleted`);
+      setShowDeleteConfirmDialog(false);
+      setUserToDelete(null);
+      loadRealDatabaseData();
+    } catch (err: any) {
+      toast.error(err.message || "Delete failed");
+    }
+  };
+
+  // Add New User
   const handleAddUser = async () => {
     if (!newEmail.trim() || !newPassword.trim() || !newName.trim()) {
       toast.error("Please fill in all required fields");
       return;
     }
-
     try {
       await api.createAdminUser({
         fullName: newName,
         email: newEmail,
         password: newPassword,
-        enrollmentNumber: newEnrollment
+        enrollmentNumber: newEnrollment,
       });
+      toast.success(`Account "${newEmail}" created successfully!`);
+      setShowAddDialog(false);
+      setNewName("");
+      setNewEmail("");
+      setNewPassword("");
+      setNewEnrollment("");
+      loadRealDatabaseData();
     } catch (err: any) {
-      console.error("API create user error:", err);
+      toast.error(err.message || "Failed to create account");
     }
+  };
 
-    const newUser: UserAccount = {
-      id: "usr-" + Date.now(),
-      fullName: newName,
-      email: newEmail,
-      passwordHash: newPassword,
-      enrollmentNumber: newEnrollment || "00" + Math.floor(10000000 + Math.random() * 90000000),
-      collegeName: "GGSIPU Affiliate",
-      branch: "CSE",
-      admissionYear: 2025,
-      graduationYear: 2029,
-      lastLogin: "Created just now",
-      status: "active",
-    };
-
-    const updated = [...users, newUser];
-    setUsers(updated);
-    localStorage.setItem("system_users", JSON.stringify(updated));
-
-    logActivity(
-      "ACCOUNT_CREATED",
-      `Admin created new user account for ${newName} (${newEmail}).`,
-      "System",
-      "admin@campus-hub.com",
-      "System Admin",
-      "success"
-    );
-
-    setShowAddDialog(false);
-    setNewName("");
-    setNewEmail("");
-    setNewPassword("");
-    setNewEnrollment("");
-    toast.success(`Account "${newEmail}" created successfully!`);
-    loadRealDatabaseData();
+  // View User History
+  const handleViewHistory = async (user: UserAccount) => {
+    setHistoryUser(user);
+    try {
+      const logs = await api.getLoginActivityByEmail(user.email);
+      setUserHistoryLogs(Array.isArray(logs) ? logs : []);
+    } catch (e) {
+      setUserHistoryLogs([]);
+    }
+    setShowHistoryDialog(true);
   };
 
   // Guard UI for Non-Admin Users
@@ -389,61 +346,48 @@ export function AdminDashboard() {
           </div>
           <h2 className="text-2xl font-black text-foreground mb-2">Access Restricted: Admin Privileges Required</h2>
           <p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
-            The Admin Telemetry Control Hub is restricted. Please sign in with your master administrator credentials.
+            The Admin Telemetry Control Hub is restricted. Please sign in with master administrator credentials.
           </p>
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold max-w-md mx-auto mb-6 text-left space-y-1">
-            <div className="font-bold flex items-center gap-1.5 mb-1">
-              <ShieldCheck className="w-4 h-4" /> Dedicated Admin Credentials:
-            </div>
-            <div><strong>Email:</strong> admin@campus-hub.com</div>
-            <div><strong>Password:</strong> AdminPassword123</div>
-          </div>
           <Button
-            onClick={() => navigate("/app")}
+            onClick={() => navigate("/")}
             className="bg-[var(--brand-start)] text-white hover:bg-amber-600 font-bold px-6 py-2.5 rounded-xl shadow-md"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Login
           </Button>
         </Card>
       </div>
     );
   }
 
-  // Filter Telemetry Activities
-  const filteredActivities = activities.filter((act) => {
-    const matchesSearch =
-      act.description.toLowerCase().includes(telemetrySearch.toLowerCase()) ||
-      act.userName.toLowerCase().includes(telemetrySearch.toLowerCase()) ||
-      act.userEmail.toLowerCase().includes(telemetrySearch.toLowerCase()) ||
-      act.actionType.toLowerCase().includes(telemetrySearch.toLowerCase());
-
-    const matchesCategory =
-      telemetryCategory === "ALL" || act.category.toUpperCase() === telemetryCategory.toUpperCase();
-
-    return matchesSearch && matchesCategory;
-  });
-
-  const getCategoryBadge = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "login":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1"><Key className="w-3 h-3" /> LOGIN</span>;
-      case "marks":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30 flex items-center gap-1"><Award className="w-3 h-3" /> MARKS</span>;
-      case "attendance":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> ATTENDANCE</span>;
-      case "studymaterial":
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1"><BookOpen className="w-3 h-3" /> MATERIAL</span>;
-      default:
-        return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/15 text-slate-600 dark:text-slate-400 border border-slate-500/30 flex items-center gap-1"><Activity className="w-3 h-3" /> SYSTEM</span>;
-    }
+  // Calculate login stats for a user email
+  const getUserStats = (email: string) => {
+    const userLogs = backendLoginLogs.filter((l) => l.attemptedEmail.toLowerCase() === email.toLowerCase());
+    const successful = userLogs.filter((l) => l.success).length;
+    const failed = userLogs.filter((l) => !l.success).length;
+    const lastSuccess = userLogs.find((l) => l.success);
+    return { successful, failed, lastSuccess };
   };
 
-  // Compute storage size
-  const storageKb = (JSON.stringify(localStorage).length / 1024).toFixed(1);
+  // Filtered backend login logs for Partition A
+  const filteredLoginLogs = backendLoginLogs.filter((log) => {
+    const query = telemetrySearch.toLowerCase();
+    const matchesSearch =
+      log.attemptedEmail.toLowerCase().includes(query) ||
+      log.device.toLowerCase().includes(query) ||
+      log.browser.toLowerCase().includes(query) ||
+      log.os.toLowerCase().includes(query) ||
+      (log.ipAddress && log.ipAddress.includes(query));
+
+    const matchesStatus =
+      telemetryFilterStatus === "ALL" ||
+      (telemetryFilterStatus === "SUCCESS" && log.success) ||
+      (telemetryFilterStatus === "FAILED" && !log.success);
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
-      
       {/* HEADER SECTION & MASTER CREDENTIALS BANNER */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4 flex-wrap pb-4 border-b border-border">
@@ -456,7 +400,7 @@ export function AdminDashboard() {
               </span>
             </div>
             <p className="text-muted-foreground text-sm font-medium">
-              Enterprise control panel for live user audit logging, credential management, and database telemetry
+              Enterprise control panel for live user audit logging, credential management, and security telemetry
             </p>
           </div>
 
@@ -479,7 +423,7 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Master Admin Identity Info Badge */}
+        {/* Master Admin Identity Info Banner */}
         <Card className="bg-card border-2 border-[var(--brand-start)]/60 p-4 shadow-sm rounded-xl">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
@@ -489,41 +433,49 @@ export function AdminDashboard() {
               <div>
                 <h3 className="font-bold text-foreground text-sm">Authenticated Master Admin</h3>
                 <p className="text-xs text-muted-foreground font-medium">
-                  Logged in with dedicated super admin identity
+                  Logged in with persistent super admin account
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-5 text-xs font-mono bg-muted/60 px-4 py-2 rounded-lg border border-border">
-              <div>
+            <div className="flex items-center gap-4">
+              <div className="text-xs font-mono bg-muted/60 px-4 py-2 rounded-lg border border-border">
                 <span className="text-muted-foreground text-[10px] block font-sans font-semibold">Master Admin Email</span>
-                <strong className="text-foreground">admin@campus-hub.com</strong>
+                <strong className="text-foreground">{adminEmail}</strong>
               </div>
-              <div className="h-6 w-px bg-border"></div>
-              <div>
-                <span className="text-muted-foreground text-[10px] block font-sans font-semibold">Master Admin Password</span>
-                <strong className="text-[var(--brand-start)]">AdminPassword123</strong>
-              </div>
+              <Button
+                onClick={() => {
+                  setCredNewEmail(adminEmail);
+                  setCredNewPassword("");
+                  setCredConfirmPassword("");
+                  setShowCredChangeDialog(true);
+                }}
+                variant="outline"
+                className="border-[var(--brand-start)] text-[var(--brand-start)] hover:bg-[var(--brand-start)]/10 text-xs font-bold"
+              >
+                <Key className="w-3.5 h-3.5 mr-1.5" />
+                Change Admin Credentials
+              </Button>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* PARTITION 1: EXECUTIVE KPI METRICS PANEL */}
+      {/* EXECUTIVE KPI METRICS PANEL */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">User Records</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Login Attempts</span>
             <Activity className="w-5 h-5 text-[var(--brand-start)]" />
           </div>
-          <p className="text-3xl font-black text-foreground">{activities.length}</p>
+          <p className="text-3xl font-black text-foreground">{backendLoginLogs.length}</p>
           <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Real-time stream active
+            <CheckCircle2 className="w-3.5 h-3.5" /> Live MongoDB Audit Stream
           </p>
         </Card>
 
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Registered Students</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Registered Accounts</span>
             <Users className="w-5 h-5 text-emerald-500" />
           </div>
           <p className="text-3xl font-black text-foreground">{realStats.totalUsers}</p>
@@ -536,20 +488,20 @@ export function AdminDashboard() {
             <Award className="w-5 h-5 text-blue-500" />
           </div>
           <p className="text-3xl font-black text-foreground">{realStats.activeUsers}</p>
-          <p className="text-xs text-muted-foreground font-semibold">Status: active in DB</p>
+          <p className="text-xs text-muted-foreground font-semibold">Active account status</p>
         </Card>
 
         <Card className="bg-card border border-border p-5 shadow-xs rounded-xl space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Onboarded</span>
-            <Database className="w-5 h-5 text-amber-500" />
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Admin Actions</span>
+            <ShieldCheck className="w-5 h-5 text-amber-500" />
           </div>
-          <p className="text-3xl font-black text-foreground">{realStats.onboarded}</p>
-          <p className="text-xs text-muted-foreground font-semibold">Completed setup</p>
+          <p className="text-3xl font-black text-foreground">{adminAuditLogs.length}</p>
+          <p className="text-xs text-muted-foreground font-semibold">Security audit events</p>
         </Card>
       </div>
 
-      {/* PARTITION 2: TOP-LEVEL CONTROL PARTITION TABS */}
+      {/* TOP-LEVEL CONTROL PARTITION TABS */}
       <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto whitespace-nowrap scrollbar-none">
         <button
           onClick={() => setActivePartition("telemetry")}
@@ -560,7 +512,7 @@ export function AdminDashboard() {
           }`}
         >
           <Activity className="w-4 h-4" />
-          Partition A: User Record ({activities.length})
+          Partition A: Login Telemetry Audit ({backendLoginLogs.length})
         </button>
 
         <button
@@ -572,244 +524,126 @@ export function AdminDashboard() {
           }`}
         >
           <Users className="w-4 h-4" />
-          Partition B: User Credential Manager ({users.length})
+          Partition B: Account Manager ({users.length})
+        </button>
+
+        <button
+          onClick={() => setActivePartition("audit")}
+          className={`px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border ${
+            activePartition === "audit"
+              ? "bg-[var(--brand-start)] text-white border-[var(--brand-start)] shadow-md"
+              : "bg-card text-muted-foreground border-border hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          Partition C: Admin Security Audit Log ({adminAuditLogs.length})
         </button>
       </div>
 
       {/* ══════════════════════════════════════════════════════════
-         PARTITION A: USER RECORD & STRUCTURED ACTIVITY TABLE
+         PARTITION A: LOGIN TELEMETRY AUDIT TRAIL
       ══════════════════════════════════════════════════════════ */}
       {activePartition === "telemetry" && (
-        <div className="space-y-6">
-          {/* USER SIGN IN & CREDENTIAL VERIFICATION FORM */}
-          <Card className="p-6 bg-card border-2 border-[var(--brand-start)]/40 shadow-md rounded-2xl space-y-5">
-            <div className="flex items-center justify-between gap-4 flex-wrap pb-3 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center font-black">
-                  <Key className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">User Record — Credentials Sign In</h2>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Enter email and password below to authenticate and view structured section-wise activity tables for any user
-                  </p>
-                </div>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Authentication & Access Audit Trail</h2>
+              <p className="text-xs text-muted-foreground font-medium">
+                Persistent database record of all successful and failed authentication attempts with device telemetry
+              </p>
             </div>
-
-            <form onSubmit={handleUserAuthSignIn} className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
-              <div className="sm:col-span-5 space-y-1.5">
-                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-[var(--brand-start)]" /> Enter User Email Address
-                </Label>
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={telemetryFilterStatus}
+                onChange={(e) => setTelemetryFilterStatus(e.target.value as any)}
+                className="bg-background border border-border text-foreground text-xs rounded-lg p-2 font-semibold"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="SUCCESS">✓ Successful Logins Only</option>
+                <option value="FAILED">✕ Failed Attempts Only</option>
+              </select>
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="e.g. demo@gmail.com or admin@campus-hub.com"
-                  className="bg-background border-border text-xs h-10 font-mono font-medium"
-                  required
+                  value={telemetrySearch}
+                  onChange={(e) => setTelemetrySearch(e.target.value)}
+                  placeholder="Filter email, device, IP..."
+                  className="pl-9 bg-background border-border text-foreground text-xs"
                 />
               </div>
-
-              <div className="sm:col-span-4 space-y-1.5">
-                <Label className="text-xs font-bold text-foreground flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-[var(--brand-start)]" /> Enter Password Credentials
-                </Label>
-                <div className="relative">
-                  <Input
-                    type={showAuthPass ? "text" : "password"}
-                    value={authPassword}
-                    onChange={(e) => setAuthPassword(e.target.value)}
-                    placeholder="Enter user password"
-                    className="bg-background border-border text-xs h-10 font-mono font-medium pr-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAuthPass(!showAuthPass)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showAuthPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="sm:col-span-3 flex gap-2">
-                <Button
-                  type="submit"
-                  className="w-full bg-[var(--brand-start)] text-white hover:bg-amber-600 font-bold text-xs h-10 shadow-md flex items-center justify-center gap-2"
-                >
-                  <ShieldCheck className="w-4 h-4" /> Sign In & View Activity
-                </Button>
-                {userAuthSuccess && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSignOutUserView}
-                    className="border-border text-muted-foreground hover:text-foreground text-xs font-bold h-10"
-                  >
-                    Sign Out
-                  </Button>
-                )}
-              </div>
-            </form>
-          </Card>
-
-          {/* DISPLAY USER ACTIVITY STRUCTURED TABLES UPON AUTHENTICATION */}
-          {userAuthSuccess && authenticatedUser ? (
-            <div className="space-y-6">
-              {/* Authenticated User Status Banner */}
-              <div className="bg-emerald-500/10 border-2 border-emerald-500/30 p-4 rounded-2xl flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-black text-base">
-                    {authenticatedUser.fullName.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-foreground text-base">{authenticatedUser.fullName}</h3>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
-                        VERIFIED & SIGNED IN
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      Email: {authenticatedUser.email} | ID: {authenticatedUser.id}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-muted-foreground bg-background px-3 py-1.5 rounded-xl border border-border">
-                    Total Logs Found:{" "}
-                    <strong className="text-[var(--brand-start)] font-mono">
-                      {
-                        activities.filter(
-                          (a) =>
-                            a.userEmail.toLowerCase() === authenticatedUser.email.toLowerCase() ||
-                            a.userName.toLowerCase() === authenticatedUser.fullName.toLowerCase()
-                        ).length
-                      }
-                    </strong>
-                  </span>
-                </div>
-              </div>
-
-              {/* STRUCTURED TABLES BY SECTION */}
-              {[
-                { title: "1. Login & Authentication Records", category: "Login", icon: Key, badgeColor: "text-emerald-500" },
-                { title: "2. Academic Marks & Exam Ledger Records", category: "Marks", icon: Award, badgeColor: "text-blue-500" },
-                { title: "3. Attendance Activity Records", category: "Attendance", icon: CheckCircle2, badgeColor: "text-purple-500" },
-                { title: "4. Study Material & Resource Downloads", category: "StudyMaterial", icon: BookOpen, badgeColor: "text-amber-500" },
-                { title: "5. Target Predictor & System Records", category: "System", icon: Activity, badgeColor: "text-sky-500" },
-              ].map((sec) => {
-                const secActivities = activities.filter((act) => {
-                  const matchesUser =
-                    act.userEmail.toLowerCase() === authenticatedUser.email.toLowerCase() ||
-                    act.userName.toLowerCase() === authenticatedUser.fullName.toLowerCase();
-                  if (!matchesUser) return false;
-                  if (sec.category === "System") {
-                    return act.category === "System" || act.category === "TargetPredictor" || act.category === "Profile";
-                  }
-                  return act.category.toLowerCase() === sec.category.toLowerCase();
-                });
-
-                const SecIcon = sec.icon;
-
-                return (
-                  <Card key={sec.category} className="p-5 bg-card border border-border shadow-xs rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between border-b border-border pb-3">
-                      <h3 className="text-sm font-extrabold text-foreground flex items-center gap-2">
-                        <SecIcon className={`w-4 h-4 ${sec.badgeColor}`} />
-                        {sec.title}
-                      </h3>
-                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-muted text-muted-foreground font-mono">
-                        {secActivities.length} Entries
-                      </span>
-                    </div>
-
-                    {secActivities.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-muted-foreground bg-muted/20 rounded-xl border border-border/50 font-medium">
-                        No activity logged in {sec.title.toLowerCase()} for this user yet.
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto rounded-xl border border-border">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-muted/70 text-muted-foreground font-bold uppercase border-b border-border">
-                            <tr>
-                              <th className="p-3 w-44">Date & Time</th>
-                              <th className="p-3 w-40">Action Code</th>
-                              <th className="p-3">Activity Description</th>
-                              <th className="p-3 text-center w-28">Status</th>
-                              <th className="p-3 w-44">Device / Client</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border/60">
-                            {secActivities.map((act) => (
-                              <tr key={act.id} className="hover:bg-muted/30 transition-colors">
-                                <td className="p-3 font-mono text-muted-foreground whitespace-nowrap">
-                                  <div className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5 text-amber-500" />
-                                    {act.timestamp}
-                                  </div>
-                                </td>
-                                <td className="p-3 font-mono font-bold text-foreground">
-                                  <span className="px-2 py-0.5 rounded bg-muted border border-border text-[11px]">
-                                    {act.actionType}
-                                  </span>
-                                </td>
-                                <td className="p-3 font-medium text-foreground leading-normal">
-                                  {act.description}
-                                </td>
-                                <td className="p-3 text-center whitespace-nowrap">
-                                  <span
-                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
-                                      act.status === "success"
-                                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                                        : act.status === "warning"
-                                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                                        : "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30"
-                                    }`}
-                                  >
-                                    {act.status}
-                                  </span>
-                                </td>
-                                <td className="p-3 font-mono text-muted-foreground text-[11px] whitespace-nowrap">
-                                  {act.deviceInfo || "Web Application"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
             </div>
-          ) : (
-            /* WHEN NOT SIGNED IN YET, SHOW INSTRUCTION CARD */
-            <Card className="p-8 text-center border-2 border-dashed border-border bg-muted/20 rounded-2xl space-y-3">
-              <div className="w-12 h-12 rounded-full bg-[var(--brand-start)]/15 text-[var(--brand-start)] flex items-center justify-center mx-auto border border-[var(--brand-start)]/30">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-foreground">Enter User Credentials Above to Sign In</h3>
-              <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Type the user email and password in the sign in section above to view their section-wise activity tables.
-              </p>
-            </Card>
-          )}
+          </div>
+
+          <Card className="bg-card border border-border overflow-hidden shadow-xs rounded-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/70 text-muted-foreground font-bold uppercase border-b border-border">
+                  <tr>
+                    <th className="p-3.5 w-32">Status</th>
+                    <th className="p-3.5">Attempted Email</th>
+                    <th className="p-3.5">Date & Time</th>
+                    <th className="p-3.5">Device / Client</th>
+                    <th className="p-3.5">Browser</th>
+                    <th className="p-3.5">Operating System</th>
+                    <th className="p-3.5">IP Address</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredLoginLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-muted-foreground font-medium">
+                        No login audit records found matching criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLoginLogs.map((log, idx) => (
+                      <tr
+                        key={log._id || idx}
+                        className={`transition-colors ${
+                          !log.success ? "bg-red-500/5 hover:bg-red-500/10" : "hover:bg-muted/30"
+                        }`}
+                      >
+                        <td className="p-3.5 font-bold">
+                          {log.success ? (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1 w-fit">
+                              <CheckCircle2 className="w-3 h-3" /> SUCCESS
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 flex items-center gap-1 w-fit">
+                              <XCircle className="w-3 h-3" /> FAILED
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-foreground">{log.attemptedEmail}</td>
+                        <td className="p-3.5 font-mono text-muted-foreground whitespace-nowrap">
+                          {new Date(log.timestamp).toLocaleString()}
+                        </td>
+                        <td className="p-3.5 font-semibold text-foreground">{log.device || "Unknown Device"}</td>
+                        <td className="p-3.5 text-muted-foreground">{log.browser || "Unknown Browser"}</td>
+                        <td className="p-3.5 text-muted-foreground">{log.os || "Unknown OS"}</td>
+                        <td className="p-3.5 font-mono text-muted-foreground text-[11px]">
+                          {log.ipAddress || "Not Available"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════
-         PARTITION B: USER & CREDENTIAL MANAGER TABLE
+         PARTITION B: USER & ACCOUNT MANAGER TABLE
       ══════════════════════════════════════════════════════════ */}
       {activePartition === "users" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h2 className="text-xl font-bold text-foreground">System Users & Credential Ledger</h2>
+              <h2 className="text-xl font-bold text-foreground">Registered Accounts & Management Controls</h2>
               <p className="text-xs text-muted-foreground font-medium">
-                Manage accounts, update emails/passwords, or create new student login profiles
+                Complete account control: view history, edit profile, reset password, change status, or delete accounts
               </p>
             </div>
             <div className="relative w-full sm:w-72">
@@ -823,17 +657,17 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          <Card className="bg-card border border-border overflow-hidden shadow-xs rounded-xl">
+          <Card className="bg-card border border-border overflow-hidden shadow-xs rounded-2xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead className="bg-muted/60 text-muted-foreground text-xs uppercase font-bold border-b border-border">
                   <tr>
                     <th className="p-4">User & Role</th>
                     <th className="p-4">Login Email</th>
-                    <th className="p-4">Password Credentials</th>
-                    <th className="p-4">College Campus & Branch</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Actions</th>
+                    <th className="p-4">Account Status</th>
+                    <th className="p-4">Last Login Event</th>
+                    <th className="p-4 text-center">Login Counts (✓ / ✕)</th>
+                    <th className="p-4 text-right">Management Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
@@ -844,75 +678,119 @@ export function AdminDashboard() {
                         u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
                         u.enrollmentNumber.includes(userSearchTerm)
                     )
-                    .map((user) => (
-                      <tr key={user.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="p-4">
-                          <div className="font-bold text-foreground flex items-center gap-2">
-                            {user.fullName}
-                            {user.id === "usr-admin" && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                                MASTER ADMIN
+                    .map((user) => {
+                      const stats = getUserStats(user.email);
+                      return (
+                        <tr key={user.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-4">
+                            <div className="font-bold text-foreground flex items-center gap-2">
+                              {user.fullName}
+                              {user.id === "usr-admin" && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                  MASTER ADMIN
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground font-mono">
+                              {user.branch !== "Admin" ? `${user.branch} | Enr: ${user.enrollmentNumber}` : "System Role"}
+                            </div>
+                          </td>
+                          <td className="p-4 font-mono text-xs text-foreground font-semibold">
+                            <div className="flex items-center gap-1.5">
+                              <Mail className="w-3.5 h-3.5 text-[var(--brand-start)]" />
+                              {user.email}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-extrabold ${
+                                  user.status === "active"
+                                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                    : "bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30"
+                                }`}
+                              >
+                                ● {user.status.toUpperCase()}
                               </span>
+                              {user.id !== "usr-admin" && (
+                                <button
+                                  onClick={() => handleToggleStatus(user)}
+                                  title={user.status === "active" ? "Deactivate Account" : "Activate Account"}
+                                  className="text-xs text-muted-foreground hover:text-foreground font-semibold underline"
+                                >
+                                  {user.status === "active" ? <UserX className="w-3.5 h-3.5 text-red-400" /> : <UserCheck className="w-3.5 h-3.5 text-emerald-400" />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-xs">
+                            {user.lastLogin && user.lastLogin !== "Never" ? (
+                              <div className="space-y-0.5">
+                                <div className="font-semibold text-foreground flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-amber-500" />
+                                  {user.lastLogin}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground font-mono">
+                                  {user.lastLoginDevice || (stats.lastSuccess ? stats.lastSuccess.device : "Unknown Device")}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground font-semibold italic">Never Logged In</span>
                             )}
-                          </div>
-                          <div className="text-xs text-muted-foreground font-mono">Enr: {user.enrollmentNumber}</div>
-                        </td>
-                        <td className="p-4 font-mono text-xs text-foreground font-semibold">
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-[var(--brand-start)]" />
-                            {user.email}
-                          </div>
-                        </td>
-                        <td className="p-4 font-mono text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-amber-600 dark:text-amber-400">
-                              {revealedPasswords[user.id] ? user.passwordHash : "••••••••••••"}
+                          </td>
+                          <td className="p-4 text-center font-mono text-xs">
+                            <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20 mr-1.5">
+                              ✓ {stats.successful}
                             </span>
-                            <button
-                              onClick={() => togglePasswordReveal(user.id)}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              {revealedPasswords[user.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="p-4 text-xs text-muted-foreground">
-                          <span className="font-semibold text-foreground">{user.collegeName}</span> ({user.branch})
-                        </td>
-                        <td className="p-4">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                              user.status === "active"
-                                ? "bg-emerald-500/20 text-emerald-600 border border-emerald-500/30"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            ● {user.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditClick(user)}
-                              className="border-border text-foreground hover:bg-muted text-xs font-bold"
-                            >
-                              <Edit className="w-3.5 h-3.5 mr-1" />
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleDeleteUser(user.id, user.fullName)}
-                              className="text-red-500 hover:text-red-600 hover:bg-red-500/10 text-xs font-bold"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                            <span className="px-2 py-1 rounded bg-red-500/10 text-red-600 dark:text-red-400 font-bold border border-red-500/20">
+                              ✕ {stats.failed}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewHistory(user)}
+                                className="border-border text-foreground hover:bg-muted text-xs font-bold h-8 px-2.5"
+                                title="View Login History"
+                              >
+                                <History className="w-3.5 h-3.5 mr-1 text-blue-500" />
+                                History
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditClick(user)}
+                                className="border-border text-foreground hover:bg-muted text-xs font-bold h-8 px-2.5"
+                              >
+                                <Edit className="w-3.5 h-3.5 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenResetPass(user)}
+                                className="border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 text-xs font-bold h-8 px-2.5"
+                              >
+                                <Lock className="w-3.5 h-3.5 mr-1" />
+                                Reset Pass
+                              </Button>
+                              {user.id !== "usr-admin" && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleOpenDelete(user)}
+                                  className="text-red-500 hover:text-red-600 hover:bg-red-500/10 text-xs font-bold h-8 px-2"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -920,15 +798,221 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════════
+         PARTITION C: ADMIN SECURITY AUDIT LOG
+      ══════════════════════════════════════════════════════════ */}
+      {activePartition === "audit" && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Master Admin Action Audit Log</h2>
+            <p className="text-xs text-muted-foreground font-medium">
+              Persistent, tamper-proof MongoDB record of sensitive administrative actions (credential changes, user edits, password resets, account deletions)
+            </p>
+          </div>
 
+          <Card className="bg-card border border-border overflow-hidden shadow-xs rounded-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/70 text-muted-foreground font-bold uppercase border-b border-border">
+                  <tr>
+                    <th className="p-3.5 w-44">Timestamp</th>
+                    <th className="p-3.5">Action Code</th>
+                    <th className="p-3.5">Target Account</th>
+                    <th className="p-3.5">Admin Identity</th>
+                    <th className="p-3.5">Device & IP</th>
+                    <th className="p-3.5">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {adminAuditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground font-medium">
+                        No admin audit records logged yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    adminAuditLogs.map((audit, idx) => (
+                      <tr key={audit._id || idx} className="hover:bg-muted/30 transition-colors">
+                        <td className="p-3.5 font-mono text-muted-foreground whitespace-nowrap">
+                          {new Date(audit.timestamp).toLocaleString()}
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-[var(--brand-start)]">
+                          <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                            {audit.action}
+                          </span>
+                        </td>
+                        <td className="p-3.5 font-mono font-bold text-foreground">
+                          {audit.targetEmail || "N/A"}
+                        </td>
+                        <td className="p-3.5 font-semibold text-foreground">{audit.adminEmail}</td>
+                        <td className="p-3.5 font-mono text-muted-foreground text-[11px]">
+                          {audit.device} ({audit.ipAddress || "Local"})
+                        </td>
+                        <td className="p-3.5 text-muted-foreground font-medium">{audit.details || "None"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
 
-      {/* EDIT USER CREDENTIALS MODAL */}
+      {/* ══════════════════════════════════════════════════════════
+         DIALOG MODALS
+      ══════════════════════════════════════════════════════════ */}
+
+      {/* CHANGE ADMIN CREDENTIALS DIALOG */}
+      <Dialog open={showCredChangeDialog} onOpenChange={setShowCredChangeDialog}>
+        <DialogContent className="bg-card border border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <Key className="w-4 h-4 text-[var(--brand-start)]" />
+              Change Master Admin Credentials
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Admin Username / Email</Label>
+              <Input
+                type="email"
+                value={credNewEmail}
+                onChange={(e) => setCredNewEmail(e.target.value)}
+                placeholder="admin@campus-hub.com"
+                className="bg-background border-border text-foreground text-sm font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">New Master Password</Label>
+              <Input
+                type="password"
+                value={credNewPassword}
+                onChange={(e) => setCredNewPassword(e.target.value)}
+                placeholder="Enter new master password"
+                className="bg-background border-border text-foreground text-sm font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Confirm New Password</Label>
+              <Input
+                type="password"
+                value={credConfirmPassword}
+                onChange={(e) => setCredConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="bg-background border-border text-foreground text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCredChangeDialog(false)} className="border-border text-foreground font-bold text-xs">
+              Cancel
+            </Button>
+            <Button onClick={handleChangeAdminCredentials} className="bg-[var(--brand-start)] text-white hover:bg-amber-600 font-bold text-xs">
+              Update Admin Credentials
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ACCOUNT HISTORY MODAL WITH SECURITY SUMMARY */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="bg-card border border-border text-foreground max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <History className="w-4 h-4 text-blue-500" />
+              Account Security Summary & Login History — {historyUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {historyUser && (() => {
+              const stats = getUserStats(historyUser.email);
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-muted/40 rounded-xl border border-border text-xs">
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase font-bold">Status</span>
+                    <strong className={historyUser.status === "active" ? "text-emerald-500 font-bold" : "text-red-500 font-bold"}>
+                      {historyUser.status.toUpperCase()}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase font-bold">Successful Logins</span>
+                    <strong className="text-emerald-500 font-mono font-bold">{stats.successful}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase font-bold">Failed Attempts</span>
+                    <strong className="text-red-500 font-mono font-bold">{stats.failed}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block text-[10px] uppercase font-bold">Last Device</span>
+                    <strong className="text-foreground font-mono font-semibold truncate block">
+                      {historyUser.lastLoginDevice || (stats.lastSuccess ? stats.lastSuccess.device : "Unknown Device")}
+                    </strong>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-border">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/70 text-muted-foreground font-bold uppercase sticky top-0 border-b border-border">
+                  <tr>
+                    <th className="p-2.5">Status</th>
+                    <th className="p-2.5">Date & Time</th>
+                    <th className="p-2.5">Device</th>
+                    <th className="p-2.5">Browser</th>
+                    <th className="p-2.5">OS</th>
+                    <th className="p-2.5">IP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {userHistoryLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-6 text-center text-muted-foreground italic">
+                        No login activity recorded for this account.
+                      </td>
+                    </tr>
+                  ) : (
+                    userHistoryLogs.map((log, i) => (
+                      <tr key={log._id || i} className={!log.success ? "bg-red-500/5 font-medium" : ""}>
+                        <td className="p-2.5 font-bold">
+                          {log.success ? (
+                            <span className="text-emerald-500 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Success</span>
+                          ) : (
+                            <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3 h-3" /> Failed</span>
+                          )}
+                        </td>
+                        <td className="p-2.5 font-mono text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</td>
+                        <td className="p-2.5 font-semibold text-foreground">{log.device || "Unknown Device"}</td>
+                        <td className="p-2.5 text-muted-foreground">{log.browser || "Unknown Browser"}</td>
+                        <td className="p-2.5 text-muted-foreground">{log.os || "Unknown OS"}</td>
+                        <td className="p-2.5 font-mono text-muted-foreground text-[10px]">{log.ipAddress || "N/A"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoryDialog(false)} className="border-border text-foreground font-bold text-xs">
+              Close History
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EDIT USER MODAL */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="bg-card border border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
               <Edit className="w-4 h-4 text-[var(--brand-start)]" />
-              Edit Account Credentials
+              Edit Account Information
             </DialogTitle>
           </DialogHeader>
 
@@ -951,14 +1035,6 @@ export function AdminDashboard() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-muted-foreground">Password Credentials</Label>
-              <Input
-                value={editPassword}
-                onChange={(e) => setEditPassword(e.target.value)}
-                className="bg-background border-border text-foreground text-sm font-mono font-semibold"
-              />
-            </div>
-            <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-muted-foreground">Account Status</Label>
               <select
                 value={editStatus}
@@ -966,18 +1042,95 @@ export function AdminDashboard() {
                 className="w-full bg-background border border-border text-foreground text-sm rounded-lg p-2 font-semibold"
               >
                 <option value="active">Active</option>
-                <option value="offline">Offline</option>
-                <option value="blocked">Blocked</option>
+                <option value="blocked">Deactivated / Blocked</option>
               </select>
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDialog(false)} className="border-border text-foreground font-bold text-xs">
               Cancel
             </Button>
             <Button onClick={handleSaveUser} className="bg-[var(--brand-start)] text-white hover:bg-amber-600 font-bold text-xs">
-              Save Credentials
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* RESET PASSWORD DIALOG */}
+      <Dialog open={showResetPassDialog} onOpenChange={setShowResetPassDialog}>
+        <DialogContent className="bg-card border border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-500" />
+              Reset Account Password — {selectedUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <p className="text-xs text-muted-foreground">
+              Set a new password for this user account. Existing password is never displayed or accessible.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">New Password</Label>
+              <Input
+                type="password"
+                value={resetPassNew}
+                onChange={(e) => setResetPassNew(e.target.value)}
+                placeholder="Enter new password"
+                className="bg-background border-border text-foreground text-sm font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-muted-foreground">Confirm New Password</Label>
+              <Input
+                type="password"
+                value={resetPassConfirm}
+                onChange={(e) => setResetPassConfirm(e.target.value)}
+                placeholder="Confirm new password"
+                className="bg-background border-border text-foreground text-sm font-mono"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowResetPassDialog(false)} className="border-border text-foreground font-bold text-xs">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveResetPass} className="bg-amber-500 text-white hover:bg-amber-600 font-bold text-xs">
+              Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog open={showDeleteConfirmDialog} onOpenChange={setShowDeleteConfirmDialog}>
+        <DialogContent className="bg-card border border-red-500/40 text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-red-500 flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              Confirm Permanent Account Deletion
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="py-3 space-y-2">
+            <p className="text-sm font-bold text-foreground">
+              Are you sure you want to permanently delete account{" "}
+              <span className="text-red-500 font-mono">{userToDelete?.email}</span>?
+            </p>
+            <p className="text-xs text-muted-foreground">
+              This action cannot be undone. User profile, saved academic data, and associated logs will be permanently removed.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirmDialog(false)} className="border-border text-foreground font-bold text-xs">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmDelete} className="bg-red-600 text-white hover:bg-red-700 font-bold text-xs">
+              Delete Account Permanently
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -989,7 +1142,7 @@ export function AdminDashboard() {
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-foreground flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-[var(--brand-start)]" />
-              Create New User Profile
+              Create New User Account
             </DialogTitle>
           </DialogHeader>
 
@@ -1017,7 +1170,7 @@ export function AdminDashboard() {
               <Label className="text-xs font-semibold text-muted-foreground">Password Credentials</Label>
               <Input
                 type="password"
-                placeholder="Password123"
+                placeholder="Password123!"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="bg-background border-border text-foreground text-sm font-mono"

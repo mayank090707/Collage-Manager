@@ -14,6 +14,41 @@ export interface ActivityLog {
 
 const STORAGE_KEY = "system_activity_logs";
 
+// ─── Device Detection ──────────────────────────────────────────────────────
+// Parses a User-Agent string into a clean "OS / Browser" string.
+// Returns "Unknown Device" when indeterminate — never fabricates device info.
+export function detectDevice(ua?: string): string {
+  const str = ua || (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  if (!str) return "Unknown Device";
+
+  // Detect OS/device type
+  let os = "Unknown OS";
+  if (/iPhone/i.test(str))                               os = "iPhone";
+  else if (/iPad/i.test(str))                            os = "iPad";
+  else if (/Android/i.test(str))                         os = "Android";
+  else if (/Windows NT/i.test(str))                      os = "Windows PC";
+  else if (/Macintosh|Mac OS X/i.test(str))              os = "macOS";
+  else if (/Linux/i.test(str))                           os = "Linux";
+  else if (/CrOS/i.test(str))                            os = "ChromeOS";
+
+  // Detect browser (order matters — Edge before Chrome, Samsung before Chrome)
+  let browser = "Unknown Browser";
+  if (/Edg\//i.test(str))                               browser = "Edge";
+  else if (/OPR\/|Opera/i.test(str))                    browser = "Opera";
+  else if (/SamsungBrowser/i.test(str))                 browser = "Samsung Browser";
+  else if (/Firefox\//i.test(str))                      browser = "Firefox";
+  else if (/Chrome\//i.test(str) && !/Chromium/i.test(str)) browser = "Chrome";
+  else if (/Chromium\//i.test(str))                     browser = "Chromium";
+  else if (/Safari\//i.test(str) && !/Chrome\//i.test(str)) browser = "Safari";
+  else if (/MSIE|Trident/i.test(str))                   browser = "Internet Explorer";
+
+  // Combine: if both are known, show both; if only one, show that
+  if (os !== "Unknown OS" && browser !== "Unknown Browser") return `${os} / ${browser}`;
+  if (os !== "Unknown OS")      return os;
+  if (browser !== "Unknown Browser") return browser;
+  return "Unknown Device";
+}
+
 export const getActivities = (): ActivityLog[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -28,6 +63,7 @@ export const getActivities = (): ActivityLog[] => {
   }
 
   // Seed default realistic activity logs if none exist
+  const device = detectDevice();
   const seededLogs: ActivityLog[] = [
     {
       id: "act-101",
@@ -38,9 +74,9 @@ export const getActivities = (): ActivityLog[] => {
       userName: "Mayank Verma",
       actionType: "LOGIN_SUCCESS",
       category: "Login",
-      description: "Mayank Verma logged into student portal (Windows 11 / Chrome browser).",
+      description: "Mayank Verma logged into student portal.",
       status: "success",
-      deviceInfo: "Chrome 126.0 (Windows NT 10.0)"
+      deviceInfo: device,
     },
     {
       id: "act-102",
@@ -53,7 +89,7 @@ export const getActivities = (): ActivityLog[] => {
       category: "Marks",
       description: "Updated Internal Assessment marks for 'Database Management Systems' (Semester 4) to 23/25.",
       status: "info",
-      deviceInfo: "Web Application"
+      deviceInfo: device,
     },
     {
       id: "act-103",
@@ -66,7 +102,7 @@ export const getActivities = (): ActivityLog[] => {
       category: "Attendance",
       description: "Recorded attendance for 'Data Structures' (+1 Present). Current percentage: 86.4%.",
       status: "success",
-      deviceInfo: "Web Application"
+      deviceInfo: device,
     },
     {
       id: "act-104",
@@ -79,7 +115,7 @@ export const getActivities = (): ActivityLog[] => {
       category: "StudyMaterial",
       description: "Downloaded resource 'Algorithms_Lecture_Notes_Unit2.pdf' from Study Material repository.",
       status: "info",
-      deviceInfo: "Web Application"
+      deviceInfo: device,
     },
     {
       id: "act-105",
@@ -92,7 +128,7 @@ export const getActivities = (): ActivityLog[] => {
       category: "TargetPredictor",
       description: "Ran Target Predictor with target 9.20 CGPA. Target SGPA required: 9.65 for Semester 5.",
       status: "info",
-      deviceInfo: "Web Application"
+      deviceInfo: device,
     },
     {
       id: "act-106",
@@ -103,10 +139,10 @@ export const getActivities = (): ActivityLog[] => {
       userName: "System Admin",
       actionType: "ADMIN_LOGIN",
       category: "System",
-      description: "Super Admin authenticated using master credentials 'admin@campus-hub.com'.",
+      description: "Super Admin authenticated using master credentials.",
       status: "warning",
-      deviceInfo: "Admin Control Center"
-    }
+      deviceInfo: device,
+    },
   ];
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(seededLogs));
@@ -119,7 +155,8 @@ export const logActivity = (
   category: ActivityLog["category"] = "System",
   userEmail?: string,
   userName?: string,
-  status: ActivityLog["status"] = "info"
+  status: ActivityLog["status"] = "info",
+  deviceInfoOverride?: string
 ): ActivityLog => {
   const logs = getActivities();
 
@@ -139,6 +176,9 @@ export const logActivity = (
     userName ||
     (userRole === "admin" ? "System Admin" : currentProfile.fullName || "Student User");
 
+  // Use override → live UA detection → "Unknown Device"
+  const deviceInfo = deviceInfoOverride || detectDevice();
+
   const newLog: ActivityLog = {
     id: "act-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
     timestamp: new Date().toLocaleString(),
@@ -150,7 +190,7 @@ export const logActivity = (
     category,
     description,
     status,
-    deviceInfo: typeof window !== "undefined" && window.navigator ? (window.navigator.userAgent.includes("Windows") ? "Windows PC / Chrome" : "Browser Web Client") : "Web Client"
+    deviceInfo,
   };
 
   const updated = [newLog, ...logs].slice(0, 150); // Keep latest 150 activity records

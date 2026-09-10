@@ -3,18 +3,21 @@
  *
  * Replaces the old file-based db.json storage.
  * Exposes the EXACT same public API (find, filter, insert, update, upsert, delete)
- * so that index.ts needs zero changes.
+ * so that index.ts needs zero changes for existing collections.
  *
  * Data is now stored permanently in MongoDB Atlas and survives Render
  * restarts, redeployments, and ephemeral filesystem wipes.
  */
 
-import { UserModel, UserDataModel } from './models';
+import { UserModel, UserDataModel, LoginActivityModel, AdminConfigModel, AdminAuditLogModel } from './models';
 
 // Map collection name → the right Mongoose model
 function getModel(collection: string) {
-  if (collection === 'users')    return UserModel;
-  if (collection === 'userData') return UserDataModel;
+  if (collection === 'users')          return UserModel;
+  if (collection === 'userData')       return UserDataModel;
+  if (collection === 'loginActivity')  return LoginActivityModel;
+  if (collection === 'adminConfig')    return AdminConfigModel;
+  if (collection === 'adminAuditLog')  return AdminAuditLogModel;
   throw new Error(`Unknown collection: ${collection}`);
 }
 
@@ -23,7 +26,6 @@ function toPlain(doc: any): any {
   if (!doc) return null;
   if (typeof doc.toObject === 'function') {
     const obj = doc.toObject({ versionKey: false });
-    // Remove prototype Mongoose fields that callers don't need
     delete obj.__v;
     return obj;
   }
@@ -34,8 +36,6 @@ class MongoDBService {
   // ── Find one ─────────────────────────────────────────────────────────────
   async find(collection: string, predicate: (item: any) => boolean): Promise<any> {
     const model = getModel(collection);
-    // Fetch all and filter in-memory (keeps same semantics as old FileDB)
-    // For small datasets (hundreds of users) this is perfectly fine.
     const docs = await (model as any).find({}).lean();
     return docs.find(predicate) || null;
   }
@@ -50,7 +50,6 @@ class MongoDBService {
   // ── Insert ───────────────────────────────────────────────────────────────
   async insert(collection: string, item: any): Promise<any> {
     const model = getModel(collection);
-    // Remove MongoDB internal fields before saving
     const { _id, __v, ...cleanItem } = item;
     const doc = new (model as any)(cleanItem);
     await doc.save();
@@ -90,6 +89,19 @@ class MongoDBService {
     return true;
   }
 
+  // ── Delete many (for login activity cleanup etc.) ─────────────────────────
+  async deleteMany(collection: string, predicate: (item: any) => boolean): Promise<number> {
+    const model = getModel(collection);
+    const docs = await (model as any).find({}).lean();
+    const matches = docs.filter(predicate);
+    let count = 0;
+    for (const m of matches) {
+      await (model as any).findByIdAndDelete(m._id);
+      count++;
+    }
+    return count;
+  }
+
   // ── Sync helpers (compatibility with old FileDB API) ─────────────────────
   findSync    = this.find.bind(this);
   filterSync  = this.filter.bind(this);
@@ -106,6 +118,9 @@ export const db = new MongoDBService();
 
 // Export type alias for shared interface compatibility
 export interface DBTemplate {
-  users:    any[];
-  userData: any[];
+  users:         any[];
+  userData:      any[];
+  loginActivity: any[];
+  adminConfig:   any[];
+  adminAuditLog: any[];
 }
