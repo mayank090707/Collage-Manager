@@ -30,7 +30,7 @@ export function CampusAIChat() {
     {
       id: "welcome-1",
       role: "assistant",
-      content: "Hi! 👋 I'm **Campus AI**, your official intelligent assistant for Campus Hub. How can I help you today?",
+      content: "Hi! 👋 I'm Campus AI, your official intelligent assistant for Campus Hub. How can I help you today?",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -142,7 +142,7 @@ export function CampusAIChat() {
       {/* ── Chat Window Panel ─────────────────────────────────────────────────── */}
       {isOpen && (
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[600px] max-h-[85vh] rounded-2xl border border-amber-500/30 bg-slate-950/95 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
-          
+
           {/* ── Header ────────────────────────────────────────────────────────── */}
           <div className="p-3.5 px-4 bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -180,18 +180,17 @@ export function CampusAIChat() {
 
           {/* ── Messages Scroll Area ───────────────────────────────────────────── */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 custom-scrollbar bg-slate-950/60">
-            
+
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`px-4 py-2.5 text-sm leading-relaxed ${
-                    msg.role === "user"
+                  className={`px-4 py-2.5 text-sm leading-relaxed ${msg.role === "user"
                       ? "bg-amber-500/20 border border-amber-500/40 text-amber-100 rounded-2xl rounded-tr-none max-w-[85%] shadow-sm"
                       : "bg-slate-900/90 border border-slate-800/90 text-slate-200 rounded-2xl rounded-tl-none max-w-[92%] shadow-sm"
-                  }`}
+                    }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
 
